@@ -1,13 +1,36 @@
+# Gradle
 .gradle/
-.idea/
 build/
 app/build/
-app/google-services.json
-local.properties
+
+# Android Studio / IntelliJ
+.idea/
 *.iml
+local.properties
+
+# Firebase config
+app/google-services.json
+
+# Signing keys
 *.jks
 *.keystore
-.DS_Store
 
-# Nếu muốn bảo mật hơn, có thể không commit file này và dùng GitHub Secret GOOGLE_SERVICES_JSON
-# app/google-services.json
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Generated APK/AAB
+*.apk
+*.aab
+
+# Build outputs
+out/
+captures/
+
+# Native build cache
+.externalNativeBuild/
+.cxx/
+​
