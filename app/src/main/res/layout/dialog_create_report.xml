@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="22dp" android:background="#FFFFFF">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tạo báo cáo tài chính" android:textColor="#101828" android:textSize="22sp" android:textStyle="bold" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="Chọn loại báo cáo bạn muốn xem nhanh" android:textColor="#667085" android:textSize="14sp" />
+    <Button android:id="@+id/btnReportOverview" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="18dp" android:text="Báo cáo tổng quan" />
+    <Button android:id="@+id/btnReportExpense" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="8dp" android:text="Báo cáo chi tiêu theo danh mục" />
+    <Button android:id="@+id/btnReportCashflow" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="8dp" android:text="Báo cáo thu - chi" />
+</LinearLayout>

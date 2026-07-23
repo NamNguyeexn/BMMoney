@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_main">
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:clipToPadding="false" android:paddingBottom="118dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingLeft="18dp" android:paddingRight="18dp" android:paddingTop="46dp" android:paddingBottom="150dp">
+            <TextView android:text="Báo cáo tài chính" android:textColor="#FFFFFF" android:textSize="31sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            <TextView android:text="Tổng quan dòng tiền cá nhân" android:textColor="#D0D5DD" android:textSize="14sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:background="@drawable/bg_report_card" android:elevation="8dp" android:orientation="vertical" android:padding="18dp">
+                <TextView android:text="Số dư hiện tại" android:textColor="#D0D5DD" android:textSize="13sp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <TextView android:id="@+id/tvReportBalance" android:text="0 đ" android:textColor="#FFFFFF" android:textSize="32sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="14dp">
+                    <TextView android:id="@+id/tvReportIncome" android:layout_width="0dp" android:layout_height="54dp" android:layout_weight="1" android:gravity="center" android:background="@drawable/bg_income" android:text="Thu\n0 đ" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="13sp" />
+                    <Space android:layout_width="12dp" android:layout_height="1dp" />
+                    <TextView android:id="@+id/tvReportExpense" android:layout_width="0dp" android:layout_height="54dp" android:layout_weight="1" android:gravity="center" android:background="@drawable/bg_expense" android:text="Chi\n0 đ" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="13sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:background="@drawable/bg_report_card" android:elevation="6dp" android:orientation="vertical" android:padding="14dp">
+                <TextView android:text="Cơ cấu chi tiêu" android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <com.github.mikephil.charting.charts.PieChart android:id="@+id/pieChart" android:layout_width="match_parent" android:layout_height="290dp" android:layout_marginTop="6dp" />
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:background="@drawable/bg_report_card" android:elevation="6dp" android:orientation="vertical" android:padding="14dp">
+                <TextView android:text="Thu nhập và chi tiêu" android:textColor="#FFFFFF" android:textSize="18sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <com.github.mikephil.charting.charts.BarChart android:id="@+id/barChart" android:layout_width="match_parent" android:layout_height="260dp" android:layout_marginTop="8dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton android:id="@+id/fabCreateReport" android:layout_width="62dp" android:layout_height="62dp" android:layout_gravity="end|bottom" android:layout_marginEnd="18dp" android:layout_marginBottom="122dp" android:contentDescription="Tạo báo cáo" app:backgroundTint="#FF6B6B" app:srcCompat="@android:drawable/ic_menu_edit" app:tint="#FFFFFF" />
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="92dp" android:layout_gravity="bottom" android:background="@drawable/bg_bottom_nav_modern" android:elevation="22dp" android:gravity="center" android:orientation="horizontal" android:paddingLeft="18dp" android:paddingRight="18dp" android:paddingTop="8dp" android:paddingBottom="8dp">
+        <TextView android:id="@+id/navHome" android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1" android:gravity="center" android:text="⌂\nTrang chủ" android:textColor="#667085" android:textSize="12sp" />
+        <TextView android:id="@+id/navCalendar" android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1" android:gravity="center" android:text="◷\nLịch" android:textColor="#667085" android:textSize="12sp" />
+        <Space android:layout_width="78dp" android:layout_height="1dp" />
+        <TextView android:id="@+id/navReport" android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1" android:gravity="center" android:background="@drawable/bg_nav_selected" android:text="▣\nBáo cáo" android:textColor="#7F56D9" android:textSize="12sp" android:textStyle="bold" />
+        <TextView android:id="@+id/navSettings" android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1" android:gravity="center" android:text="⚙\nCài đặt" android:textColor="#667085" android:textSize="12sp" />
+    </LinearLayout>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton android:id="@+id/fabAdd" android:layout_width="74dp" android:layout_height="74dp" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="48dp" android:contentDescription="Thêm giao dịch" app:backgroundTint="#7F56D9" app:srcCompat="@android:drawable/ic_input_add" app:tint="#FFFFFF" />
+</FrameLayout>

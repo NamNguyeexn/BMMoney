@@ -1,0 +1,12 @@
+package com.example.bmmoney.adapter;
+
+import android.graphics.Color; import android.view.*; import android.widget.TextView; import android.widget.Toast; import androidx.annotation.NonNull; import androidx.recyclerview.widget.RecyclerView; import com.example.bmmoney.R; import com.example.bmmoney.data.TransactionEntity; import java.text.*; import java.util.*;
+
+public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder> {
+    private final List<TransactionEntity> transactions = new ArrayList<>(); private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("vi", "VN")); private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+    public void setTransactions(List<TransactionEntity> newTransactions) { transactions.clear(); if(newTransactions!=null) transactions.addAll(newTransactions); notifyDataSetChanged(); }
+    @NonNull @Override public TransactionViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) { return new TransactionViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_transaction, parent, false)); }
+    @Override public void onBindViewHolder(@NonNull TransactionViewHolder holder, int position) { TransactionEntity t=transactions.get(position); holder.tvTitle.setText(t.getTitle()); holder.tvCategory.setText(t.getCategory()); holder.tvDate.setText(dateFormat.format(new Date(t.getDate()))); boolean income=t.getType().equals("INCOME"); holder.tvAmount.setText((income?"+ ":"- ")+currencyFormat.format(t.getAmount())); holder.tvAmount.setTextColor(Color.parseColor(income?"#12B76A":"#F04438")); holder.tvIcon.setText(income?"↑":"↓"); holder.tvIcon.setBackgroundResource(income?R.drawable.bg_income:R.drawable.bg_expense); holder.itemView.setOnClickListener(v -> Toast.makeText(v.getContext(), t.getTitle(), Toast.LENGTH_SHORT).show()); }
+    @Override public int getItemCount() { return transactions.size(); }
+    static class TransactionViewHolder extends RecyclerView.ViewHolder { TextView tvIcon,tvTitle,tvCategory,tvDate,tvAmount; TransactionViewHolder(@NonNull View itemView){ super(itemView); tvIcon=itemView.findViewById(R.id.tvIcon); tvTitle=itemView.findViewById(R.id.tvTitle); tvCategory=itemView.findViewById(R.id.tvCategory); tvDate=itemView.findViewById(R.id.tvDate); tvAmount=itemView.findViewById(R.id.tvAmount); } }
+}
