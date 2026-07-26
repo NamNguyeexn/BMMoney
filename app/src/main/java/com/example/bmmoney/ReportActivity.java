@@ -154,7 +154,7 @@ public class ReportActivity extends AppCompatActivity {
 
     private void setupNav() {
         findViewById(R.id.navHome).setOnClickListener(v -> startActivity(new Intent(this, MainActivity.class)));
-        findViewById(R.id.navCalendar).setOnClickListener(v -> startActivity(new Intent(this, CalendarActivity.class)));
+        findViewById(R.id.navCalendar).setOnClickListener(v -> startActivity(new Intent(this, SearchActivity.class)));
         findViewById(R.id.fabAdd).setOnClickListener(v -> startActivity(new Intent(this, AddTransactionActivity.class)));
         findViewById(R.id.navReport).setOnClickListener(v -> loadReport());
         findViewById(R.id.navSettings).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
