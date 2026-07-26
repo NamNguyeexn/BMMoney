@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp" android:background="@drawable/bg_report_card" android:gravity="center_vertical" android:orientation="horizontal" android:padding="14dp">
-    <TextView android:id="@+id/tvIcon" android:layout_width="44dp" android:layout_height="44dp" android:gravity="center" android:text="↑" android:textColor="#FFFFFF" android:textSize="22sp" android:textStyle="bold" />
+    <TextView android:id="@+id/tvIcon" android:layout_width="44dp" android:layout_height="44dp" android:gravity="center" android:text="↑" android:textColor="#283618" android:textSize="22sp" android:textStyle="bold" />
     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:layout_weight="1" android:orientation="vertical">
-        <TextView android:id="@+id/tvTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tiêu đề" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold" />
-        <TextView android:id="@+id/tvCategory" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Danh mục" android:textColor="#D0D5DD" android:textSize="13sp" />
-        <TextView android:id="@+id/tvDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="21/07/2026" android:textColor="#98A2B3" android:textSize="12sp" />
+        <TextView android:id="@+id/tvTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tiêu đề" android:textColor="#283618" android:textSize="16sp" android:textStyle="bold" />
+        <TextView android:id="@+id/tvCategory" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Danh mục" android:textColor="#606C38" android:textSize="13sp" />
+        <TextView android:id="@+id/tvDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="21/07/2026" android:textColor="#606C38" android:textSize="12sp" />
     </LinearLayout>
-    <TextView android:id="@+id/tvAmount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="+ 100.000 đ" android:textColor="#12B76A" android:textSize="15sp" android:textStyle="bold" />
+    <TextView android:id="@+id/tvAmount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="+ 100.000 đ" android:textColor="#606C38" android:textSize="15sp" android:textStyle="bold" />
 </LinearLayout>

@@ -1,1 +1,7 @@
-<resources><color name="black">#000000</color><color name="white">#FFFFFF</color></resources>
+<resources><color name="black">#000000</color><color name="white">#FFFFFF</color>
+    <color name="bmm_cream">#FEFAE0</color>
+    <color name="bmm_dark_green">#283618</color>
+    <color name="bmm_olive">#606C38</color>
+    <color name="bmm_gold">#DDA15E</color>
+    <color name="bmm_brown">#BC6C25</color>
+</resources>
