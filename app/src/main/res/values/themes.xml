@@ -6,6 +6,7 @@
         <item name="colorPrimaryDark">@color/dark_green</item>
         <item name="colorAccent">@color/burnt</item>
         <item name="android:statusBarColor">@color/cream</item>
+        <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowBackground">@color/cream</item>
         <item name="android:navigationBarColor">@color/cream</item>
         <item name="android:textColor">@color/dark_green</item>

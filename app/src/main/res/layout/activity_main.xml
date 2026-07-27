@@ -4,54 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/cream">
-
-    <!-- Thanh trạng thái (mô phỏng đúng thiết kế) -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/status_bar_height"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingLeft="32dp"
-        android:paddingRight="32dp"
-        android:background="@color/cream">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="9:41"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/dark_green" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <View
-            android:layout_width="24dp"
-            android:layout_height="12dp"
-            android:background="@drawable/bg_status_pill" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <FrameLayout
-            android:layout_width="24dp"
-            android:layout_height="12dp"
-            android:background="@drawable/bg_status_battery">
-
-            <View
-                android:layout_width="16dp"
-                android:layout_height="4dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginLeft="2dp"
-                android:background="@drawable/bar_dark_green" />
-        </FrameLayout>
-    </LinearLayout>
+    android:background="@color/cream"
+    android:fitsSystemWindows="true">
 
     <!-- Nội dung màn hình -->
     <FrameLayout

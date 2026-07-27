@@ -3,13 +3,18 @@ package com.example.bmmoney.util;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-/** Luu ten nguoi dung, ngan sach thang va thoi diem sao luu. */
+import java.util.Calendar;
+
+/** Luu ten nguoi dung, ngan sach, ngay chot chu ky, danh muc va thoi diem sao luu. */
 public final class Prefs {
 
     private static final String FILE = "bmm_settings";
     private static final String KEY_NAME = "user_name";
     private static final String KEY_BUDGET = "monthly_budget";
     private static final String KEY_BACKUP = "last_backup";
+    private static final String KEY_CYCLE_DAY = "cycle_day";
+    private static final String KEY_CYCLE_MONTH = "cycle_month";
+    private static final String KEY_CATEGORIES = "categories";
 
     public static final double DEFAULT_BUDGET = 80500000d;
 
@@ -42,5 +47,31 @@ public final class Prefs {
 
     public static void setLastBackup(Context context, long time) {
         prefs(context).edit().putLong(KEY_BACKUP, time).apply();
+    }
+
+    /** Ngay chot chu ky (1..31). */
+    public static int cycleDay(Context context) {
+        return prefs(context).getInt(KEY_CYCLE_DAY, 1);
+    }
+
+    /** Thang moc cua chu ky (1..12), chi dung de hien thi dd/mm. */
+    public static int cycleMonth(Context context) {
+        int fallback = Calendar.getInstance().get(Calendar.MONTH) + 1;
+        return prefs(context).getInt(KEY_CYCLE_MONTH, fallback);
+    }
+
+    public static void setCycle(Context context, int day, int month) {
+        prefs(context).edit()
+                .putInt(KEY_CYCLE_DAY, Math.max(1, Math.min(31, day)))
+                .putInt(KEY_CYCLE_MONTH, Math.max(1, Math.min(12, month)))
+                .apply();
+    }
+
+    public static String categoriesRaw(Context context) {
+        return prefs(context).getString(KEY_CATEGORIES, null);
+    }
+
+    public static void setCategoriesRaw(Context context, String raw) {
+        prefs(context).edit().putString(KEY_CATEGORIES, raw).apply();
     }
 }

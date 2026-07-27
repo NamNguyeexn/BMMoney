@@ -129,116 +129,42 @@
                 </LinearLayout>
             </LinearLayout>
 
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        app:cardBackgroundColor="@color/card_cream"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:strokeWidth="0dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_download"
-                    app:tint="@color/olive" />
+                android:orientation="vertical"
+                android:layout_marginTop="16dp">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="8dp"
-                    android:text="Xuất dữ liệu"
-                    android:textSize="16sp"
+                    android:text="Ngày chốt chu kỳ (dd/mm)"
+                    android:textSize="13sp"
                     android:textStyle="bold"
-                    android:textColor="@color/dark_green" />
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp">
-                <LinearLayout
-                android:id="@+id/btn_export_csv"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="0dp"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="16dp"
+                    android:textColor="@color/olive" />
+
+                <TextView
+                    android:id="@+id/tv_cycle_day"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:paddingLeft="12dp"
                     android:background="@drawable/bg_field"
+                    android:text="--"
+                    android:textSize="15sp"
+                    android:textColor="@color/dark_green"
                     android:clickable="true"
-                    android:focusable="true">
+                    android:focusable="true" />
 
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:src="@drawable/ic_file_text"
-                        app:tint="@color/burnt" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Xuất CSV"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-                </LinearLayout>
-                <LinearLayout
-                android:id="@+id/btn_export_pdf"
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="16dp"
-                    android:background="@drawable/bg_field"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:src="@drawable/ic_file_text"
-                        app:tint="@color/burnt" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Xuất PDF"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-                </LinearLayout>
+                    android:layout_marginTop="6dp"
+                    android:text="Mọi số liệu được tính theo chu kỳ kết thúc vào ngày này."
+                    android:textSize="12sp"
+                    android:textColor="@color/olive" />
             </LinearLayout>
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Xuất dữ liệu chi tiêu để sao lưu hoặc phân tích trên các công cụ khác."
-                android:textSize="14sp"
-                android:textColor="@color/olive"
-                />
-
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -414,6 +340,7 @@
                     android:textColor="@color/dark_green" />
 
                 <FrameLayout
+                    android:id="@+id/btn_add_category"
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:background="@drawable/bg_olive_small"
@@ -429,219 +356,19 @@
                 </FrameLayout>
             </LinearLayout>
             <LinearLayout
+                android:id="@+id/container_categories"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="12dp"
-                android:padding="12dp"
-                android:background="@drawable/bg_field">
+                android:orientation="vertical" />
 
-                <TextView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:gravity="center"
-                    android:background="@drawable/bar_burnt"
-                    android:text="☕"
-                    android:textSize="18sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Cà phê &amp; Đồ uống"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="15 giao dịch"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-
-                <FrameLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_icon_badge"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_edit"
-                        app:tint="@color/olive" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginLeft="8dp"
-                    android:background="@drawable/bg_icon_sand"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_trash"
-                        app:tint="@color/burnt" />
-                </FrameLayout>
-            </LinearLayout>
-            <LinearLayout
+            <TextView
+                android:id="@+id/tv_no_category"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
                 android:layout_marginTop="12dp"
-                android:padding="12dp"
-                android:background="@drawable/bg_field">
-
-                <TextView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:gravity="center"
-                    android:background="@drawable/bar_olive"
-                    android:text="💪"
-                    android:textSize="18sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Gym &amp; Thể thao"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="8 giao dịch"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-
-                <FrameLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_icon_badge"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_edit"
-                        app:tint="@color/olive" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginLeft="8dp"
-                    android:background="@drawable/bg_icon_sand"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_trash"
-                        app:tint="@color/burnt" />
-                </FrameLayout>
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="12dp"
-                android:padding="12dp"
-                android:background="@drawable/bg_field">
-
-                <TextView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:gravity="center"
-                    android:background="@drawable/bar_sandy"
-                    android:text="🐕"
-                    android:textSize="18sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Thú cưng"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="12 giao dịch"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-
-                <FrameLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_icon_badge"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_edit"
-                        app:tint="@color/olive" />
-                </FrameLayout>
-
-                <FrameLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginLeft="8dp"
-                    android:background="@drawable/bg_icon_sand"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_trash"
-                        app:tint="@color/burnt" />
-                </FrameLayout>
-            </LinearLayout>
-
+                android:text="Chưa có danh mục nào. Nhấn dấu + để thêm."
+                android:textSize="13sp"
+                android:textColor="@color/olive" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -860,124 +587,6 @@
                         android:background="@drawable/bg_toggle_thumb"
                         android:elevation="1dp" />
                 </FrameLayout>
-            </LinearLayout>
-
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        app:cardBackgroundColor="@color/card_cream"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:strokeWidth="0dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_shield"
-                    app:tint="@color/olive" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="8dp"
-                    android:text="Bảo mật &amp; Quyền riêng tư"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/dark_green" />
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="12dp"
-                android:padding="12dp"
-                android:background="@drawable/bg_field"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_credit_card"
-                    app:tint="@color/olive" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="12dp"
-                    android:text="Quản lý phương thức thanh toán"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/dark_green" />
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="12dp"
-                android:padding="12dp"
-                android:background="@drawable/bg_field"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_shield"
-                    app:tint="@color/olive" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="12dp"
-                    android:text="Đổi mật khẩu"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/dark_green" />
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="12dp"
-                android:padding="12dp"
-                android:background="@drawable/bg_field"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_user"
-                    app:tint="@color/olive" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="12dp"
-                    android:text="Cài đặt quyền riêng tư"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/dark_green" />
             </LinearLayout>
 
         </LinearLayout>

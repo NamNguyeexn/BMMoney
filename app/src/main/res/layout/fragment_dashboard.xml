@@ -175,6 +175,8 @@
                 />
             <TextView
                 android:id="@+id/tv_days_left"
+                android:clickable="true"
+                android:focusable="true"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Còn 9 ngày"
@@ -218,7 +220,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tháng 1/2025"
+                android:id="@+id/tv_period_range"
+                android:text="--"
                 android:textSize="12sp"
                 android:textColor="@color/olive"
                 android:background="@drawable/bg_badge_cream"
@@ -230,8 +233,8 @@
             </LinearLayout>
             <com.example.bmmoney.view.DonutChartView
                 android:id="@+id/donut_chart"
-                android:layout_width="160dp"
-                android:layout_height="160dp"
+                android:layout_width="match_parent"
+                android:layout_height="236dp"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="16dp" />
             <LinearLayout

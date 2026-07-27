@@ -41,7 +41,7 @@
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
             android:background="@drawable/bg_pill_olive"
-            android:text="Tháng"
+            android:text="Chu kỳ"
             android:textSize="13sp"
             android:textStyle="bold"
             android:textColor="@color/cream"
@@ -80,218 +80,10 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="20dp">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                >
-            <FrameLayout
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/bg_icon_sand"
-                >
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_lightbulb"
-                    app:tint="@color/burnt" />
-            </FrameLayout>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Nhận định bởi AI"
-                android:textSize="16sp"
-                android:textColor="@color/dark_green"
-                android:textStyle="bold"
-                android:layout_marginLeft="12dp"
-                />
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp"
-                android:padding="16dp"
-                android:background="@drawable/bg_insight_burnt">
-
-                <FrameLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_icon_sand">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_alert_triangle"
-                        app:tint="@color/burnt" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Cảnh báo chi tiêu cao"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/burnt" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Bạn đã chi nhiều hơn 25% cho ăn uống tuần này."
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Hãy lên kế hoạch bữa ăn để giảm chi phí."
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp"
-                android:padding="16dp"
-                android:background="@drawable/bg_insight_olive">
-
-                <FrameLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_icon_olive">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_trending_up"
-                        app:tint="@color/olive" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tiến bộ tốt!"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/olive" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Chi phí di chuyển giảm 15% so với tháng trước."
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Tiếp tục sử dụng phương tiện công cộng."
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp"
-                android:padding="16dp"
-                android:background="@drawable/bg_insight_sandy">
-
-                <FrameLayout
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_icon_sand">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_target"
-                        app:tint="@color/dark_green" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Mục tiêu ngân sách"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Bạn đã đạt 81% mục tiêu chi tiêu tháng."
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Bạn còn có thể chi thêm 15.019.000 ₫ tháng này."
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-                </LinearLayout>
-            </LinearLayout>
-
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        app:cardBackgroundColor="@color/card_cream"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:strokeWidth="0dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Xu hướng chi tiêu hàng tháng"
+                android:text="Xu hướng chi tiêu theo chu kỳ"
                 android:textSize="16sp"
                 android:textColor="@color/dark_green"
                 android:textStyle="bold"
@@ -343,7 +135,8 @@
                     android:paddingTop="4dp"
                     android:paddingBottom="4dp"
                     android:background="@drawable/bg_badge_cream"
-                    android:text="Tháng 1/2025"
+                android:id="@+id/tv_trend_period"
+                    android:text="--"
                     android:textSize="12sp"
                     android:textColor="@color/olive" />
             </LinearLayout>
@@ -447,14 +240,14 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Tháng này"
+                        android:text="Kỳ này"
                         android:textSize="12sp"
                         android:textColor="@color/olive" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tháng trước"
+                        android:text="Kỳ trước"
                         android:textSize="12sp"
                         android:textColor="@color/olive" />
                 </LinearLayout>
@@ -533,14 +326,14 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Tháng này"
+                        android:text="Kỳ này"
                         android:textSize="12sp"
                         android:textColor="@color/olive" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tháng trước"
+                        android:text="Kỳ trước"
                         android:textSize="12sp"
                         android:textColor="@color/olive" />
                 </LinearLayout>
@@ -619,14 +412,14 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Tháng này"
+                        android:text="Kỳ này"
                         android:textSize="12sp"
                         android:textColor="@color/olive" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tháng trước"
+                        android:text="Kỳ trước"
                         android:textSize="12sp"
                         android:textColor="@color/olive" />
                 </LinearLayout>
@@ -705,14 +498,14 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Tháng này"
+                        android:text="Kỳ này"
                         android:textSize="12sp"
                         android:textColor="@color/olive" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tháng trước"
+                        android:text="Kỳ trước"
                         android:textSize="12sp"
                         android:textColor="@color/olive" />
                 </LinearLayout>

@@ -5,50 +5,73 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
 
 import androidx.annotation.Nullable;
 
 /**
- * Bieu do tron (donut) ve lai dung SVG cua thiet ke:
- * ban kinh ngoai 62, trong 40, khe 2 do, dau bo tron, chu o giua.
- * Du lieu duoc nap tu Room qua setData(...).
+ * Bieu do tron chi tieu theo danh muc.
+ * Vong tron duoc ve theo kich thuoc thuc cua view, chu o giua duoc thu nho
+ * va can giua trong long vong tron nen khong con de len cac lat cat.
  */
 public class DonutChartView extends View {
 
-    private static final String[] COLORS = {"#BC6C25", "#606C38", "#DDA15E", "#283618", "#a0925a"};
-    private static final String DARK_GREEN = "#283618";
-    private static final String OLIVE = "#606C38";
-    private static final String CREAM = "#FEFAE0";
+    private static final int[] COLORS = {
+            Color.parseColor("#BC6C25"),
+            Color.parseColor("#606C38"),
+            Color.parseColor("#DDA15E"),
+            Color.parseColor("#283618"),
+            Color.parseColor("#A0925A")
+    };
 
     private final Paint arcPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint valuePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint subPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint capPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF oval = new RectF();
 
-    private float[] percents = {40f, 24f, 18f, 12f, 6f};
-    private String centerLabel = "T\u1ed5ng th\u00e1ng";
-    private String centerValue = "65,5 tr \u20ab";
-    private String centerSub = "\u2193 8.5% th\u00e1ng tr\u01b0\u1edbc";
+    private float[] percents = new float[0];
+    private String centerValue = "";
+    private String centerSub = "";
 
     public DonutChartView(Context context) {
-        this(context, null);
+        super(context);
+        init();
     }
 
     public DonutChartView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        arcPaint.setStyle(Paint.Style.STROKE);
-        arcPaint.setStrokeCap(Paint.Cap.ROUND);
-        textPaint.setTextAlign(Paint.Align.CENTER);
+        init();
     }
 
-    /** Nap du lieu that: ty le tung danh muc va chu o tam. */
+    private void init() {
+        arcPaint.setStyle(Paint.Style.STROKE);
+        arcPaint.setStrokeCap(Paint.Cap.BUTT);
+
+        valuePaint.setColor(Color.parseColor("#283618"));
+        valuePaint.setTextAlign(Paint.Align.CENTER);
+        valuePaint.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+
+        capPaint.setColor(Color.parseColor("#606C38"));
+        capPaint.setTextAlign(Paint.Align.CENTER);
+        capPaint.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+
+        subPaint.setColor(Color.parseColor("#BC6C25"));
+        subPaint.setTextAlign(Paint.Align.CENTER);
+        subPaint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+    }
+
+    /**
+     * @param percents ty le cac lat cat (tong ~100)
+     * @param centerValue so tien tong cua ky (dong chinh)
+     * @param centerSub ghi chu ngan, vi du "\u2191 8,5% so v\u1edbi k\u1ef3 tr\u01b0\u1edbc"
+     */
     public void setData(float[] percents, String centerValue, String centerSub) {
-        if (percents != null && percents.length > 0) {
-            this.percents = percents;
-        }
-        if (centerValue != null) this.centerValue = centerValue;
-        if (centerSub != null) this.centerSub = centerSub;
+        this.percents = percents == null ? new float[0] : percents;
+        this.centerValue = centerValue == null ? "" : centerValue;
+        this.centerSub = centerSub == null ? "" : centerSub;
         invalidate();
     }
 
@@ -56,50 +79,55 @@ public class DonutChartView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        // He toa do goc cua thiet ke la 160x160
-        float scale = Math.min(getWidth(), getHeight()) / 160f;
-        float cx = getWidth() / 2f;
-        float cy = getHeight() / 2f;
-        float outerR = 62f * scale;
-        float innerR = 40f * scale;
-        arcPaint.setStrokeWidth(outerR - innerR);
-        float radius = (outerR + innerR) / 2f;
-        oval.set(cx - radius, cy - radius, cx + radius, cy + radius);
+        float w = getWidth();
+        float h = getHeight();
+        float cx = w / 2f;
+        float cy = h / 2f;
+        float radius = Math.min(w, h) / 2f - dp(6);
+        if (radius <= 0) return;
 
-        float cursor = 0f;
-        for (int i = 0; i < percents.length; i++) {
-            float start = cursor * 3.6f - 90f;
-            float sweep = percents[i] * 3.6f - 2f; // khe 2 do giua cac phan
-            if (sweep <= 0f) {
-                cursor += percents[i];
-                continue;
+        float ring = radius * 0.26f;
+        arcPaint.setStrokeWidth(ring);
+        float arcRadius = radius - ring / 2f;
+        oval.set(cx - arcRadius, cy - arcRadius, cx + arcRadius, cy + arcRadius);
+
+        float total = 0f;
+        for (float p : percents) total += p;
+        if (total <= 0f) {
+            arcPaint.setColor(Color.parseColor("#F0E8C8"));
+            canvas.drawArc(oval, 0f, 360f, false, arcPaint);
+        } else {
+            float start = -90f;
+            for (int i = 0; i < percents.length; i++) {
+                float sweep = percents[i] / total * 360f;
+                arcPaint.setColor(COLORS[i % COLORS.length]);
+                canvas.drawArc(oval, start + 1f, Math.max(0f, sweep - 2f), false, arcPaint);
+                start += sweep;
             }
-            arcPaint.setColor(Color.parseColor(COLORS[i % COLORS.length]));
-            canvas.drawArc(oval, start, sweep, false, arcPaint);
-            cursor += percents[i];
         }
 
-        textPaint.setColor(Color.parseColor(OLIVE));
-        textPaint.setFakeBoldText(false);
-        textPaint.setTextSize(9f * scale * 1.15f);
-        canvas.drawText(centerLabel, cx, cy - 10f * scale, textPaint);
+        float inner = radius - ring;
+        float valueSize = Math.min(inner * 0.34f, dp(22));
+        valuePaint.setTextSize(valueSize);
+        capPaint.setTextSize(valueSize * 0.5f);
+        subPaint.setTextSize(valueSize * 0.52f);
 
-        textPaint.setColor(Color.parseColor(DARK_GREEN));
-        textPaint.setFakeBoldText(true);
-        textPaint.setTextSize(12f * scale * 1.15f);
-        canvas.drawText(centerValue, cx, cy + 5f * scale, textPaint);
+        // Rut ngan neu chu vuot qua long vong tron
+        String value = centerValue;
+        float maxWidth = inner * 1.7f;
+        while (value.length() > 4 && valuePaint.measureText(value) > maxWidth) {
+            valueSize -= dp(1);
+            valuePaint.setTextSize(valueSize);
+        }
 
-        textPaint.setColor(Color.parseColor(OLIVE));
-        textPaint.setFakeBoldText(false);
-        textPaint.setTextSize(8f * scale * 1.15f);
-        canvas.drawText(centerSub, cx, cy + 19f * scale, textPaint);
+        canvas.drawText("T\u1ed4NG K\u1ef2", cx, cy - valueSize * 0.95f, capPaint);
+        canvas.drawText(value, cx, cy + valueSize * 0.32f, valuePaint);
+        if (!centerSub.isEmpty()) {
+            canvas.drawText(centerSub, cx, cy + valueSize * 1.45f, subPaint);
+        }
     }
 
-    public int colorAt(int index) {
-        return Color.parseColor(COLORS[index % COLORS.length]);
-    }
-
-    public String creamColor() {
-        return CREAM;
+    private float dp(float value) {
+        return value * getResources().getDisplayMetrics().density;
     }
 }

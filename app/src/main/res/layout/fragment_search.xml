@@ -92,124 +92,7 @@
                     android:textSize="14sp"
                     android:textColor="@color/dark_green" />
 
-                <ImageView
-                    android:id="@+id/search_sparkle"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="right|center_vertical"
-                    android:layout_marginRight="12dp"
-                    android:src="@drawable/ic_sparkles"
-                    app:tint="@color/burnt" />
             </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="16dp">
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:src="@drawable/ic_sparkles"
-                    app:tint="@color/burnt" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="8dp"
-                    android:text="Thử tìm kiếm bằng ngôn ngữ tự nhiên:"
-                    android:textSize="14sp"
-                    android:textColor="@color/olive" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                <TextView
-                android:id="@+id/chip_example_0"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="0dp"
-                    android:layout_marginTop="8dp"
-                    android:paddingLeft="12dp"
-                    android:paddingRight="12dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:background="@drawable/bg_pill_sand_outline"
-                    android:text="&quot;Chi phí di chuyển trên 200k&quot;"
-                    android:textSize="12sp"
-                    android:textColor="@color/burnt"
-                    android:clickable="true"
-                    android:focusable="true" />
-                <TextView
-                android:id="@+id/chip_example_1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="8dp"
-                    android:layout_marginTop="8dp"
-                    android:paddingLeft="12dp"
-                    android:paddingRight="12dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:background="@drawable/bg_pill_sand_outline"
-                    android:text="&quot;Tất cả mua sắm tuần trước&quot;"
-                    android:textSize="12sp"
-                    android:textColor="@color/burnt"
-                    android:clickable="true"
-                    android:focusable="true" />
-                </LinearLayout>
-                <TextView
-                android:id="@+id/chip_example_2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="0dp"
-                    android:layout_marginTop="8dp"
-                    android:paddingLeft="12dp"
-                    android:paddingRight="12dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:background="@drawable/bg_pill_sand_outline"
-                    android:text="&quot;Thanh toán thẻ hôm nay&quot;"
-                    android:textSize="12sp"
-                    android:textColor="@color/burnt"
-                    android:clickable="true"
-                    android:focusable="true" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="16dp"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp"
-                android:background="@drawable/bg_pill_sand_outline">
-
-                <ImageView
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:src="@drawable/ic_sparkles"
-                    app:tint="@color/burnt" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="4dp"
-                    android:text="AI đang xử lý..."
-                    android:textSize="12sp"
-                    android:textColor="@color/burnt" />
-            </LinearLayout>
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -268,7 +151,7 @@
                 android:paddingTop="8dp"
                 android:paddingBottom="8dp"
                 android:background="@drawable/bg_pill_olive"
-                android:text="Tháng này"
+                android:text="Khoảng thời gian này"
                 android:textSize="13sp"
                 android:textColor="@color/cream"
                 android:textStyle="bold"
@@ -281,7 +164,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
             <TextView
-                android:id="@+id/chip_food"
+                android:id="@+id/chip_year"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="0dp"
@@ -290,7 +173,24 @@
                 android:paddingRight="16dp"
                 android:paddingTop="8dp"
                 android:paddingBottom="8dp"
-                android:background="@drawable/bg_pill_olive"
+                android:background="@drawable/bg_pill_cream"
+                android:text="Năm nay"
+                android:textSize="13sp"
+                android:textColor="@color/olive"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true" />
+            <TextView
+                android:id="@+id/chip_food"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:layout_marginTop="8dp"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:background="@drawable/bg_pill_cream"
                 android:text="Ăn uống"
                 android:textSize="13sp"
                 android:textColor="@color/cream"

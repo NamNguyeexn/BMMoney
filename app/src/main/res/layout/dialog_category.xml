@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/card_cream"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/tv_dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Danh mục"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:textColor="@color/dark_green" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <EditText
+            android:id="@+id/edt_cat_emoji"
+            android:layout_width="64dp"
+            android:layout_height="48dp"
+            android:gravity="center"
+            android:background="@drawable/bg_field"
+            android:hint="🏷"
+            android:maxLength="4"
+            android:textSize="18sp"
+            android:inputType="text"
+            android:textColor="@color/dark_green" />
+
+        <EditText
+            android:id="@+id/edt_cat_name"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginLeft="12dp"
+            android:paddingLeft="12dp"
+            android:background="@drawable/bg_field"
+            android:hint="Tên danh mục"
+            android:inputType="text"
+            android:maxLength="40"
+            android:textSize="15sp"
+            android:textColor="@color/dark_green"
+            android:textColorHint="@color/olive" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="right"
+        android:layout_marginTop="20dp">
+
+        <TextView
+            android:id="@+id/btn_cat_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:gravity="center"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp"
+            android:text="Xóa"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/burnt"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/btn_cat_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginLeft="8dp"
+            android:gravity="center"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp"
+            android:text="Hủy"
+            android:textSize="14sp"
+            android:textColor="@color/olive"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/btn_cat_save"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginLeft="8dp"
+            android:gravity="center"
+            android:paddingLeft="18dp"
+            android:paddingRight="18dp"
+            android:background="@drawable/bg_burnt_button"
+            android:text="Lưu"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/cream"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+</LinearLayout>

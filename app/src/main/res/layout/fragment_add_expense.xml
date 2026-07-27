@@ -49,76 +49,6 @@
             android:textColor="@color/dark_green" />
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal"
-        android:layout_marginTop="20dp"
-        android:padding="28dp"
-        android:background="@drawable/bg_dashed">
-
-        <FrameLayout
-            android:id="@+id/scan_icon_box"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:background="@drawable/bg_icon_sand"
-            android:elevation="3dp">
-
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_camera"
-                app:tint="@color/burnt" />
-        </FrameLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Quét hóa đơn"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@color/dark_green" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:text="Dùng AI để tự động trích xuất thông tin chi tiêu"
-            android:textSize="14sp"
-            android:textColor="@color/olive" />
-
-        <LinearLayout
-                android:id="@+id/btn_scan_receipt"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="20dp"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/bg_white_outline_burnt"
-            android:clickable="true"
-            android:focusable="true">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_camera"
-                app:tint="@color/burnt" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="8dp"
-                android:text="Quét hóa đơn"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="@color/burnt" />
-        </LinearLayout>
-    </LinearLayout>
-
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -211,67 +141,6 @@
                 android:textColorHint="@color/subtle_text"
                 android:textSize="15sp"
                 android:textColor="@color/dark_green" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="16dp"
-                android:padding="16dp"
-                android:background="@drawable/bg_ai_suggest">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <FrameLayout
-                        android:id="@+id/ai_sparkle_box"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:background="@drawable/bg_icon_sand">
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_sparkles"
-                            app:tint="@color/burnt" />
-                    </FrameLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginLeft="8dp"
-                        android:text="Gợi ý của AI"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="Đây có vẻ là chi tiêu Ăn uống &amp; Ẩm thực"
-                    android:textSize="14sp"
-                    android:textColor="@color/olive" />
-
-                <TextView
-                android:id="@+id/btn_apply_suggestion"
-                    android:layout_width="match_parent"
-                    android:layout_height="32dp"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center"
-                    android:background="@drawable/bg_burnt_button"
-                    android:text="⚡ Áp dụng gợi ý"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/cream"
-                    android:clickable="true"
-                    android:focusable="true" />
-            </LinearLayout>
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -525,7 +394,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Ngày"
+                    android:text="Ngày &amp; giờ"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:textColor="@color/olive" />
@@ -538,7 +407,7 @@
                     android:gravity="center_vertical"
                     android:paddingLeft="12dp"
                     android:background="@drawable/bg_field_small"
-                    android:text="30/01/2025"
+                    android:text="--"
                     android:textSize="13sp"
                     android:textColor="@color/dark_green" />
             </LinearLayout>
