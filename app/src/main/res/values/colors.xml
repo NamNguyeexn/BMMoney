@@ -1,5 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Bảng màu gốc của thiết kế -->
+    <color name="dark_green">#283618</color>
+    <color name="olive">#606C38</color>
+    <color name="burnt">#BC6C25</color>
+    <color name="sandy">#DDA15E</color>
+    <color name="cream">#FEFAE0</color>
+
+    <color name="card_cream">#FFFEF5</color>
+    <color name="chip_cream">#F0E8C8</color>
+    <color name="field_cream">#F5F0D8</color>
+    <color name="sand_light">#FDF5E4</color>
+    <color name="icon_sand">#F5E8D0</color>
+    <color name="icon_olive">#E0EAD0</color>
+    <color name="green_light">#EEF3E0</color>
+    <color name="light_green_bg">#E8F0D8</color>
+    <color name="badge_cream">#E8E0C0</color>
+    <color name="grey_gold">#A0925A</color>
+    <color name="old_gold">#C8B87A</color>
+    <color name="subtle_text">#C9D4A8</color>
+    <color name="olive_60">#99606C38</color>
+    <color name="hairline">#1A283618</color>
+    <color name="field_border">#26283618</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- Giữ tên màu cũ để code sẵn có không bị vỡ -->
     <color name="bmm_dark_green">#283618</color>
     <color name="bmm_olive">#606C38</color>
     <color name="bmm_burnt">#BC6C25</color>

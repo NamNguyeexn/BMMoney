@@ -1,1 +1,40 @@
-<resources xmlns:tools="http://schemas.android.com/tools"><style name="Theme.ExpenseManager" parent="Theme.MaterialComponents.DayNight.NoActionBar"><item name="colorPrimary">#7F56D9</item><item name="colorPrimaryVariant">#6941C6</item><item name="colorOnPrimary">#FFFFFF</item><item name="android:fontFamily">sans</item><item name="android:windowLightStatusBar">false</item><item name="android:statusBarColor">#101828</item><item name="android:navigationBarColor">#101828</item></style></resources>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Giữ nguyên tên theme cũ, đổi sang bảng màu kem của thiết kế mới -->
+    <style name="Theme.ExpenseManager" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/olive</item>
+        <item name="colorPrimaryDark">@color/dark_green</item>
+        <item name="colorAccent">@color/burnt</item>
+        <item name="android:statusBarColor">@color/cream</item>
+        <item name="android:windowBackground">@color/cream</item>
+        <item name="android:navigationBarColor">@color/cream</item>
+        <item name="android:textColor">@color/dark_green</item>
+    </style>
+
+    <!-- Kiểu chữ bám theo thiết kế web -->
+    <style name="Text.H1">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/dark_green</item>
+    </style>
+    <style name="Text.H3">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/dark_green</item>
+    </style>
+    <style name="Text.Body">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/olive</item>
+    </style>
+    <style name="Text.Small">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/olive</item>
+    </style>
+    <style name="Card" parent="Widget.MaterialComponents.CardView">
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">4dp</item>
+        <item name="cardBackgroundColor">@color/card_cream</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+</resources>

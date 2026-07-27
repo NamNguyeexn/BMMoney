@@ -1,9 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_main">
-<ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:paddingBottom="96dp"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingTop="10dp"><LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical"><TextView android:text="Xin chào 👋" android:textColor="#283618" android:textSize="25sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/><TextView android:text="Quản lý chi tiêu thông minh hơn" android:textColor="#606C38" android:textSize="14sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/></LinearLayout><TextView android:id="@+id/btnHeaderAdd" android:layout_width="48dp" android:layout_height="48dp" android:gravity="center" android:text="+" android:textColor="#FEFAE0" android:textSize="28sp" android:background="@drawable/bg_fab_new"/></LinearLayout>
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:orientation="vertical" android:background="@drawable/bg_summary_gradient"><TextView android:text="Tổng chi tiêu tháng này" android:textColor="#DDE5BE" android:textSize="14sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/><TextView android:id="@+id/tvExpense" android:text="0 đ" android:textColor="#FEFAE0" android:textSize="34sp" android:textStyle="bold" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/><TextView android:id="@+id/tvBudgetLine" android:text="Ngân sách: 80.500.000 đ  •  Còn lại" android:textColor="#DDE5BE" android:textSize="13sp" android:layout_marginTop="16dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/><ProgressBar android:id="@+id/progressBudget" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="10dp" android:layout_marginTop="10dp" android:max="100" android:progress="0" android:progressTint="#DDA15E" android:progressBackgroundTint="#55FEFAE0"/></LinearLayout>
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:orientation="horizontal"><TextView android:id="@+id/tvIncome" android:layout_width="0dp" android:layout_height="76dp" android:layout_weight="1" android:background="@drawable/bg_card_new" android:gravity="center" android:text="Thu nhập\n0 đ" android:textColor="#606C38" android:textStyle="bold"/><Space android:layout_width="12dp" android:layout_height="1dp"/><TextView android:id="@+id/tvBalance" android:layout_width="0dp" android:layout_height="76dp" android:layout_weight="1" android:background="@drawable/bg_card_new" android:gravity="center" android:text="Số dư\n0 đ" android:textColor="#283618" android:textStyle="bold"/></LinearLayout>
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:orientation="vertical" android:background="@drawable/bg_card_new"><TextView android:text="Chi tiêu theo danh mục" android:textColor="#283618" android:textSize="18sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/><com.github.mikephil.charting.charts.PieChart android:id="@+id/homePieChart" android:layout_width="match_parent" android:layout_height="210dp"/></LinearLayout>
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:orientation="vertical" android:background="@drawable/bg_card_new"><TextView android:text="Giao dịch gần đây" android:textColor="#283618" android:textSize="18sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/><androidx.recyclerview.widget.RecyclerView android:id="@+id/recyclerTransactions" android:layout_width="match_parent" android:layout_height="360dp" android:layout_marginTop="12dp"/></LinearLayout>
-</LinearLayout></ScrollView><include layout="@layout/include_bottom_nav_new"/></FrameLayout>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/cream">
+
+    <!-- Thanh trạng thái (mô phỏng đúng thiết kế) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/status_bar_height"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="32dp"
+        android:paddingRight="32dp"
+        android:background="@color/cream">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="9:41"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/dark_green" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <View
+            android:layout_width="24dp"
+            android:layout_height="12dp"
+            android:background="@drawable/bg_status_pill" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <FrameLayout
+            android:layout_width="24dp"
+            android:layout_height="12dp"
+            android:background="@drawable/bg_status_battery">
+
+            <View
+                android:layout_width="16dp"
+                android:layout_height="4dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginLeft="2dp"
+                android:background="@drawable/bar_dark_green" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- Nội dung màn hình -->
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/cream" />
+
+    <!-- Thanh điều hướng dưới -->
+    <include layout="@layout/view_bottom_nav" />
+
+</LinearLayout>
