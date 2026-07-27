@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_main">
@@ -9,123 +9,62 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingTop="48dp"
-        android:paddingLeft="20dp"
-        android:paddingRight="20dp"
-        android:paddingBottom="104dp">
+        android:padding="16dp"
+        android:paddingBottom="100dp">
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tìm kiếm giao dịch"
+            android:text="Tìm kiếm &amp; Lọc"
             android:textColor="#283618"
-            android:textSize="30sp"
-            android:textStyle="bold" />
+            android:textSize="25sp"
+            android:textStyle="bold"
+            android:layout_marginTop="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tìm theo tên, danh mục, ghi chú hoặc loại giao dịch"
+            android:text="Tìm giao dịch bằng từ khóa tự nhiên"
             android:textColor="#606C38"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
 
         <EditText
             android:id="@+id/edtSearch"
             android:layout_width="match_parent"
-            android:layout_height="58dp"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/bg_input"
+            android:layout_height="56dp"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_input_new"
             android:hint="VD: cà phê, ăn uống, thu nhập..."
-            android:inputType="text"
-            android:padding="16dp"
             android:textColor="#283618"
-            android:textColorHint="#606C38" />
+            android:textColorHint="#A0925A"/>
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
+            android:text="✨ Gợi ý AI: thử tìm “chi tiêu ăn uống tuần này”"
+            android:layout_marginTop="12dp"
+            android:padding="12dp"
+            android:background="@drawable/bg_ai_dashed"
+            android:textColor="#606C38"
+            android:textSize="13sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <TextView
             android:text="Kết quả"
             android:textColor="#283618"
             android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerSearch"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="10dp"/>
 
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="86dp"
-        android:layout_gravity="bottom"
-        android:background="@drawable/bg_bottom_nav_modern"
-        android:elevation="16dp"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingLeft="22dp"
-        android:paddingRight="22dp">
-
-        <TextView
-            android:id="@+id/navHome"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="🏠\nTrang chủ"
-            android:textColor="#606C38"
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/navCalendar"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="🔎\nTìm kiếm"
-            android:textColor="#606C38"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <Space
-            android:layout_width="78dp"
-            android:layout_height="1dp" />
-
-        <TextView
-            android:id="@+id/navReport"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="📊\nBáo cáo"
-            android:textColor="#606C38"
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/navSettings"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="⚙️\nCài đặt"
-            android:textColor="#606C38"
-            android:textSize="13sp" />
-
-    </LinearLayout>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabAdd"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="46dp"
-        android:contentDescription="Thêm giao dịch"
-        app:backgroundTint="#606C38"
-        app:srcCompat="@android:drawable/ic_input_add"
-        app:tint="@android:color/white" />
-
+    <include layout="@layout/include_bottom_nav_new"/>
 </FrameLayout>

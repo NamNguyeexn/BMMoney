@@ -1,7 +1,11 @@
-<resources><color name="black">#000000</color><color name="white">#FFFFFF</color>
-    <color name="bmm_cream">#FEFAE0</color>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
     <color name="bmm_dark_green">#283618</color>
     <color name="bmm_olive">#606C38</color>
-    <color name="bmm_gold">#DDA15E</color>
-    <color name="bmm_brown">#BC6C25</color>
+    <color name="bmm_burnt">#BC6C25</color>
+    <color name="bmm_sandy">#DDA15E</color>
+    <color name="bmm_cream">#FEFAE0</color>
+    <color name="bmm_card">#FFFEF5</color>
+    <color name="bmm_panel">#F5F0D8</color>
+    <color name="bmm_ai_panel">#FDF5E4</color>
 </resources>
