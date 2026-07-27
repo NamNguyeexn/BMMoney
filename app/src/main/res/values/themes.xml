@@ -12,21 +12,24 @@
     </style>
 
     <!-- Kiểu chữ bám theo thiết kế web -->
-    <style name="Text.H1">
+    <!-- Style cha bat buoc phai co vi ten cac style con dung dau cham (Text.H1...) -->
+    <style name="Text" parent="" />
+
+    <style name="Text.H1" parent="Text">
         <item name="android:textSize">24sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/dark_green</item>
     </style>
-    <style name="Text.H3">
+    <style name="Text.H3" parent="Text">
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/dark_green</item>
     </style>
-    <style name="Text.Body">
+    <style name="Text.Body" parent="Text">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/olive</item>
     </style>
-    <style name="Text.Small">
+    <style name="Text.Small" parent="Text">
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/olive</item>
     </style>
