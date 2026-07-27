@@ -1,6 +1,6 @@
 package com.example.bmmoney.ui;
 
-import android.content.SharedPreferences;
+import android.animation.ValueAnimator;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +17,8 @@ import com.example.bmmoney.MainActivity;
 import com.example.bmmoney.R;
 import com.example.bmmoney.adapter.TransactionAdapter;
 import com.example.bmmoney.data.AppDatabase;
+import com.example.bmmoney.data.CategoryTotal;
+import com.example.bmmoney.data.TransactionDao;
 import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Prefs;
@@ -26,6 +28,7 @@ import com.example.bmmoney.view.DonutChartView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /** Man Trang chu: tong quan ngan sach, bieu do tron, danh muc va giao dich gan day. */
 public class DashboardFragment extends Fragment {
@@ -37,6 +40,7 @@ public class DashboardFragment extends Fragment {
 
     private View root;
     private TransactionAdapter adapter;
+    private ValueAnimator sparkleAnimator;
 
     @Nullable
     @Override
@@ -62,8 +66,8 @@ public class DashboardFragment extends Fragment {
             }
         });
 
-        ViewUtils.floatForever(root.findViewById(R.id.ai_sparkle_box), 4f);
-        reload();
+        sparkleAnimator = ViewUtils.floatForever(root.findViewById(R.id.ai_sparkle_box), 4f);
+        // Khong goi reload() o day: onResume() luon chay ngay sau onCreateView()
         return root;
     }
 
@@ -73,24 +77,33 @@ public class DashboardFragment extends Fragment {
         reload();
     }
 
+    @Override
+    public void onDestroyView() {
+        // Huy animation vo han, tranh giu tham chieu View sau khi fragment bi huy
+        if (sparkleAnimator != null) {
+            sparkleAnimator.cancel();
+            sparkleAnimator = null;
+        }
+        root = null;
+        super.onDestroyView();
+    }
+
     private void open(int tab) {
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).showTab(tab);
         }
     }
 
-    /** Nap lai toan bo so lieu tu Room. */
+    /** Nap lai so lieu bang cac truy van tong hop cua Room. */
     public void reload() {
         if (root == null || getContext() == null) return;
 
-        List<TransactionEntity> all = AppDatabase.getInstance(getContext())
-                .transactionDao().getAllTransactions();
-        if (all == null) all = new ArrayList<>();
+        TransactionDao dao = AppDatabase.getInstance(getContext()).transactionDao();
 
         long monthStart = Stats.startOfMonth(0);
         long monthEnd = Stats.endOfMonth(0);
-        double expense = Stats.totalExpense(all, monthStart, monthEnd);
-        double lastMonth = Stats.totalExpense(all, Stats.startOfMonth(-1), Stats.endOfMonth(-1));
+        double expense = value(dao.getExpenseInRange(monthStart, monthEnd));
+        double lastMonth = value(dao.getExpenseInRange(Stats.startOfMonth(-1), Stats.endOfMonth(-1)));
         double budget = Prefs.budget(getContext());
         double remaining = budget - expense;
         double usedPercent = budget > 0 ? expense / budget * 100d : 0d;
@@ -107,7 +120,8 @@ public class DashboardFragment extends Fragment {
 
         ViewUtils.animateBar(root.findViewById(R.id.budget_bar), (float) Math.min(100d, usedPercent), 900, 200);
 
-        List<Stats.Slice> slices = Stats.topWithOther(Stats.byCategory(all, monthStart, monthEnd), 5);
+        List<Stats.Slice> slices = Stats.topWithOther(
+                toSlices(dao.getExpenseByCategoryInRange(monthStart, monthEnd)), 5);
         float[] percents = new float[Math.max(1, slices.size())];
         for (int i = 0; i < CAT_NAME.length; i++) {
             if (i < slices.size()) {
@@ -130,12 +144,27 @@ public class DashboardFragment extends Fragment {
         double change = Stats.changePercent(expense, lastMonth);
         String arrow = change >= 0 ? "\u2191" : "\u2193";
         donut.setData(slices.isEmpty() ? null : percents, Money.shortVnd(expense),
-                arrow + " " + String.format(java.util.Locale.US, "%.1f", Math.abs(change)) + "% th\u00e1ng tr\u01b0\u1edbc");
+                arrow + " " + String.format(Locale.US, "%.1f", Math.abs(change)) + "% th\u00e1ng tr\u01b0\u1edbc");
 
-        List<TransactionEntity> recent = all.size() > 5 ? all.subList(0, 5) : all;
-        adapter.setTransactions(new ArrayList<>(recent));
+        List<TransactionEntity> recent = dao.getRecent(5);
+        if (recent == null) recent = new ArrayList<>();
+        adapter.setTransactions(recent);
         root.findViewById(R.id.tv_empty_recent).setVisibility(recent.isEmpty() ? View.VISIBLE : View.GONE);
         root.findViewById(R.id.recycler_recent).setVisibility(recent.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    private List<Stats.Slice> toSlices(List<CategoryTotal> totals) {
+        List<Stats.Slice> out = new ArrayList<>();
+        if (totals == null) return out;
+        for (CategoryTotal c : totals) {
+            String name = c.category == null || c.category.isEmpty() ? "Kh\u00e1c" : c.category;
+            out.add(new Stats.Slice(name, c.total));
+        }
+        return out;
+    }
+
+    private double value(Double v) {
+        return v == null ? 0d : v;
     }
 
     private void text(int id, String value) {

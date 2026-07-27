@@ -5,7 +5,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
 
-/** Tien ich hieu ung, mo phong animation cua ban thiet ke web. */
+/**
+ * Tien ich hieu ung, mo phong animation cua ban thiet ke web.
+ * Cac animation vo han tra ve ValueAnimator de fragment co the cancel() khi bi huy.
+ */
 public final class ViewUtils {
 
     private ViewUtils() {
@@ -43,8 +46,9 @@ public final class ViewUtils {
         view.animate().alpha(1f).translationY(0f).setStartDelay(delay).setDuration(420).start();
     }
 
-    public static void floatForever(final View view, final float distanceDp) {
-        if (view == null) return;
+    /** Animation noi len xuong vo han. NHO cancel() trong onDestroyView(). */
+    public static ValueAnimator floatForever(final View view, final float distanceDp) {
+        if (view == null) return null;
         final float d = distanceDp * view.getResources().getDisplayMetrics().density;
         ValueAnimator animator = ValueAnimator.ofFloat(0f, -d, 0f);
         animator.setDuration(2500);
@@ -56,10 +60,12 @@ public final class ViewUtils {
             }
         });
         animator.start();
+        return animator;
     }
 
-    public static void wiggleForever(final View view) {
-        if (view == null) return;
+    /** Animation lac nhe vo han. NHO cancel() trong onDestroyView(). */
+    public static ValueAnimator wiggleForever(final View view) {
+        if (view == null) return null;
         ValueAnimator animator = ValueAnimator.ofFloat(0f, 10f, -10f, 0f);
         animator.setDuration(3000);
         animator.setRepeatCount(ValueAnimator.INFINITE);
@@ -70,5 +76,6 @@ public final class ViewUtils {
             }
         });
         animator.start();
+        return animator;
     }
 }

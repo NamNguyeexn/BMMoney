@@ -12,18 +12,20 @@ import androidx.fragment.app.Fragment;
 
 import com.example.bmmoney.R;
 import com.example.bmmoney.data.AppDatabase;
-import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.data.CategoryTotal;
+import com.example.bmmoney.data.TransactionDao;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Stats;
 import com.example.bmmoney.util.ViewUtils;
 import com.example.bmmoney.view.TrendChartView;
 
-import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
-/** Man Phan tich: so sanh thang nay / thang truoc theo danh muc va xu huong 7 thang. */
+/** Man Phan tich: so sanh ky nay / ky truoc theo danh muc va xu huong 7 thang. */
 public class AnalyticsFragment extends Fragment {
 
     private static final int[] NAME_IDS = {R.id.an_name_0, R.id.an_name_1, R.id.an_name_2, R.id.an_name_3};
@@ -55,7 +57,7 @@ public class AnalyticsFragment extends Fragment {
             }
         });
 
-        reload();
+        // Khong goi reload() o day: onResume() luon chay ngay sau onCreateView()
         return root;
     }
 
@@ -65,37 +67,51 @@ public class AnalyticsFragment extends Fragment {
         reload();
     }
 
+    @Override
+    public void onDestroyView() {
+        root = null;
+        super.onDestroyView();
+    }
+
     private void reload() {
         if (root == null || getContext() == null) return;
 
-        List<TransactionEntity> all = AppDatabase.getInstance(getContext())
-                .transactionDao().getAllTransactions();
-        if (all == null) all = new ArrayList<>();
+        TransactionDao dao = AppDatabase.getInstance(getContext()).transactionDao();
 
         long fromNow = yearMode ? Stats.startOfMonth(-11) : Stats.startOfMonth(0);
         long toNow = Stats.endOfMonth(0);
         long fromPrev = yearMode ? Stats.startOfMonth(-23) : Stats.startOfMonth(-1);
         long toPrev = yearMode ? Stats.endOfMonth(-12) : Stats.endOfMonth(-1);
 
-        List<Stats.Slice> current = Stats.byCategory(all, fromNow, toNow);
-        double totalNow = Stats.totalExpense(all, fromNow, toNow);
-        double totalPrev = Stats.totalExpense(all, fromPrev, toPrev);
+        List<CategoryTotal> current = dao.getExpenseByCategoryInRange(fromNow, toNow);
+        Map<String, Double> previous = new HashMap<>();
+        List<CategoryTotal> prevList = dao.getExpenseByCategoryInRange(fromPrev, toPrev);
+        if (prevList != null) {
+            for (CategoryTotal c : prevList) {
+                previous.put(c.category == null ? "" : c.category, c.total);
+            }
+        }
 
+        double totalNow = value(dao.getExpenseInRange(fromNow, toNow));
+        double totalPrev = value(dao.getExpenseInRange(fromPrev, toPrev));
+
+        int count = current == null ? 0 : current.size();
         double max = 0;
-        for (int i = 0; i < NAME_IDS.length && i < current.size(); i++) {
-            max = Math.max(max, current.get(i).total);
-            max = Math.max(max, categoryTotal(all, current.get(i).name, fromPrev, toPrev));
+        for (int i = 0; i < NAME_IDS.length && i < count; i++) {
+            CategoryTotal c = current.get(i);
+            max = Math.max(max, c.total);
+            max = Math.max(max, prev(previous, c.category));
         }
         if (max <= 0) max = 1;
 
         for (int i = 0; i < NAME_IDS.length; i++) {
-            if (i < current.size()) {
-                Stats.Slice slice = current.get(i);
-                double prev = categoryTotal(all, slice.name, fromPrev, toPrev);
-                text(NAME_IDS[i], slice.name);
-                text(AMT_IDS[i], Money.plain(slice.total / 1000d) + " \u20ab");
-                ViewUtils.animateBar(root.findViewById(THIS_IDS[i]), (float) (slice.total / max * 100d), 800, 100L * i);
-                ViewUtils.animateBar(root.findViewById(LAST_IDS[i]), (float) (prev / max * 100d), 800, 100L * i + 60);
+            if (i < count) {
+                CategoryTotal c = current.get(i);
+                double prevTotal = prev(previous, c.category);
+                text(NAME_IDS[i], c.category == null || c.category.isEmpty() ? "Kh\u00e1c" : c.category);
+                text(AMT_IDS[i], Money.plain(c.total / 1000d) + " \u20ab");
+                ViewUtils.animateBar(root.findViewById(THIS_IDS[i]), (float) (c.total / max * 100d), 800, 100L * i);
+                ViewUtils.animateBar(root.findViewById(LAST_IDS[i]), (float) (prevTotal / max * 100d), 800, 100L * i + 60);
             } else {
                 text(NAME_IDS[i], "\u2014");
                 text(AMT_IDS[i], "0 \u20ab");
@@ -104,29 +120,30 @@ public class AnalyticsFragment extends Fragment {
             }
         }
 
-        double change = Stats.changePercent(totalNow, totalPrev);
-        text(R.id.tv_trend_summary, Money.signedPercent(change) + " so k\u1ef3 tr\u01b0\u1edbc");
+        text(R.id.tv_trend_summary,
+                Money.signedPercent(Stats.changePercent(totalNow, totalPrev)) + " so k\u1ef3 tr\u01b0\u1edbc");
 
         // Danh muc tiet kiem nhat / vuot muc nhat so voi ky truoc
         String best = "\u2014";
         String worst = "\u2014";
         double bestChange = Double.MAX_VALUE;
         double worstChange = -Double.MAX_VALUE;
-        for (Stats.Slice slice : current) {
-            double prev = categoryTotal(all, slice.name, fromPrev, toPrev);
-            double delta = Stats.changePercent(slice.total, prev);
-            if (delta < bestChange) {
-                bestChange = delta;
-                best = slice.name;
-            }
-            if (delta > worstChange) {
-                worstChange = delta;
-                worst = slice.name;
+        if (current != null) {
+            for (CategoryTotal c : current) {
+                double delta = Stats.changePercent(c.total, prev(previous, c.category));
+                if (delta < bestChange) {
+                    bestChange = delta;
+                    best = c.category;
+                }
+                if (delta > worstChange) {
+                    worstChange = delta;
+                    worst = c.category;
+                }
             }
         }
         text(R.id.tv_best_category, best);
         text(R.id.tv_worst_category, worst);
-        if (!current.isEmpty()) {
+        if (count > 0) {
             text(R.id.tv_best_note, String.format(Locale.US, "%.0f", bestChange) + "% ti\u1ebft ki\u1ec7m");
             text(R.id.tv_worst_note, Money.signedPercent(worstChange) + " v\u01b0\u1ee3t m\u1ee9c");
         }
@@ -137,7 +154,7 @@ public class AnalyticsFragment extends Fragment {
         Calendar calendar = Calendar.getInstance();
         for (int i = 0; i < 7; i++) {
             int offset = -(6 - i);
-            values[i] = Stats.totalExpense(all, Stats.startOfMonth(offset), Stats.endOfMonth(offset));
+            values[i] = value(dao.getExpenseInRange(Stats.startOfMonth(offset), Stats.endOfMonth(offset)));
             calendar.setTimeInMillis(Stats.startOfMonth(offset));
             labels[i] = "T" + (calendar.get(Calendar.MONTH) + 1);
         }
@@ -147,15 +164,13 @@ public class AnalyticsFragment extends Fragment {
         }
     }
 
-    private double categoryTotal(List<TransactionEntity> all, String category, long from, long to) {
-        double sum = 0;
-        for (TransactionEntity t : all) {
-            if (!"EXPENSE".equals(t.getType())) continue;
-            if (t.getDate() < from || t.getDate() > to) continue;
-            String key = t.getCategory() == null ? "" : t.getCategory();
-            if (key.equals(category)) sum += t.getAmount();
-        }
-        return sum;
+    private double prev(Map<String, Double> map, String category) {
+        Double v = map.get(category == null ? "" : category);
+        return v == null ? 0d : v;
+    }
+
+    private double value(Double v) {
+        return v == null ? 0d : v;
     }
 
     private void text(int id, String value) {

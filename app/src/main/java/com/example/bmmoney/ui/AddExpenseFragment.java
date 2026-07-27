@@ -1,5 +1,6 @@
 package com.example.bmmoney.ui;
 
+import android.animation.ValueAnimator;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.os.Bundle;
@@ -44,6 +45,7 @@ public class AddExpenseFragment extends Fragment {
     private View root;
     private int selected = 0;
     private long selectedDate = System.currentTimeMillis();
+    private ValueAnimator scanAnimator;
     private String payment = "\ud83d\udcb3 Th\u1ebb t\u00edn d\u1ee5ng";
 
     @Nullable
@@ -109,7 +111,7 @@ public class AddExpenseFragment extends Fragment {
             }
         });
 
-        ViewUtils.floatForever(root.findViewById(R.id.scan_icon_box), 4f);
+        scanAnimator = ViewUtils.floatForever(root.findViewById(R.id.scan_icon_box), 4f);
         return root;
     }
 
@@ -188,5 +190,16 @@ public class AddExpenseFragment extends Fragment {
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).showTab(MainActivity.TAB_HOME);
         }
+    }
+
+    @Override
+    public void onDestroyView() {
+        // Huy animation vo han, tranh giu tham chieu View sau khi fragment bi huy
+        if (scanAnimator != null) {
+            scanAnimator.cancel();
+            scanAnimator = null;
+        }
+        root = null;
+        super.onDestroyView();
     }
 }

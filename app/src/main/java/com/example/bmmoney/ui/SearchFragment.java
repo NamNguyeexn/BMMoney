@@ -102,7 +102,6 @@ public class SearchFragment extends Fragment {
         setExample(R.id.chip_example_1, "Mua s\u1eafm");
         setExample(R.id.chip_example_2, "Th\u1ebb");
 
-        apply();
         return root;
     }
 
@@ -178,5 +177,11 @@ public class SearchFragment extends Fragment {
     private void text(int id, String value) {
         TextView view = root.findViewById(id);
         if (view != null) view.setText(value);
+    }
+
+    @Override
+    public void onDestroyView() {
+        root = null;
+        super.onDestroyView();
     }
 }
