@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -96,6 +97,8 @@ public class SettingsFragment extends Fragment {
             });
         });
 
+        allowInnerScroll();
+
         root.findViewById(R.id.btn_add_category).setOnClickListener(v -> editCategory(-1));
         root.findViewById(R.id.btn_backup_now).setOnClickListener(v -> backup());
         root.findViewById(R.id.btn_sync_now).setOnClickListener(v -> sync());
@@ -109,6 +112,32 @@ public class SettingsFragment extends Fragment {
         refresh = null;
         root = null;
         super.onDestroyView();
+    }
+
+    /**
+     * Khung danh m\u1ee5c n\u1eb1m b\u00ean trong m\u1ed9t ScrollView kh\u00e1c n\u00ean m\u00e0n cha s\u1ebd \u0111o\u1ea1t thao t\u00e1c cu\u1ed9n.
+     * \u1ede \u0111\u00e2y ta y\u00eau c\u1ea7u m\u00e0n cha nh\u01b0\u1eddng l\u1ea1i s\u1ef1 ki\u1ec7n ch\u1ea1m khi ng\u00f3n tay \u0111ang \u1edf tr\u00ean khung n\u00e0y.
+     */
+    private void allowInnerScroll() {
+        final View scroll = root.findViewById(R.id.scroll_categories);
+        if (scroll == null) return;
+
+        scroll.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int action = event.getActionMasked();
+                boolean finished = action == MotionEvent.ACTION_UP
+                        || action == MotionEvent.ACTION_CANCEL;
+
+                if (v.getParent() != null) {
+                    v.getParent().requestDisallowInterceptTouchEvent(!finished);
+                }
+                if (refresh != null) {
+                    refresh.setEnabled(finished);
+                }
+                return false;
+            }
+        });
     }
 
     // ------------------------------------------------------------- h\u1ed3 s\u01a1

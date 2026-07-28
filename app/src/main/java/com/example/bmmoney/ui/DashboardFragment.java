@@ -45,6 +45,15 @@ public class DashboardFragment extends Fragment {
     private static final int[] CAT_AMT = {R.id.cat_amt_0, R.id.cat_amt_1, R.id.cat_amt_2, R.id.cat_amt_3, R.id.cat_amt_4};
     private static final int[] CAT_BAR = {R.id.cat_bar_0, R.id.cat_bar_1, R.id.cat_bar_2, R.id.cat_bar_3, R.id.cat_bar_4};
 
+    /** Moc thoi gian de cac hieu ung chay lan luot tu tren xuong duoi. */
+    private static final long DELAY_BUDGET = 120;
+    private static final long DUR_BUDGET = 650;
+    private static final long DELAY_DONUT = 900;
+    private static final long DUR_DONUT = 1800;
+    private static final long DELAY_CATS = 2500;
+    private static final long STEP_CATS = 200;
+    private static final long DUR_CATS = 600;
+
     private View root;
     private TransactionAdapter adapter;
     private SwipeRefreshLayout refresh;
@@ -180,7 +189,7 @@ public class DashboardFragment extends Fragment {
             }
         }
 
-        bar(R.id.budget_bar, (float) Math.min(100d, usedPercent), animate, 150);
+        bar(R.id.budget_bar, (float) Math.min(100d, usedPercent), animate, DELAY_BUDGET, DUR_BUDGET);
 
         List<Stats.Slice> slices = Stats.topWithOther(toSlices(data.categories), 5);
         float[] percents = new float[Math.max(1, slices.size())];
@@ -192,12 +201,12 @@ public class DashboardFragment extends Fragment {
                 text(CAT_NAME[i], slice.name);
                 text(CAT_PCT[i], Money.percent(pct));
                 text(CAT_AMT[i], Money.vnd(slice.total));
-                bar(CAT_BAR[i], (float) pct, animate, 90L * i);
+                bar(CAT_BAR[i], (float) pct, animate, DELAY_CATS + STEP_CATS * i, DUR_CATS);
             } else {
                 text(CAT_NAME[i], "\u2014");
                 text(CAT_PCT[i], "0%");
                 text(CAT_AMT[i], Money.vnd(0));
-                bar(CAT_BAR[i], 0f, false, 0);
+                bar(CAT_BAR[i], 0f, false, 0, 0);
             }
         }
 
@@ -206,18 +215,18 @@ public class DashboardFragment extends Fragment {
         String arrow = change >= 0 ? "\u2191" : "\u2193";
         donut.setData(slices.isEmpty() ? null : percents, Money.shortVnd(expense),
                 arrow + " " + String.format(Locale.US, "%.1f", Math.abs(change)) + "% so v\u1edbi k\u1ef3 tr\u01b0\u1edbc");
-        if (animate) donut.animateSweep();
+        if (animate) donut.animateSweep(DELAY_DONUT, DUR_DONUT);
 
         adapter.setTransactions(data.recent);
         root.findViewById(R.id.tv_empty_recent).setVisibility(data.recent.isEmpty() ? View.VISIBLE : View.GONE);
         root.findViewById(R.id.recycler_recent).setVisibility(data.recent.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
-    private void bar(int id, float percent, boolean animate, long delay) {
+    private void bar(int id, float percent, boolean animate, long delay, long duration) {
         View view = root.findViewById(id);
         if (view == null) return;
         if (animate) {
-            ViewUtils.animateBar(view, percent, 700, delay);
+            ViewUtils.animateBar(view, percent, duration, delay);
         } else {
             ViewUtils.setBar(view, percent);
         }

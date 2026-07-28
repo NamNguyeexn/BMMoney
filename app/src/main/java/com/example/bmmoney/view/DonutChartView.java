@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
+import android.view.animation.LinearInterpolator;
 import android.view.View;
 
 import androidx.annotation.Nullable;
@@ -74,9 +75,26 @@ public class DonutChartView extends View {
 
     /** Chay hieu ung ve theo chieu kim dong ho tu 12 gio. */
     public void animateSweep() {
+        animateSweep(0, 1600);
+    }
+
+    /**
+     * Ve theo chieu kim dong ho tu 12 gio, co the hen gio bat dau.
+     *
+     * @param delay so mili giay cho truoc khi bat dau
+     * @param duration do dai hieu ung
+     */
+    public void animateSweep(long delay, long duration) {
         if (sweepAnimator != null) sweepAnimator.cancel();
+
+        // Xoa het vong tron ngay lap tuc de trong luc cho khong hien san hinh day
+        sweepProgress = 0f;
+        invalidate();
+
         sweepAnimator = ValueAnimator.ofFloat(0f, 1f);
-        sweepAnimator.setDuration(900);
+        sweepAnimator.setDuration(duration);
+        sweepAnimator.setStartDelay(delay);
+        sweepAnimator.setInterpolator(new LinearInterpolator());
         sweepAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -119,18 +137,23 @@ public class DonutChartView extends View {
         float arcRadius = radius - ring / 2f;
         oval.set(cx - arcRadius, cy - arcRadius, cx + arcRadius, cy + arcRadius);
 
+        // Vong nen mo, luon ve truoc de thay ro phan da duoc lap day
+        arcPaint.setColor(Color.parseColor("#F0E8C8"));
+        canvas.drawArc(oval, 0f, 360f, false, arcPaint);
+
         float total = 0f;
         for (float p : percents) total += p;
-        if (total <= 0f) {
-            arcPaint.setColor(Color.parseColor("#F0E8C8"));
-            canvas.drawArc(oval, 0f, 360f, false, arcPaint);
-        } else {
+        if (total > 0f) {
+            float drawn = 360f * Math.max(0f, Math.min(1f, sweepProgress));
             float start = -90f;
-            for (int i = 0; i < percents.length; i++) {
+            float used = 0f;
+            for (int i = 0; i < percents.length && used < drawn; i++) {
                 float sweep = percents[i] / total * 360f;
+                float visible = Math.min(sweep, drawn - used);
                 arcPaint.setColor(COLORS[i % COLORS.length]);
-                canvas.drawArc(oval, start + 1f, Math.max(0f, sweep - 2f), false, arcPaint);
+                canvas.drawArc(oval, start + 1f, Math.max(0f, visible - 2f), false, arcPaint);
                 start += sweep;
+                used += sweep;
             }
         }
 

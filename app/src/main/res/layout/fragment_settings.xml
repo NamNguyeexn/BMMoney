@@ -328,8 +328,12 @@
                 </FrameLayout>
             </LinearLayout>
             <ScrollView
+                android:id="@+id/scroll_categories"
                 android:layout_width="match_parent"
                 android:layout_height="300dp"
+                android:fillViewport="true"
+                android:overScrollMode="never"
+                android:nestedScrollingEnabled="true"
                 android:scrollbars="none">
             <LinearLayout
                 android:id="@+id/container_categories"
