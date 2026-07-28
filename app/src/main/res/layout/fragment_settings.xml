@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/refresh_settings"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cream">
+
+    <ScrollView 
+    
     android:id="@+id/screen_settings"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -13,7 +21,7 @@
         android:orientation="vertical"
         android:padding="16dp"
         android:paddingTop="8dp"
-        android:paddingBottom="24dp">
+        android:paddingBottom="120dp">
 
 
     <TextView
@@ -95,13 +103,13 @@
 
                     <EditText
                         android:id="@+id/edt_name"
+                android:inputType="textCapSentences|textPersonName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:padding="8dp"
                         android:background="@drawable/bg_field_small"
                         android:hint="Nhập họ tên"
-                        android:inputType="textPersonName"
                         android:textColorHint="@color/subtle_text"
                         android:textSize="14sp"
                         android:textColor="@color/dark_green" />
@@ -129,42 +137,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ngày chốt chu kỳ (dd/mm)"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/olive" />
-
-                <TextView
-                    android:id="@+id/tv_cycle_day"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center_vertical"
-                    android:paddingLeft="12dp"
-                    android:background="@drawable/bg_field"
-                    android:text="--"
-                    android:textSize="15sp"
-                    android:textColor="@color/dark_green"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Mọi số liệu được tính theo chu kỳ kết thúc vào ngày này."
-                    android:textSize="12sp"
-                    android:textColor="@color/olive" />
-            </LinearLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -355,11 +327,16 @@
                         app:tint="@color/cream" />
                 </FrameLayout>
             </LinearLayout>
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:scrollbars="none">
             <LinearLayout
                 android:id="@+id/container_categories"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
+            </ScrollView>
 
             <TextView
                 android:id="@+id/tv_no_category"
@@ -386,6 +363,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="20dp">
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -399,196 +377,174 @@
                     app:tint="@color/olive" />
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="8dp"
+                    android:layout_marginLeft="10dp"
                     android:text="Tùy chọn"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/dark_green" />
             </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ngày chốt chu kỳ"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/olive" />
+
+                <TextView
+                    android:id="@+id/tv_cycle_day"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:paddingLeft="12dp"
+                    android:background="@drawable/bg_field"
+                    android:text="--"
+                    android:textSize="15sp"
+                    android:textColor="@color/dark_green"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Mọi số liệu được tính theo chu kỳ kết thúc vào ngày này."
+                    android:textSize="12sp"
+                    android:textColor="@color/olive" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ngưỡng chi tiêu"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/olive" />
+
+                <TextView
+                    android:id="@+id/tv_warn_percent"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:paddingLeft="12dp"
+                    android:background="@drawable/bg_field"
+                    android:text="--"
+                    android:textSize="15sp"
+                    android:textColor="@color/dark_green"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Vượt mức này sẽ hiện cảnh báo ở trang chủ."
+                    android:textSize="12sp"
+                    android:textColor="@color/olive" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mốc chi tiêu lớn"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/olive" />
+
+                <TextView
+                    android:id="@+id/tv_big_percent"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:paddingLeft="12dp"
+                    android:background="@drawable/bg_field"
+                    android:text="--"
+                    android:textSize="15sp"
+                    android:textColor="@color/dark_green"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Giao dịch chiếm từ mức này trở lên sẽ được đánh dấu là khoản chi đáng chú ý."
+                    android:textSize="12sp"
+                    android:textColor="@color/olive" />
+            </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="20dp">
 
-                <FrameLayout
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:background="@drawable/bg_icon_chip">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_moon"
-                        app:tint="@color/olive" />
-                </FrameLayout>
-
-                <LinearLayout
+                <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Giao diện tối"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Chuyển sang chủ đề tối"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
+                    android:text="Nhắc ghi chú chi tiêu"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/olive" />
 
                 <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="24dp"
-                    android:background="@drawable/bg_toggle_off"
+                    android:id="@+id/btn_add_reminder"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/bg_olive_small"
                     android:clickable="true"
                     android:focusable="true">
 
-                    <View
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="left|center_vertical"
-                        android:layout_marginLeft="2dp"
-                        android:layout_marginRight="2dp"
-                        android:background="@drawable/bg_toggle_thumb"
-                        android:elevation="1dp" />
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_add"
+                        app:tint="@color/cream" />
                 </FrameLayout>
             </LinearLayout>
+
             <LinearLayout
+                android:id="@+id/container_reminders"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="16dp">
+                android:orientation="vertical"
+                android:layout_marginTop="8dp" />
 
-                <FrameLayout
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:background="@drawable/bg_icon_chip">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_bell"
-                        app:tint="@color/olive" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Thông báo đẩy"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Nhận thông báo về chi tiêu"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-
-                <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="24dp"
-                    android:background="@drawable/bg_toggle_on"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <View
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="right|center_vertical"
-                        android:layout_marginLeft="2dp"
-                        android:layout_marginRight="2dp"
-                        android:background="@drawable/bg_toggle_thumb"
-                        android:elevation="1dp" />
-                </FrameLayout>
-            </LinearLayout>
-            <LinearLayout
+            <TextView
+                android:id="@+id/tv_no_reminder"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="16dp">
-
-                <FrameLayout
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:background="@drawable/bg_icon_chip">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_shield"
-                        app:tint="@color/olive" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Cảnh báo ngân sách"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Cảnh báo khi chi tiêu quá mức"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-
-                <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="24dp"
-                    android:background="@drawable/bg_toggle_on"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <View
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="right|center_vertical"
-                        android:layout_marginLeft="2dp"
-                        android:layout_marginRight="2dp"
-                        android:background="@drawable/bg_toggle_thumb"
-                        android:elevation="1dp" />
-                </FrameLayout>
-            </LinearLayout>
-
+                android:layout_marginTop="6dp"
+                android:text="Chưa có lời nhắc nào. Nhấn + để thêm giờ nhắc ghi chi tiêu."
+                android:textSize="12sp"
+                android:textColor="@color/olive" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -657,3 +613,5 @@
 
     </LinearLayout>
 </ScrollView>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

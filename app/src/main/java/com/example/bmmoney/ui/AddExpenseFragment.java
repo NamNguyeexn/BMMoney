@@ -1,12 +1,11 @@
 package com.example.bmmoney.ui;
 
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,88 +20,110 @@ import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.remote.FirebaseSyncManager;
 import com.example.bmmoney.util.Categories;
+import com.example.bmmoney.util.Refresh;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * Man Them chi tieu: chi nhap tay (da bo quet hoa don va goi y AI),
- * cho chon ca ngay va gio.
+ * M\u00e0n Th\u00eam giao d\u1ecbch: nh\u1eadp tay, danh m\u1ee5c cu\u1ed9n ngang l\u1ea5y t\u1eeb danh m\u1ee5c t\u00f9y ch\u1ec9nh,
+ * m\u1ed9t popup duy nh\u1ea5t cho ng\u00e0y + gi\u1edd + ph\u00fat, v\u00e0 select box ph\u01b0\u01a1ng th\u1ee9c thanh to\u00e1n.
  */
 public class AddExpenseFragment extends Fragment {
 
-    private static final int[] CELL = {R.id.cat_cell_0, R.id.cat_cell_1, R.id.cat_cell_2,
-            R.id.cat_cell_3, R.id.cat_cell_4, R.id.cat_cell_5};
-    private static final int[] LABEL = {R.id.cat_label_0, R.id.cat_label_1, R.id.cat_label_2,
-            R.id.cat_label_3, R.id.cat_label_4, R.id.cat_label_5};
-    private static final String[] PAYMENTS = {
-            "\ud83d\udcb3 Th\u1ebb t\u00edn d\u1ee5ng",
+    private static final List<String> PAYMENTS = Arrays.asList(
+            "\ud83c\udfe6 Chuy\u1ec3n kho\u1ea3n",
             "\ud83d\udcb5 Ti\u1ec1n m\u1eb7t",
+            "\ud83d\udcb3 Th\u1ebb t\u00edn d\u1ee5ng",
             "\ud83d\udcf1 V\u00ed \u0111i\u1ec7n t\u1eed",
-            "\ud83c\udfe6 Chuy\u1ec3n kho\u1ea3n"};
-
-    private final SimpleDateFormat display = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-    private final Calendar picked = Calendar.getInstance();
+            "\ud83e\uddfe Kh\u00e1c");
 
     private View root;
+    private long pickedTime = System.currentTimeMillis();
+    private String payment = PAYMENTS.get(0);
     private String category = "";
-    private int paymentIndex = 0;
+    private final List<View> cells = new ArrayList<>();
+    private final List<Categories.Item> items = new ArrayList<>();
+
+    private final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                            @Nullable Bundle savedInstanceState) {
+                             @Nullable Bundle savedInstanceState) {
         root = inflater.inflate(R.layout.fragment_add_expense, container, false);
 
-        root.findViewById(R.id.btn_back).setOnClickListener(v -> open(MainActivity.TAB_HOME));
-        root.findViewById(R.id.tv_date).setOnClickListener(v -> pickDateTime());
-        root.findViewById(R.id.tv_payment).setOnClickListener(v -> {
-            paymentIndex = (paymentIndex + 1) % PAYMENTS.length;
-            text(R.id.tv_payment, PAYMENTS[paymentIndex]);
-        });
+        Refresh.setup(root, R.id.refresh_add_expense, this::resetForm);
+
+        View back = root.findViewById(R.id.btn_back);
+        if (back != null) back.setOnClickListener(v -> open(MainActivity.TAB_HOME));
+
+        text(R.id.tv_date, format.format(new Date(pickedTime)));
+        text(R.id.tv_payment, payment);
+
+        root.findViewById(R.id.tv_date).setOnClickListener(v ->
+                DateTimeDialog.show(getContext(), pickedTime, time -> {
+                    pickedTime = time;
+                    text(R.id.tv_date, format.format(new Date(pickedTime)));
+                }));
+
+        root.findViewById(R.id.tv_payment).setOnClickListener(v ->
+                SelectDialog.show(getContext(), "Ph\u01b0\u01a1ng th\u1ee9c thanh to\u00e1n", PAYMENTS, payment,
+                        (index, value) -> {
+                            payment = value;
+                            text(R.id.tv_payment, payment);
+                        }));
+
         root.findViewById(R.id.btn_submit).setOnClickListener(v -> save());
 
-        text(R.id.tv_payment, PAYMENTS[paymentIndex]);
-        updateDateLabel();
-        bindCategories();
+        buildCategories();
         return root;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Danh muc co the vua duoc them/sua trong Cai dat
-        bindCategories();
+        buildCategories();
     }
 
     @Override
     public void onDestroyView() {
+        cells.clear();
+        items.clear();
         root = null;
         super.onDestroyView();
     }
 
-    /** Nap 6 o danh muc dau tien tu danh sach danh muc tuy chinh. */
-    private void bindCategories() {
+    /** N\u1ea1p danh m\u1ee5c t\u1eeb C\u00e0i \u0111\u1eb7t v\u00e0o d\u1ea3i cu\u1ed9n ngang. */
+    private void buildCategories() {
         if (root == null || getContext() == null) return;
-        List<Categories.Item> items = Categories.all(getContext());
-        for (int i = 0; i < CELL.length; i++) {
-            View cell = root.findViewById(CELL[i]);
-            TextView label = root.findViewById(LABEL[i]);
-            if (cell == null) continue;
-            if (i < items.size()) {
-                final Categories.Item item = items.get(i);
-                cell.setVisibility(View.VISIBLE);
-                if (label != null) label.setText(item.emoji + " " + item.name);
-                cell.setOnClickListener(v -> {
-                    category = item.name;
-                    highlight();
-                });
-            } else {
-                cell.setVisibility(View.GONE);
-            }
+
+        LinearLayout container = root.findViewById(R.id.container_cats);
+        if (container == null) return;
+
+        container.removeAllViews();
+        cells.clear();
+        items.clear();
+        items.addAll(Categories.all(getContext()));
+
+        LayoutInflater inflater = LayoutInflater.from(getContext());
+        for (int i = 0; i < items.size(); i++) {
+            final Categories.Item item = items.get(i);
+            View cell = inflater.inflate(R.layout.item_cat_cell, container, false);
+            ((TextView) cell.findViewById(R.id.tv_cell_emoji)).setText(item.emoji);
+            ((TextView) cell.findViewById(R.id.tv_cell_name)).setText(item.name);
+            cell.setOnClickListener(v -> {
+                category = item.name;
+                highlight();
+            });
+            container.addView(cell);
+            cells.add(cell);
         }
+
         if (category.isEmpty() && !items.isEmpty()) {
             category = items.get(0).name;
         }
@@ -110,76 +131,67 @@ public class AddExpenseFragment extends Fragment {
     }
 
     private void highlight() {
-        if (root == null || getContext() == null) return;
-        List<Categories.Item> items = Categories.all(getContext());
-        for (int i = 0; i < CELL.length && i < items.size(); i++) {
-            View cell = root.findViewById(CELL[i]);
-            if (cell == null) continue;
+        for (int i = 0; i < cells.size() && i < items.size(); i++) {
             boolean active = items.get(i).name.equals(category);
-            cell.setBackgroundResource(active ? R.drawable.bg_pill_olive : R.drawable.bg_field_small);
-            TextView label = root.findViewById(LABEL[i]);
-            if (label != null) {
-                label.setTextColor(getResources().getColor(active ? R.color.cream : R.color.dark_green));
-            }
+            cells.get(i).setBackgroundResource(
+                    active ? R.drawable.bg_cat_selected : R.drawable.bg_cat_unselected);
         }
-    }
-
-    /** Chon ngay roi chon gio, luu day du ca ngay lan gio. */
-    private void pickDateTime() {
-        if (getContext() == null) return;
-        new DatePickerDialog(getContext(), (view, year, month, day) -> {
-            picked.set(Calendar.YEAR, year);
-            picked.set(Calendar.MONTH, month);
-            picked.set(Calendar.DAY_OF_MONTH, day);
-            new TimePickerDialog(getContext(), (timeView, hour, minute) -> {
-                picked.set(Calendar.HOUR_OF_DAY, hour);
-                picked.set(Calendar.MINUTE, minute);
-                picked.set(Calendar.SECOND, 0);
-                updateDateLabel();
-            }, picked.get(Calendar.HOUR_OF_DAY), picked.get(Calendar.MINUTE), true).show();
-        }, picked.get(Calendar.YEAR), picked.get(Calendar.MONTH), picked.get(Calendar.DAY_OF_MONTH)).show();
-    }
-
-    private void updateDateLabel() {
-        text(R.id.tv_date, display.format(picked.getTime()));
     }
 
     private void save() {
         if (root == null || getContext() == null) return;
 
-        EditText amountInput = root.findViewById(R.id.edt_amount);
-        EditText descInput = root.findViewById(R.id.edt_description);
-        EditText noteInput = root.findViewById(R.id.edt_note);
+        EditText amountField = root.findViewById(R.id.edt_amount);
+        EditText descField = root.findViewById(R.id.edt_description);
+        EditText noteField = root.findViewById(R.id.edt_note);
 
-        String rawAmount = amountInput.getText().toString().replaceAll("[^0-9]", "");
+        String rawAmount = amountField.getText().toString().replaceAll("[^0-9]", "");
         if (rawAmount.isEmpty()) {
             toast("Nh\u1eadp s\u1ed1 ti\u1ec1n tr\u01b0\u1edbc \u0111\u00e3 nh\u00e9");
             return;
         }
+        if (category.isEmpty()) {
+            toast("Ch\u1ecdn m\u1ed9t danh m\u1ee5c nh\u00e9");
+            return;
+        }
+
         double amount = Double.parseDouble(rawAmount);
-        String title = descInput.getText().toString().trim();
-        if (title.isEmpty()) title = category.isEmpty() ? "Chi ti\u00eau" : category;
+        String title = descField.getText().toString().trim();
+        if (title.isEmpty()) title = category;
 
-        String note = noteInput.getText().toString().trim();
-        String payment = PAYMENTS[paymentIndex];
-        if (!note.isEmpty()) note = note + " \u00b7 " + payment;
-        else note = payment;
+        String note = noteField.getText().toString().trim();
+        String fullNote = note.isEmpty() ? payment : note + " \u00b7 " + payment;
 
-        final TransactionEntity entity = new TransactionEntity(title, amount, "EXPENSE",
-                category.isEmpty() ? "Kh\u00e1c" : category, note, picked.getTimeInMillis());
+        final TransactionEntity entity =
+                new TransactionEntity(title, amount, "EXPENSE", category, fullNote, pickedTime);
+        final android.content.Context app = getContext().getApplicationContext();
 
         Db.io(() -> {
-            AppDatabase.dao(requireContext().getApplicationContext()).insert(entity);
-            new FirebaseSyncManager(requireContext().getApplicationContext()).uploadAllLocal();
+            AppDatabase.dao(app).insert(entity);
+            try {
+                new FirebaseSyncManager(app).uploadAllLocal();
+            } catch (Throwable ignored) {
+                // kh\u00f4ng c\u00f3 m\u1ea1ng th\u00ec b\u1ecf qua, d\u1eef li\u1ec7u v\u1eabn n\u1eb1m trong m\u00e1y
+            }
             Db.ui(() -> {
-                if (!isAdded()) return;
                 toast("\u0110\u00e3 l\u01b0u giao d\u1ecbch");
-                amountInput.setText("");
-                descInput.setText("");
-                noteInput.setText("");
+                resetForm();
                 open(MainActivity.TAB_HOME);
             });
         });
+    }
+
+    private void resetForm() {
+        if (root == null) return;
+        ((EditText) root.findViewById(R.id.edt_amount)).setText("");
+        ((EditText) root.findViewById(R.id.edt_description)).setText("");
+        ((EditText) root.findViewById(R.id.edt_note)).setText("");
+        pickedTime = System.currentTimeMillis();
+        text(R.id.tv_date, format.format(new Date(pickedTime)));
+        buildCategories();
+        androidx.swiperefreshlayout.widget.SwipeRefreshLayout refresh =
+                root.findViewById(R.id.refresh_add_expense);
+        if (refresh != null) refresh.setRefreshing(false);
     }
 
     private void open(int tab) {
@@ -189,7 +201,9 @@ public class AddExpenseFragment extends Fragment {
     }
 
     private void toast(String message) {
-        if (getContext() != null) Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        if (getContext() != null) {
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void text(int id, String value) {

@@ -7,230 +7,266 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.bmmoney.R;
 import com.example.bmmoney.adapter.TransactionAdapter;
 import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Prefs;
+import com.example.bmmoney.util.Refresh;
+import com.example.bmmoney.util.Stats;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
- * Man Tim kiem. Da bo goi y "ngon ngu tu nhien".
- * Bo loc nhanh: Tuan nay, Khoang thoi gian nay (theo ngay chot chu ky), Nam nay,
- * An uong, Tren 100k.
+ * M\u00e0n T\u00ecm ki\u1ebfm v\u1edbi ba nh\u00f3m b\u1ed9 l\u1ecdc: th\u1eddi gian, danh m\u1ee5c v\u00e0 gi\u00e1 tr\u1ecb.
+ * Th\u1ebb "Kho\u1ea3n chi \u0111\u00e1ng ch\u00fa \u00fd" l\u1ecdc c\u00e1c giao d\u1ecbch chi\u1ebfm t\u1eeb x% t\u1ed5ng chi c\u1ee7a k\u1ef3 (\u0111\u1eb7t trong C\u00e0i \u0111\u1eb7t).
  */
 public class SearchFragment extends Fragment {
 
-    private View root;
-    private TransactionAdapter adapter;
-    private EditText input;
+    private static final int TIME_WEEK = 0;
+    private static final int TIME_MONTH = 1;
+    private static final int TIME_YEAR = 2;
 
-    private boolean filterWeek = false;
-    private boolean filterCycle = false;
-    private boolean filterYear = false;
-    private boolean filterFood = false;
-    private boolean filterOver100k = false;
+    private View root;
+    private SwipeRefreshLayout refresh;
+    private TransactionAdapter adapter;
+
+    private int timeFilter = TIME_MONTH;
+    private boolean onlyOver100k = false;
+    private boolean onlyBig = false;
+    private final Set<String> pickedCategories = new HashSet<>();
+    private final List<TextView> categoryChips = new ArrayList<>();
+    private String keyword = "";
+
+    private static class Data {
+        List<TransactionEntity> items = new ArrayList<>();
+        double total;
+        double periodTotal;
+    }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                            @Nullable Bundle savedInstanceState) {
+                             @Nullable Bundle savedInstanceState) {
         root = inflater.inflate(R.layout.fragment_search, container, false);
 
-        adapter = new TransactionAdapter();
         RecyclerView recycler = root.findViewById(R.id.recycler_results);
+        adapter = new TransactionAdapter();
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
         recycler.setHasFixedSize(true);
         recycler.setItemAnimator(null);
         recycler.setNestedScrollingEnabled(false);
         recycler.setAdapter(adapter);
 
-        input = root.findViewById(R.id.edt_search);
-        input.addTextChangedListener(new TextWatcher() {
+        refresh = Refresh.setup(root, R.id.refresh_search, this::reload);
+
+        EditText search = root.findViewById(R.id.edt_search);
+        search.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {
             }
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                apply();
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
             }
 
             @Override
             public void afterTextChanged(Editable s) {
+                keyword = s.toString().trim().toLowerCase(Locale.getDefault());
+                reload();
             }
         });
 
-        root.findViewById(R.id.chip_week).setOnClickListener(v -> {
-            filterWeek = !filterWeek;
-            if (filterWeek) {
-                filterCycle = false;
-                filterYear = false;
-            }
-            refreshChips();
-            apply();
-        });
-        root.findViewById(R.id.chip_month).setOnClickListener(v -> {
-            filterCycle = !filterCycle;
-            if (filterCycle) {
-                filterWeek = false;
-                filterYear = false;
-            }
-            refreshChips();
-            apply();
-        });
-        View chipYear = root.findViewById(R.id.chip_year);
-        if (chipYear != null) {
-            chipYear.setOnClickListener(v -> {
-                filterYear = !filterYear;
-                if (filterYear) {
-                    filterWeek = false;
-                    filterCycle = false;
-                }
-                refreshChips();
-                apply();
-            });
-        }
-        root.findViewById(R.id.chip_food).setOnClickListener(v -> {
-            filterFood = !filterFood;
-            refreshChips();
-            apply();
-        });
+        root.findViewById(R.id.chip_week).setOnClickListener(v -> setTime(TIME_WEEK));
+        root.findViewById(R.id.chip_month).setOnClickListener(v -> setTime(TIME_MONTH));
+        root.findViewById(R.id.chip_year).setOnClickListener(v -> setTime(TIME_YEAR));
+
         root.findViewById(R.id.chip_over100k).setOnClickListener(v -> {
-            filterOver100k = !filterOver100k;
-            refreshChips();
-            apply();
+            onlyOver100k = !onlyOver100k;
+            styleChip((TextView) v, onlyOver100k);
+            reload();
+        });
+        root.findViewById(R.id.chip_big).setOnClickListener(v -> {
+            onlyBig = !onlyBig;
+            styleChip((TextView) v, onlyBig);
+            reload();
         });
 
-        refreshChips();
+        buildCategoryChips();
+        styleTimeChips();
         return root;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        apply();
+        buildCategoryChips();
+        reload();
     }
 
     @Override
     public void onDestroyView() {
         RecyclerView recycler = root == null ? null : (RecyclerView) root.findViewById(R.id.recycler_results);
         if (recycler != null) recycler.setAdapter(null);
+        categoryChips.clear();
         adapter = null;
-        input = null;
+        refresh = null;
         root = null;
         super.onDestroyView();
     }
 
-    private void refreshChips() {
-        chipState(R.id.chip_week, filterWeek);
-        chipState(R.id.chip_month, filterCycle);
-        chipState(R.id.chip_year, filterYear);
-        chipState(R.id.chip_food, filterFood);
-        chipState(R.id.chip_over100k, filterOver100k);
-    }
+    /** T\u1ea1o th\u1ebb l\u1ecdc cho \u0111\u00fang danh s\u00e1ch danh m\u1ee5c \u0111ang c\u00f3 trong C\u00e0i \u0111\u1eb7t. */
+    private void buildCategoryChips() {
+        if (root == null || getContext() == null) return;
+        LinearLayout container = root.findViewById(R.id.container_cat_chips);
+        if (container == null) return;
 
-    private void chipState(int id, boolean active) {
-        if (root == null) return;
-        View chip = root.findViewById(id);
-        if (chip == null) return;
-        chip.setBackgroundResource(active ? R.drawable.bg_pill_olive : R.drawable.bg_pill_cream);
-        if (chip instanceof TextView) {
-            ((TextView) chip).setTextColor(getResources().getColor(active ? R.color.cream : R.color.dark_green));
+        container.removeAllViews();
+        categoryChips.clear();
+
+        LayoutInflater inflater = LayoutInflater.from(getContext());
+        for (Categories.Item item : Categories.all(getContext())) {
+            final String name = item.name;
+            View view = inflater.inflate(R.layout.item_chip, container, false);
+            TextView chip = view.findViewById(R.id.tv_chip);
+            chip.setText(item.emoji + " " + name);
+            chip.setOnClickListener(v -> {
+                if (pickedCategories.contains(name)) {
+                    pickedCategories.remove(name);
+                } else {
+                    pickedCategories.add(name);
+                }
+                styleChip(chip, pickedCategories.contains(name));
+                reload();
+            });
+            styleChip(chip, pickedCategories.contains(name));
+            container.addView(view);
+            categoryChips.add(chip);
         }
     }
 
-    private void apply() {
-        if (root == null || getContext() == null || input == null) return;
+    private void setTime(int filter) {
+        timeFilter = filter;
+        styleTimeChips();
+        reload();
+    }
 
-        final String keyword = input.getText().toString().trim().toLowerCase(Locale.getDefault());
+    private void styleTimeChips() {
+        if (root == null) return;
+        styleChip(root.findViewById(R.id.chip_week), timeFilter == TIME_WEEK);
+        styleChip(root.findViewById(R.id.chip_month), timeFilter == TIME_MONTH);
+        styleChip(root.findViewById(R.id.chip_year), timeFilter == TIME_YEAR);
+    }
+
+    private void styleChip(TextView chip, boolean active) {
+        if (chip == null || getContext() == null) return;
+        chip.setBackgroundResource(active ? R.drawable.bg_pill_olive : R.drawable.bg_pill_cream);
+        chip.setTextColor(ContextCompat.getColor(getContext(),
+                active ? R.color.cream : R.color.dark_green));
+    }
+
+    public void reload() {
+        if (root == null || getContext() == null) return;
+
         final int cycleDay = Prefs.cycleDay(getContext());
         final long now = System.currentTimeMillis();
-        final long weekStart = Cycle.startOfWeek(now);
-        final long[] cycle = Cycle.bounds(cycleDay, now, 0);
-        final long yearStart = Cycle.startOfYear(now);
-        final long yearEnd = Cycle.endOfYear(now);
-        final boolean week = filterWeek;
-        final boolean inCycle = filterCycle;
-        final boolean year = filterYear;
-        final boolean food = filterFood;
-        final boolean over = filterOver100k;
+        final int bigPercent = Prefs.bigPercent(getContext());
+        final String key = keyword;
+        final int filter = timeFilter;
+        final boolean over100k = onlyOver100k;
+        final boolean big = onlyBig;
+        final Set<String> cats = new HashSet<>(pickedCategories);
+
+        final long from;
+        final long to;
+        if (filter == TIME_WEEK) {
+            from = Cycle.startOfWeek(now);
+            to = now;
+        } else if (filter == TIME_YEAR) {
+            from = Cycle.startOfYear(now);
+            to = Cycle.endOfYear(now);
+        } else {
+            long[] bounds = Cycle.bounds(cycleDay, now, 0);
+            from = bounds[0];
+            to = bounds[1];
+        }
+
+        final com.example.bmmoney.data.TransactionDao dao = AppDatabase.dao(getContext());
 
         Db.load(() -> {
-            List<TransactionEntity> result = new ArrayList<>();
-            List<TransactionEntity> all = AppDatabase
-                    .dao(requireContext().getApplicationContext()).getAllTransactions();
-            if (all == null) return result;
+            Data data = new Data();
+            List<TransactionEntity> all = dao.getTransactionsByDateRange(from, to);
+            if (all == null) return data;
+
+            double periodTotal = 0;
             for (TransactionEntity t : all) {
-                if (!keyword.isEmpty() && !matches(t, keyword)) continue;
-                if (week && t.getDate() < weekStart) continue;
-                if (inCycle && (t.getDate() < cycle[0] || t.getDate() > cycle[1])) continue;
-                if (year && (t.getDate() < yearStart || t.getDate() > yearEnd)) continue;
-                if (food && !"\u0102n u\u1ed1ng".equals(t.getCategory())) continue;
-                if (over && t.getAmount() < 100000d) continue;
-                result.add(t);
+                if (Stats.EXPENSE.equals(t.getType())) periodTotal += t.getAmount();
             }
-            return result;
-        }, result -> {
-            if (root == null || result == null || adapter == null) return;
+            data.periodTotal = periodTotal;
+            double threshold = periodTotal * bigPercent / 100d;
 
-            double total = 0d;
-            for (TransactionEntity t : result) {
-                if ("EXPENSE".equals(t.getType())) total += t.getAmount();
+            for (TransactionEntity t : all) {
+                if (!key.isEmpty()) {
+                    String title = t.getTitle() == null ? "" : t.getTitle().toLowerCase(Locale.getDefault());
+                    String note = t.getNote() == null ? "" : t.getNote().toLowerCase(Locale.getDefault());
+                    String category = t.getCategory() == null ? "" : t.getCategory().toLowerCase(Locale.getDefault());
+                    if (!title.contains(key) && !note.contains(key) && !category.contains(key)) continue;
+                }
+                if (!cats.isEmpty() && !cats.contains(t.getCategory())) continue;
+                if (over100k && t.getAmount() < 100000) continue;
+                if (big && (threshold <= 0 || t.getAmount() < threshold)) continue;
+
+                data.items.add(t);
+                if (Stats.EXPENSE.equals(t.getType())) data.total += t.getAmount();
             }
+            return data;
+        }, data -> {
+            if (refresh != null) refresh.setRefreshing(false);
+            if (root == null || data == null) return;
 
-            adapter.setTransactions(result);
-            root.findViewById(R.id.tv_empty_results).setVisibility(result.isEmpty() ? View.VISIBLE : View.GONE);
-            root.findViewById(R.id.recycler_results).setVisibility(result.isEmpty() ? View.GONE : View.VISIBLE);
+            adapter.setTransactions(data.items);
+            text(R.id.tv_result_count, data.items.size() + " k\u1ebft qu\u1ea3");
+            text(R.id.tv_search_total_label, "T\u1ed5ng chi c\u1ee7a k\u1ebft qu\u1ea3");
+            text(R.id.tv_search_total, Money.vnd(data.total));
+            text(R.id.tv_search_sub, big
+                    ? "Kho\u1ea3n chi t\u1eeb " + bigPercent + "% t\u1ed5ng chi c\u1ee7a k\u1ef3 tr\u1edf l\u00ean"
+                    : subtitle(filter));
 
-            text(R.id.tv_result_count, result.size() + " k\u1ebft qu\u1ea3");
-            text(R.id.tv_search_total, "-" + Money.vnd(total));
-            text(R.id.tv_search_sub, result.size() + " giao d\u1ecbch ph\u00f9 h\u1ee3p");
-            text(R.id.tv_search_total_label, label(keyword, inCycle, year, cycle));
+            root.findViewById(R.id.tv_empty_results)
+                    .setVisibility(data.items.isEmpty() ? View.VISIBLE : View.GONE);
+            root.findViewById(R.id.recycler_results)
+                    .setVisibility(data.items.isEmpty() ? View.GONE : View.VISIBLE);
         });
     }
 
-    private String label(String keyword, boolean inCycle, boolean year, long[] cycle) {
-        if (!keyword.isEmpty()) {
-            return "T\u1ed5ng chi ti\u00eau cho \u201c" + keyword + "\u201d";
-        }
-        if (inCycle) {
-            return "T\u1ed5ng chi ti\u00eau " + Cycle.rangeLabel(cycle[0], cycle[1]);
-        }
-        if (year) {
-            return "T\u1ed5ng chi ti\u00eau n\u0103m nay";
-        }
-        return "T\u1ed5ng chi ti\u00eau";
-    }
-
-    private boolean matches(TransactionEntity t, String keyword) {
-        return contains(t.getTitle(), keyword)
-                || contains(t.getCategory(), keyword)
-                || contains(t.getNote(), keyword)
-                || contains(String.valueOf((long) t.getAmount()), keyword);
-    }
-
-    private boolean contains(String value, String keyword) {
-        return value != null && value.toLowerCase(Locale.getDefault()).contains(keyword);
+    private String subtitle(int filter) {
+        if (filter == TIME_WEEK) return "Trong tu\u1ea7n n\u00e0y";
+        if (filter == TIME_YEAR) return "Trong n\u0103m nay";
+        return "Trong k\u1ef3 chi ti\u00eau hi\u1ec7n t\u1ea1i";
     }
 
     private void text(int id, String value) {
         if (root == null) return;
-        TextView view = root.findViewById(id);
-        if (view != null) view.setText(value);
+        View view = root.findViewById(id);
+        if (view instanceof TextView) ((TextView) view).setText(value);
     }
 }

@@ -8,7 +8,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.bmmoney.R;
 import com.example.bmmoney.data.AppDatabase;
@@ -18,16 +20,19 @@ import com.example.bmmoney.data.TransactionDao;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Prefs;
+import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Stats;
+import com.example.bmmoney.util.ViewUtils;
 import com.example.bmmoney.view.TrendChartView;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Man Phan tich. Da bo khoi "Nhan dinh boi AI".
- * Xu huong chi tieu duoc ve theo cac ky L1, L2, L3... trong nam:
- * moi ky la khoang giua hai lan chot da cau hinh trong Cai dat.
+ * M\u00e0n Ph\u00e2n t\u00edch: xu h\u01b0\u1edbng chi ti\u00eau theo t\u1eebng k\u1ef3 (L1, L2, L3...),
+ * so s\u00e1nh danh m\u1ee5c k\u1ef3 n\u00e0y v\u1edbi k\u1ef3 tr\u01b0\u1edbc v\u00e0 \u0111i\u1ec3m s\u00e1ng / \u0111i\u1ec3m c\u1ea7n l\u01b0u \u00fd.
  */
 public class AnalyticsFragment extends Fragment {
 
@@ -37,33 +42,38 @@ public class AnalyticsFragment extends Fragment {
     private static final int[] AN_LAST = {R.id.an_last_0, R.id.an_last_1, R.id.an_last_2, R.id.an_last_3};
 
     private View root;
-    private boolean yearMode = false;
+    private SwipeRefreshLayout refresh;
 
-    /** Ket qua tinh toan cua mot lan nap. */
+    /** false = xem theo k\u1ef3 (6 k\u1ef3 g\u1ea7n nh\u1ea5t), true = xem theo n\u0103m (12 k\u1ef3). */
+    private boolean yearMode = false;
+    private boolean animated = false;
+
+    /** S\u1ed1 li\u1ec7u m\u1ed9t l\u1ea7n n\u1ea1p, t\u00ednh s\u1eb5n tr\u00ean lu\u1ed3ng n\u1ec1n. */
     private static class Data {
-        double[] values;
+        double[] trend;
         String[] labels;
-        double current;
-        double previous;
-        List<CategoryTotal> currentCats = new ArrayList<>();
-        List<CategoryTotal> previousCats = new ArrayList<>();
-        String periodLabel = "";
+        double total;
+        double previousTotal;
+        List<String> names = new ArrayList<>();
+        List<Double> thisAmounts = new ArrayList<>();
+        List<Double> lastAmounts = new ArrayList<>();
+        String bestName = "\u2014";
+        double bestChange = 0;
+        String worstName = "\u2014";
+        double worstChange = 0;
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                            @Nullable Bundle savedInstanceState) {
+                             @Nullable Bundle savedInstanceState) {
         root = inflater.inflate(R.layout.fragment_analytics, container, false);
 
-        root.findViewById(R.id.btn_period_month).setOnClickListener(v -> {
-            yearMode = false;
-            reload();
-        });
-        root.findViewById(R.id.btn_period_year).setOnClickListener(v -> {
-            yearMode = true;
-            reload();
-        });
+        refresh = Refresh.setup(root, R.id.refresh_analytics, this::reloadByUser);
+
+        root.findViewById(R.id.btn_period_month).setOnClickListener(v -> setMode(false));
+        root.findViewById(R.id.btn_period_year).setOnClickListener(v -> setMode(true));
+        applyModeStyle();
         return root;
     }
 
@@ -75,111 +85,182 @@ public class AnalyticsFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        refresh = null;
         root = null;
         super.onDestroyView();
     }
 
-    private void reload() {
+    private void setMode(boolean year) {
+        if (yearMode == year) return;
+        yearMode = year;
+        animated = false;
+        applyModeStyle();
+        reload();
+    }
+
+    private void applyModeStyle() {
+        if (root == null || getContext() == null) return;
+        TextView month = root.findViewById(R.id.btn_period_month);
+        TextView year = root.findViewById(R.id.btn_period_year);
+        int active = ContextCompat.getColor(getContext(), R.color.cream);
+        int inactive = ContextCompat.getColor(getContext(), R.color.dark_green);
+
+        month.setBackgroundResource(yearMode ? 0 : R.drawable.bg_pill_olive);
+        month.setTextColor(yearMode ? inactive : active);
+        year.setBackgroundResource(yearMode ? R.drawable.bg_pill_olive : 0);
+        year.setTextColor(yearMode ? active : inactive);
+    }
+
+    public void reloadByUser() {
+        animated = false;
+        reload();
+    }
+
+    public void reload() {
         if (root == null || getContext() == null) return;
 
         final int cycleDay = Prefs.cycleDay(getContext());
         final long now = System.currentTimeMillis();
-        final boolean year = yearMode;
+        final int steps = yearMode ? 12 : 6;
         final TransactionDao dao = AppDatabase.dao(getContext());
+
+        long[] current = Cycle.bounds(cycleDay, now, 0);
+        text(R.id.tv_trend_period, Cycle.rangeLabel(current[0], current[1]));
 
         Db.load(() -> {
             Data data = new Data();
+            data.trend = new double[steps];
+            data.labels = new String[steps];
 
-            // Che do "Nam": ve tu L1 den ky hien tai. Che do "Chu ky": 6 ky gan nhat.
-            int currentIndex = Cycle.indexInYear(cycleDay, now);
-            int count = year ? Math.max(1, currentIndex) : Math.min(6, Math.max(1, currentIndex));
-            data.values = new double[count];
-            data.labels = new String[count];
-
-            for (int i = 0; i < count; i++) {
-                int offset = -(count - 1 - i);
+            for (int i = 0; i < steps; i++) {
+                int offset = -(steps - 1 - i);
                 long[] bounds = Cycle.bounds(cycleDay, now, offset);
-                Double total = dao.getExpenseInRange(bounds[0], bounds[1]);
-                data.values[i] = total == null ? 0d : total;
-                data.labels[i] = "L" + Cycle.indexInYear(cycleDay, bounds[0]);
+                Double sum = dao.getExpenseInRange(bounds[0], bounds[1]);
+                data.trend[i] = sum == null ? 0d : sum;
+                data.labels[i] = Cycle.label(cycleDay, bounds[0] + 1000L);
+            }
+            data.total = data.trend[steps - 1];
+            data.previousTotal = steps > 1 ? data.trend[steps - 2] : 0d;
+
+            long[] thisBounds = Cycle.bounds(cycleDay, now, 0);
+            long[] lastBounds = Cycle.bounds(cycleDay, now, -1);
+            Map<String, Double> thisMap = toMap(dao.getExpenseByCategoryInRange(thisBounds[0], thisBounds[1]));
+            Map<String, Double> lastMap = toMap(dao.getExpenseByCategoryInRange(lastBounds[0], lastBounds[1]));
+
+            int count = 0;
+            for (Map.Entry<String, Double> entry : thisMap.entrySet()) {
+                if (count >= 4) break;
+                double thisValue = entry.getValue();
+                Double lastValue = lastMap.get(entry.getKey());
+                double last = lastValue == null ? 0d : lastValue;
+                data.names.add(entry.getKey());
+                data.thisAmounts.add(thisValue);
+                data.lastAmounts.add(last);
+                count++;
             }
 
-            long[] current = Cycle.bounds(cycleDay, now, 0);
-            long[] previous = Cycle.bounds(cycleDay, now, -1);
-            Double cur = dao.getExpenseInRange(current[0], current[1]);
-            Double prev = dao.getExpenseInRange(previous[0], previous[1]);
-            data.current = cur == null ? 0d : cur;
-            data.previous = prev == null ? 0d : prev;
-
-            List<CategoryTotal> a = dao.getExpenseByCategoryInRange(current[0], current[1]);
-            if (a != null) data.currentCats = a;
-            List<CategoryTotal> b = dao.getExpenseByCategoryInRange(previous[0], previous[1]);
-            if (b != null) data.previousCats = b;
-
-            data.periodLabel = Cycle.label(cycleDay, now) + " \u00b7 " + Cycle.rangeLabel(current[0], current[1]);
+            // \u0110i\u1ec3m s\u00e1ng: gi\u1ea3m nhi\u1ec1u nh\u1ea5t. \u0110i\u1ec3m c\u1ea7n l\u01b0u \u00fd: t\u0103ng nhi\u1ec1u nh\u1ea5t.
+            double bestChange = Double.MAX_VALUE;
+            double worstChange = -Double.MAX_VALUE;
+            for (String key : union(thisMap, lastMap)) {
+                double a = thisMap.containsKey(key) ? thisMap.get(key) : 0d;
+                double b = lastMap.containsKey(key) ? lastMap.get(key) : 0d;
+                if (a <= 0 && b <= 0) continue;
+                double change = Stats.changePercent(a, b);
+                if (change < bestChange) {
+                    bestChange = change;
+                    data.bestName = key;
+                }
+                if (change > worstChange) {
+                    worstChange = change;
+                    data.worstName = key;
+                }
+            }
+            data.bestChange = bestChange == Double.MAX_VALUE ? 0 : bestChange;
+            data.worstChange = worstChange == -Double.MAX_VALUE ? 0 : worstChange;
             return data;
         }, data -> {
+            if (refresh != null) refresh.setRefreshing(false);
             if (root == null || data == null) return;
             bind(data);
         });
     }
 
     private void bind(Data data) {
+        final boolean animate = !animated;
+        animated = true;
+
         TrendChartView chart = root.findViewById(R.id.trend_chart);
-        if (chart != null) chart.setData(data.values, data.labels);
+        if (chart != null) chart.setData(data.trend, data.labels);
 
-        text(R.id.tv_trend_period, data.periodLabel);
+        double change = Stats.changePercent(data.total, data.previousTotal);
+        String direction = change >= 0 ? "t\u0103ng" : "gi\u1ea3m";
+        text(R.id.tv_trend_summary, "K\u1ef3 n\u00e0y \u0111\u00e3 chi " + Money.vnd(data.total)
+                + " \u00b7 " + direction + " " + Money.percent(Math.abs(change)) + " so v\u1edbi k\u1ef3 tr\u01b0\u1edbc");
 
-        double change = Stats.changePercent(data.current, data.previous);
-        String direction = change >= 0
-                ? "t\u0103ng " + Money.percent(Math.abs(change))
-                : "gi\u1ea3m " + Money.percent(Math.abs(change));
-        text(R.id.tv_trend_summary, "K\u1ef3 n\u00e0y " + Money.vnd(data.current)
-                + ", " + direction + " so v\u1edbi k\u1ef3 tr\u01b0\u1edbc.");
+        double max = 0;
+        for (int i = 0; i < data.thisAmounts.size(); i++) {
+            max = Math.max(max, Math.max(data.thisAmounts.get(i), data.lastAmounts.get(i)));
+        }
 
         for (int i = 0; i < AN_NAME.length; i++) {
-            if (i < data.currentCats.size()) {
-                CategoryTotal c = data.currentCats.get(i);
-                String name = c.category == null || c.category.isEmpty() ? "Kh\u00e1c" : c.category;
-                double last = find(data.previousCats, c.category);
-                text(AN_NAME[i], name);
-                text(AN_AMT[i], Money.vnd(c.total));
-                text(AN_THIS[i], Money.vnd(c.total));
-                text(AN_LAST[i], Money.vnd(last));
+            if (i < data.names.size()) {
+                double thisValue = data.thisAmounts.get(i);
+                double lastValue = data.lastAmounts.get(i);
+                text(AN_NAME[i], data.names.get(i));
+                text(AN_AMT[i], Money.vnd(thisValue));
+                bar(AN_THIS[i], max > 0 ? (float) (thisValue / max * 100d) : 0f, animate, 80L * i);
+                bar(AN_LAST[i], max > 0 ? (float) (lastValue / max * 100d) : 0f, animate, 80L * i + 40);
             } else {
                 text(AN_NAME[i], "\u2014");
                 text(AN_AMT[i], Money.vnd(0));
-                text(AN_THIS[i], Money.vnd(0));
-                text(AN_LAST[i], Money.vnd(0));
+                bar(AN_THIS[i], 0f, false, 0);
+                bar(AN_LAST[i], 0f, false, 0);
             }
         }
 
-        if (!data.currentCats.isEmpty()) {
-            CategoryTotal top = data.currentCats.get(0);
-            CategoryTotal low = data.currentCats.get(data.currentCats.size() - 1);
-            text(R.id.tv_best_category, low.category == null ? "\u2014" : low.category);
-            text(R.id.tv_best_note, "Chi \u00edt nh\u1ea5t k\u1ef3 n\u00e0y: " + Money.vnd(low.total));
-            text(R.id.tv_worst_category, top.category == null ? "\u2014" : top.category);
-            text(R.id.tv_worst_note, "Chi nhi\u1ec1u nh\u1ea5t k\u1ef3 n\u00e0y: " + Money.vnd(top.total));
+        text(R.id.tv_best_category, data.bestName);
+        text(R.id.tv_best_note, data.bestChange <= 0
+                ? "Gi\u1ea3m " + Money.percent(Math.abs(data.bestChange)) + " so v\u1edbi k\u1ef3 tr\u01b0\u1edbc, gi\u1eef nh\u1ecbp n\u00e0y nh\u00e9!"
+                : "Ch\u01b0a c\u00f3 danh m\u1ee5c n\u00e0o gi\u1ea3m trong k\u1ef3 n\u00e0y");
+        text(R.id.tv_worst_category, data.worstName);
+        text(R.id.tv_worst_note, data.worstChange > 0
+                ? "T\u0103ng " + Money.percent(data.worstChange) + " so v\u1edbi k\u1ef3 tr\u01b0\u1edbc, c\u00e2n nh\u1eafc c\u1eaft b\u1edbt"
+                : "M\u1ecdi danh m\u1ee5c \u0111\u1ec1u trong t\u1ea7m ki\u1ec3m so\u00e1t");
+    }
+
+    /** an_this_* v\u00e0 an_last_* l\u00e0 th\u1ebb View, ch\u1ec9 \u0111\u1eb7t \u0111\u1ed9 r\u1ed9ng ch\u1ee9 kh\u00f4ng g\u00e1n ch\u1eef. */
+    private void bar(int id, float percent, boolean animate, long delay) {
+        View view = root.findViewById(id);
+        if (view == null) return;
+        if (animate) {
+            ViewUtils.animateBar(view, percent, 650, delay);
         } else {
-            text(R.id.tv_best_category, "\u2014");
-            text(R.id.tv_best_note, "Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u");
-            text(R.id.tv_worst_category, "\u2014");
-            text(R.id.tv_worst_note, "Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u");
+            ViewUtils.setBar(view, percent);
         }
     }
 
-    private double find(List<CategoryTotal> list, String category) {
-        if (list == null || category == null) return 0d;
+    private Map<String, Double> toMap(List<CategoryTotal> list) {
+        Map<String, Double> map = new LinkedHashMap<>();
+        if (list == null) return map;
         for (CategoryTotal c : list) {
-            if (category.equals(c.category)) return c.total;
+            String name = c.category == null || c.category.isEmpty() ? "Kh\u00e1c" : c.category;
+            map.put(name, c.total);
         }
-        return 0d;
+        return map;
+    }
+
+    private List<String> union(Map<String, Double> a, Map<String, Double> b) {
+        List<String> keys = new ArrayList<>(a.keySet());
+        for (String key : b.keySet()) {
+            if (!keys.contains(key)) keys.add(key);
+        }
+        return keys;
     }
 
     private void text(int id, String value) {
         if (root == null) return;
-        TextView view = root.findViewById(id);
-        if (view != null) view.setText(value);
+        View view = root.findViewById(id);
+        if (view instanceof TextView) ((TextView) view).setText(value);
     }
 }

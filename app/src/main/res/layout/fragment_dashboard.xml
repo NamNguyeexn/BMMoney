@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/refresh_dashboard"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cream">
+
+    <ScrollView 
+    
     android:id="@+id/screen_dashboard"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -13,7 +21,7 @@
         android:orientation="vertical"
         android:padding="16dp"
         android:paddingTop="8dp"
-        android:paddingBottom="24dp">
+        android:paddingBottom="120dp">
 
 
     <LinearLayout
@@ -41,7 +49,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Quản lý chi tiêu thông minh hơn"
+                android:text="Thói quen ghi lại chi tiêu rất tốt — giữ đều mỗi ngày nhé!"
                 android:textSize="14sp"
                 android:textColor="@color/olive" />
         </LinearLayout>
@@ -184,6 +192,21 @@
                 android:textColor="@color/subtle_text"
                 />
             </LinearLayout>
+            <TextView
+                android:id="@+id/tv_over_warning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:background="@drawable/bg_badge_warning"
+                android:text="Bạn đang vượt mức chi tiêu kỳ này"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/cream"
+                android:visibility="gone" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -729,3 +752,5 @@
 
     </LinearLayout>
 </ScrollView>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

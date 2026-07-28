@@ -1,5 +1,6 @@
 package com.example.bmmoney.view;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -68,6 +69,33 @@ public class DonutChartView extends View {
      * @param centerValue so tien tong cua ky (dong chinh)
      * @param centerSub ghi chu ngan, vi du "\u2191 8,5% so v\u1edbi k\u1ef3 tr\u01b0\u1edbc"
      */
+    private float sweepProgress = 1f;
+    private ValueAnimator sweepAnimator;
+
+    /** Chay hieu ung ve theo chieu kim dong ho tu 12 gio. */
+    public void animateSweep() {
+        if (sweepAnimator != null) sweepAnimator.cancel();
+        sweepAnimator = ValueAnimator.ofFloat(0f, 1f);
+        sweepAnimator.setDuration(900);
+        sweepAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                sweepProgress = (Float) animation.getAnimatedValue();
+                invalidate();
+            }
+        });
+        sweepAnimator.start();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (sweepAnimator != null) {
+            sweepAnimator.cancel();
+            sweepAnimator = null;
+        }
+        super.onDetachedFromWindow();
+    }
+
     public void setData(float[] percents, String centerValue, String centerSub) {
         this.percents = percents == null ? new float[0] : percents;
         this.centerValue = centerValue == null ? "" : centerValue;

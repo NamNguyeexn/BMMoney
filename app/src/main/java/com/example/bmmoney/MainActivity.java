@@ -47,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
             R.id.nav_search_dot, R.id.nav_settings_dot};
 
     private int current = -1;
+    /** Chỉ đồng bộ cloud một lần cho mỗi phiên, tránh nạp lại nhiều lần. */
+    private boolean syncDone = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -65,17 +67,20 @@ public class MainActivity extends AppCompatActivity {
         showTab(TAB_HOME);
 
         // Dong bo du lieu tu cloud (neu da cau hinh Firebase)
+        if (savedInstanceState == null && !syncDone) {
+            syncDone = true;
         try {
             new FirebaseSyncManager(this).downloadToLocal(new Runnable() {
                 @Override
                 public void run() {
                     Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
                     if (f instanceof DashboardFragment) {
-                        ((DashboardFragment) f).reload();
+                        ((DashboardFragment) f).reloadQuiet();
                     }
                 }
             });
         } catch (Throwable ignored) {
+        }
         }
     }
 

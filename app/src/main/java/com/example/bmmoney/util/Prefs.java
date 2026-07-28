@@ -15,6 +15,9 @@ public final class Prefs {
     private static final String KEY_CYCLE_DAY = "cycle_day";
     private static final String KEY_CYCLE_MONTH = "cycle_month";
     private static final String KEY_CATEGORIES = "categories";
+    private static final String KEY_WARN_PERCENT = "warn_percent";
+    private static final String KEY_BIG_PERCENT = "big_percent";
+    private static final String KEY_REMINDERS = "reminders";
 
     public static final double DEFAULT_BUDGET = 80500000d;
 
@@ -73,5 +76,35 @@ public final class Prefs {
 
     public static void setCategoriesRaw(Context context, String raw) {
         prefs(context).edit().putString(KEY_CATEGORIES, raw).apply();
+    }
+
+    /** Nguong canh bao chi tieu (% ngan sach), mac dinh 90%. */
+    public static int warnPercent(Context context) {
+        return prefs(context).getInt(KEY_WARN_PERCENT, 90);
+    }
+
+    public static void setWarnPercent(Context context, int percent) {
+        prefs(context).edit().putInt(KEY_WARN_PERCENT, clamp(percent, 10, 200)).apply();
+    }
+
+    /** Moc "khoan chi dang chu y": giao dich chiem tu x% tong chi cua ky, mac dinh 15%. */
+    public static int bigPercent(Context context) {
+        return prefs(context).getInt(KEY_BIG_PERCENT, 15);
+    }
+
+    public static void setBigPercent(Context context, int percent) {
+        prefs(context).edit().putInt(KEY_BIG_PERCENT, clamp(percent, 1, 99)).apply();
+    }
+
+    public static String remindersRaw(Context context) {
+        return prefs(context).getString(KEY_REMINDERS, null);
+    }
+
+    public static void setRemindersRaw(Context context, String raw) {
+        prefs(context).edit().putString(KEY_REMINDERS, raw).apply();
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

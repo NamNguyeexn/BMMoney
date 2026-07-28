@@ -39,6 +39,20 @@ public final class ViewUtils {
         });
     }
 
+    /** Dat ngay do rong thanh tien trinh, khong chay animation (dung khi reload lai). */
+    public static void setBar(final View bar, final float percent) {
+        if (bar == null) return;
+        final View track = (View) bar.getParent();
+        track.post(new Runnable() {
+            @Override
+            public void run() {
+                ViewGroup.LayoutParams lp = bar.getLayoutParams();
+                lp.width = (int) (track.getWidth() * Math.max(0f, Math.min(100f, percent)) / 100f);
+                bar.setLayoutParams(lp);
+            }
+        });
+    }
+
     public static void fadeSlideIn(View view, long delay) {
         if (view == null) return;
         view.setAlpha(0f);

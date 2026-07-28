@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/refresh_search"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cream">
+
+    <ScrollView 
+    
     android:id="@+id/screen_search"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -13,7 +21,7 @@
         android:orientation="vertical"
         android:padding="16dp"
         android:paddingTop="8dp"
-        android:paddingBottom="24dp">
+        android:paddingBottom="120dp">
 
 
     <LinearLayout
@@ -77,6 +85,7 @@
 
                 <EditText
                     android:id="@+id/edt_search"
+                android:inputType="textCapSentences|text"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_gravity="center_vertical"
@@ -85,7 +94,6 @@
                     android:background="@android:color/transparent"
                     android:gravity="center_vertical"
                     android:hint="Tìm theo mô tả, danh mục, số tiền..."
-                    android:inputType="text"
                     android:imeOptions="actionSearch"
                     android:singleLine="true"
                     android:textColorHint="@color/subtle_text"
@@ -119,6 +127,14 @@
                 android:textColor="@color/dark_green"
                 android:textStyle="bold"
                 />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Thời gian"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/subtle_text" />
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -150,24 +166,18 @@
                 android:paddingRight="16dp"
                 android:paddingTop="8dp"
                 android:paddingBottom="8dp"
-                android:background="@drawable/bg_pill_olive"
-                android:text="Khoảng thời gian này"
+                android:background="@drawable/bg_pill_cream"
+                android:text="Tháng này"
                 android:textSize="13sp"
-                android:textColor="@color/cream"
+                android:textColor="@color/olive"
                 android:textStyle="bold"
                 android:clickable="true"
                 android:focusable="true" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
             <TextView
                 android:id="@+id/chip_year"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="0dp"
+                android:layout_marginLeft="8dp"
                 android:layout_marginTop="8dp"
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp"
@@ -180,28 +190,42 @@
                 android:textStyle="bold"
                 android:clickable="true"
                 android:focusable="true" />
+            </LinearLayout>
             <TextView
-                android:id="@+id/chip_food"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="8dp"
-                android:layout_marginTop="8dp"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp"
-                android:background="@drawable/bg_pill_cream"
-                android:text="Ăn uống"
-                android:textSize="13sp"
-                android:textColor="@color/cream"
+                android:layout_marginTop="14dp"
+                android:text="Danh mục"
+                android:textSize="12sp"
                 android:textStyle="bold"
-                android:clickable="true"
-                android:focusable="true" />
+                android:textColor="@color/subtle_text" />
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
+                <LinearLayout
+                    android:id="@+id/container_cat_chips"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Giá trị"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/subtle_text" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
             <TextView
                 android:id="@+id/chip_over100k"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="8dp"
+                android:layout_marginLeft="0dp"
                 android:layout_marginTop="8dp"
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp"
@@ -209,6 +233,23 @@
                 android:paddingBottom="8dp"
                 android:background="@drawable/bg_pill_cream"
                 android:text="Trên 100k"
+                android:textSize="13sp"
+                android:textColor="@color/olive"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true" />
+            <TextView
+                android:id="@+id/chip_big"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:layout_marginTop="8dp"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:background="@drawable/bg_pill_cream"
+                android:text="Khoản chi đáng chú ý"
                 android:textSize="13sp"
                 android:textColor="@color/olive"
                 android:textStyle="bold"
@@ -235,18 +276,6 @@
             android:textStyle="bold"
             android:textColor="@color/dark_green" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="8dp"
-            android:paddingLeft="8dp"
-            android:paddingRight="8dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:background="@drawable/bg_badge_cream"
-            android:text="Đã lọc"
-            android:textSize="12sp"
-            android:textColor="@color/olive" />
 
         <View
             android:layout_width="0dp"
@@ -344,3 +373,5 @@
 
     </LinearLayout>
 </ScrollView>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
