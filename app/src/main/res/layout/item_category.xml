@@ -4,37 +4,97 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:layout_marginTop="12dp"
-    android:padding="12dp"
-    android:background="@drawable/bg_field"
-    android:clickable="true"
-    android:focusable="true">
+    android:layout_marginTop="10dp"
+    android:paddingLeft="12dp"
+    android:paddingRight="8dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp"
+    android:background="@drawable/bg_row_cream">
 
     <TextView
         android:id="@+id/tv_cat_emoji"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:gravity="center"
-        android:background="@drawable/bar_burnt"
+        android:background="@drawable/bg_circle_cream"
         android:text="🏷"
         android:textSize="18sp" />
 
-    <TextView
-        android:id="@+id/tv_cat_name"
+    <LinearLayout
+        android:id="@+id/box_cat_info"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:layout_marginLeft="12dp"
-        android:text="Danh mục"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:textColor="@color/dark_green" />
+        android:layout_marginRight="8dp"
+        android:orientation="vertical"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:id="@+id/tv_cat_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="Danh mục"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/dark_green" />
+
+        <TextView
+            android:id="@+id/tv_cat_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="Chạm để sửa"
+            android:textSize="12sp"
+            android:textColor="@color/olive" />
+    </LinearLayout>
 
     <TextView
-        android:id="@+id/tv_cat_hint"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Sửa"
-        android:textSize="12sp"
-        android:textColor="@color/olive" />
+        android:id="@+id/btn_cat_up"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:gravity="center"
+        android:background="@drawable/bg_circle_cream"
+        android:text="↑"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:textColor="@color/dark_green"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="Chuyển lên" />
+
+    <TextView
+        android:id="@+id/btn_cat_down"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginLeft="6dp"
+        android:gravity="center"
+        android:background="@drawable/bg_circle_cream"
+        android:text="↓"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:textColor="@color/dark_green"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="Chuyển xuống" />
+
+    <TextView
+        android:id="@+id/btn_cat_remove"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginLeft="6dp"
+        android:gravity="center"
+        android:background="@drawable/bg_circle_burnt_soft"
+        android:text="✕"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/burnt"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="Xóa danh mục" />
 </LinearLayout>

@@ -26,7 +26,10 @@ import androidx.fragment.app.Fragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.bmmoney.R;
+import com.example.bmmoney.data.AppDatabase;
+import com.example.bmmoney.data.CategoryTotal;
 import com.example.bmmoney.data.Db;
+import com.example.bmmoney.data.TransactionDao;
 import com.example.bmmoney.remote.FirebaseSyncManager;
 import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Cycle;
@@ -36,19 +39,30 @@ import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Reminders;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
- * M\u00e0n C\u00e0i \u0111\u1eb7t: h\u1ed3 s\u01a1, t\u00f9y ch\u1ecdn chu k\u1ef3 \u2013 nh\u1eafc ghi ch\u00fa \u2013 c\u00e1c ng\u01b0\u1ee1ng ph\u1ea7n tr\u0103m,
- * danh m\u1ee5c t\u00f9y ch\u1ec9nh v\u00e0 sao l\u01b0u d\u1eef li\u1ec7u.
+ * Man Cai dat: ho so, tuy chon chu ky - nhac ghi chu - cac nguong phan tram,
+ * danh muc tuy chinh va sao luu du lieu.
  */
 public class SettingsFragment extends Fragment {
 
     private static final int REQ_NOTIFICATION = 7001;
+
+    /** Bieu tuong goi y khi them danh muc moi. */
+    private static final String[] EMOJI_SUGGEST = {
+            "\ud83c\udf5c", "\ud83c\udf54", "\u2615", "\ud83d\ude97", "\u26fd",
+            "\ud83e\uddfe", "\ud83d\udca1", "\ud83c\udfe0", "\ud83d\udecd", "\ud83d\udc55",
+            "\ud83d\udc8a", "\ud83c\udfac", "\ud83c\udfae", "\ud83d\udcda", "\u2708",
+            "\ud83c\udf81", "\ud83d\udc36", "\ud83c\udfcb", "\ud83d\udcb0", "\ud83c\udff7"
+    };
 
     private View root;
     private SwipeRefreshLayout refresh;
@@ -61,6 +75,7 @@ public class SettingsFragment extends Fragment {
         refresh = Refresh.setup(root, R.id.refresh_settings, this::reload);
 
         bindProfile();
+        allowInnerScroll();
 
         root.findViewById(R.id.tv_cycle_day).setOnClickListener(v ->
                 CycleDialog.show(getContext(), this::reload));
@@ -97,8 +112,6 @@ public class SettingsFragment extends Fragment {
             });
         });
 
-        allowInnerScroll();
-
         root.findViewById(R.id.btn_add_category).setOnClickListener(v -> editCategory(-1));
         root.findViewById(R.id.btn_backup_now).setOnClickListener(v -> backup());
         root.findViewById(R.id.btn_sync_now).setOnClickListener(v -> sync());
@@ -115,8 +128,8 @@ public class SettingsFragment extends Fragment {
     }
 
     /**
-     * Khung danh m\u1ee5c n\u1eb1m b\u00ean trong m\u1ed9t ScrollView kh\u00e1c n\u00ean m\u00e0n cha s\u1ebd \u0111o\u1ea1t thao t\u00e1c cu\u1ed9n.
-     * \u1ede \u0111\u00e2y ta y\u00eau c\u1ea7u m\u00e0n cha nh\u01b0\u1eddng l\u1ea1i s\u1ef1 ki\u1ec7n ch\u1ea1m khi ng\u00f3n tay \u0111ang \u1edf tr\u00ean khung n\u00e0y.
+     * Khung danh muc nam ben trong mot ScrollView khac nen man cha se doat thao tac cuon.
+     * O day ta yeu cau man cha nhuong lai su kien cham khi ngon tay dang o tren khung nay.
      */
     private void allowInnerScroll() {
         final View scroll = root.findViewById(R.id.scroll_categories);
@@ -140,7 +153,7 @@ public class SettingsFragment extends Fragment {
         });
     }
 
-    // ------------------------------------------------------------- h\u1ed3 s\u01a1
+    // ------------------------------------------------------------- ho so
     private void bindProfile() {
         final EditText name = root.findViewById(R.id.edt_name);
         final EditText budget = root.findViewById(R.id.edt_budget);
@@ -176,7 +189,7 @@ public class SettingsFragment extends Fragment {
         text(R.id.tv_avatar, value.substring(0, 1).toUpperCase(Locale.getDefault()));
     }
 
-    // ------------------------------------------------------------- n\u1ea1p l\u1ea1i to\u00e0n m\u00e0n
+    // ------------------------------------------------------------- nap lai toan man
     public void reload() {
         if (root == null || getContext() == null) return;
 
@@ -196,7 +209,7 @@ public class SettingsFragment extends Fragment {
         if (refresh != null) refresh.setRefreshing(false);
     }
 
-    // ------------------------------------------------------------- nh\u1eafc ghi ch\u00fa
+    // ------------------------------------------------------------- nhac ghi chu
     private void buildReminders() {
         LinearLayout container = root.findViewById(R.id.container_reminders);
         if (container == null) return;
@@ -255,47 +268,127 @@ public class SettingsFragment extends Fragment {
         }
     }
 
-    // ------------------------------------------------------------- danh m\u1ee5c
+    // ------------------------------------------------------------- danh muc tuy chinh
+    /** Nap danh sach danh muc kem so tien da chi trong ky hien tai. */
     private void buildCategories() {
-        LinearLayout container = root.findViewById(R.id.container_categories);
-        if (container == null) return;
-        container.removeAllViews();
+        final LinearLayout container = root.findViewById(R.id.container_categories);
+        if (container == null || getContext() == null) return;
 
         final List<Categories.Item> list = Categories.all(getContext());
-        root.findViewById(R.id.tv_no_category).setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+        text(R.id.tv_cat_count, list.size() + " m\u1ee5c");
+        show(R.id.tv_no_category, list.isEmpty());
+        show(R.id.tv_cat_scroll_hint, list.size() > 5);
+
+        final long[] bounds = Cycle.bounds(Prefs.cycleDay(getContext()), System.currentTimeMillis(), 0);
+        final TransactionDao dao = AppDatabase.dao(getContext().getApplicationContext());
+
+        Db.load(() -> {
+            Map<String, Double> spent = new HashMap<>();
+            List<CategoryTotal> totals = dao.getExpenseByCategoryInRange(bounds[0], bounds[1]);
+            if (totals != null) {
+                for (CategoryTotal item : totals) {
+                    if (item != null && item.category != null) spent.put(item.category, item.total);
+                }
+            }
+            return spent;
+        }, spent -> renderCategories(container, list, spent == null ? new HashMap<>() : spent));
+    }
+
+    private void renderCategories(LinearLayout container, final List<Categories.Item> list,
+                                  final Map<String, Double> spent) {
+        if (root == null || getContext() == null) return;
+        container.removeAllViews();
 
         LayoutInflater inflater = LayoutInflater.from(getContext());
         for (int i = 0; i < list.size(); i++) {
             final int index = i;
-            Categories.Item item = list.get(i);
+            final Categories.Item item = list.get(i);
+
             View row = inflater.inflate(R.layout.item_category, container, false);
             ((TextView) row.findViewById(R.id.tv_cat_emoji)).setText(item.emoji);
             ((TextView) row.findViewById(R.id.tv_cat_name)).setText(item.name);
-            ((TextView) row.findViewById(R.id.tv_cat_hint)).setText("Ch\u1ea1m \u0111\u1ec3 s\u1eeda ho\u1eb7c xo\u00e1");
-            row.setOnClickListener(v -> editCategory(index));
+
+            Double total = spent.get(item.name);
+            ((TextView) row.findViewById(R.id.tv_cat_hint)).setText(
+                    total == null || total <= 0d
+                            ? "Ch\u01b0a d\u00f9ng trong k\u1ef3 n\u00e0y"
+                            : "\u0110\u00e3 chi " + Money.shortVnd(total) + " trong k\u1ef3 n\u00e0y");
+
+            row.findViewById(R.id.box_cat_info).setOnClickListener(v -> editCategory(index));
+
+            View up = row.findViewById(R.id.btn_cat_up);
+            View down = row.findViewById(R.id.btn_cat_down);
+            up.setEnabled(index > 0);
+            up.setAlpha(index > 0 ? 1f : 0.3f);
+            down.setEnabled(index < list.size() - 1);
+            down.setAlpha(index < list.size() - 1 ? 1f : 0.3f);
+
+            up.setOnClickListener(v -> move(index, -1));
+            down.setOnClickListener(v -> move(index, 1));
+            row.findViewById(R.id.btn_cat_remove).setOnClickListener(v ->
+                    confirmDelete(index, item, spent.get(item.name)));
+
             container.addView(row);
         }
     }
 
-    /** index = -1 l\u00e0 th\u00eam m\u1edbi. */
+    /** Doi thu tu hien thi cua danh muc (anh huong ca dai chon o man Them giao dich). */
+    private void move(int index, int delta) {
+        if (getContext() == null) return;
+        List<Categories.Item> list = new ArrayList<>(Categories.all(getContext()));
+        int target = index + delta;
+        if (index < 0 || index >= list.size() || target < 0 || target >= list.size()) return;
+
+        Collections.swap(list, index, target);
+        Categories.save(getContext(), list);
+        buildCategories();
+    }
+
+    private void confirmDelete(final int index, final Categories.Item item, final Double total) {
+        if (getContext() == null) return;
+
+        String message = total == null || total <= 0d
+                ? "Danh m\u1ee5c n\u00e0y ch\u01b0a d\u00f9ng trong k\u1ef3 hi\u1ec7n t\u1ea1i. X\u00f3a kh\u1ecfi danh s\u00e1ch?"
+                : "K\u1ef3 n\u00e0y \u0111\u00e3 chi " + Money.shortVnd(total) + " cho danh m\u1ee5c n\u00e0y. "
+                + "C\u00e1c giao d\u1ecbch c\u0169 v\u1eabn \u0111\u01b0\u1ee3c gi\u1eef nguy\u00ean, ch\u1ec9 danh m\u1ee5c b\u1ecb x\u00f3a kh\u1ecfi danh s\u00e1ch ch\u1ecdn.";
+
+        new AlertDialog.Builder(getContext())
+                .setTitle("X\u00f3a " + item.name + "?")
+                .setMessage(message)
+                .setNegativeButton("H\u1ee7y", null)
+                .setPositiveButton("X\u00f3a", (dialog, which) -> {
+                    List<Categories.Item> list = new ArrayList<>(Categories.all(getContext()));
+                    if (index >= 0 && index < list.size()) list.remove(index);
+                    Categories.save(getContext(), list);
+                    toast("\u0110\u00e3 x\u00f3a " + item.name);
+                    buildCategories();
+                })
+                .show();
+    }
+
+    /** index = -1 la them moi. */
     private void editCategory(final int index) {
         if (getContext() == null) return;
         final Context context = getContext();
-        final List<Categories.Item> list = Categories.all(context);
+        final List<Categories.Item> list = new ArrayList<>(Categories.all(context));
 
         View view = LayoutInflater.from(context).inflate(R.layout.dialog_category, null, false);
         final EditText emoji = view.findViewById(R.id.edt_cat_emoji);
         final EditText name = view.findViewById(R.id.edt_cat_name);
         View delete = view.findViewById(R.id.btn_cat_delete);
 
-        if (index >= 0 && index < list.size()) {
+        final boolean editing = index >= 0 && index < list.size();
+        if (editing) {
             emoji.setText(list.get(index).emoji);
             name.setText(list.get(index).name);
+            name.setSelection(name.getText().length());
             ((TextView) view.findViewById(R.id.tv_dialog_title)).setText("S\u1eeda danh m\u1ee5c");
         } else {
             ((TextView) view.findViewById(R.id.tv_dialog_title)).setText("Th\u00eam danh m\u1ee5c");
             delete.setVisibility(View.GONE);
         }
+
+        buildEmojiSuggest(context, view, emoji);
 
         final AlertDialog dialog = new AlertDialog.Builder(context).setView(view).create();
         if (dialog.getWindow() != null) {
@@ -304,10 +397,8 @@ public class SettingsFragment extends Fragment {
 
         view.findViewById(R.id.btn_cat_cancel).setOnClickListener(v -> dialog.dismiss());
         delete.setOnClickListener(v -> {
-            if (index >= 0 && index < list.size()) list.remove(index);
-            Categories.save(context, list);
             dialog.dismiss();
-            reload();
+            if (editing) confirmDelete(index, list.get(index), null);
         });
         view.findViewById(R.id.btn_cat_save).setOnClickListener(v -> {
             String newName = name.getText().toString().trim();
@@ -315,10 +406,17 @@ public class SettingsFragment extends Fragment {
                 toast("Nh\u1eadp t\u00ean danh m\u1ee5c nh\u00e9");
                 return;
             }
-            String newEmoji = emoji.getText().toString().trim();
-            if (newEmoji.isEmpty()) newEmoji = "\ud83c\udff7";
+            for (int i = 0; i < list.size(); i++) {
+                if (i != index && list.get(i).name.equalsIgnoreCase(newName)) {
+                    toast("\u0110\u00e3 c\u00f3 danh m\u1ee5c c\u00f9ng t\u00ean");
+                    return;
+                }
+            }
 
-            if (index >= 0 && index < list.size()) {
+            String newEmoji = emoji.getText().toString().trim();
+            if (newEmoji.isEmpty()) newEmoji = EMOJI_SUGGEST[EMOJI_SUGGEST.length - 1];
+
+            if (editing) {
                 list.get(index).emoji = newEmoji;
                 list.get(index).name = newName;
             } else {
@@ -326,13 +424,34 @@ public class SettingsFragment extends Fragment {
             }
             Categories.save(context, list);
             dialog.dismiss();
-            reload();
+            toast(editing ? "\u0110\u00e3 l\u01b0u thay \u0111\u1ed5i" : "\u0110\u00e3 th\u00eam " + newName);
+            buildCategories();
         });
 
         dialog.show();
     }
 
-    // ------------------------------------------------------------- sao l\u01b0u
+    /** Dai bieu tuong goi y, cham mot cai la dien ngay vao o emoji. */
+    private void buildEmojiSuggest(Context context, View view, final EditText target) {
+        LinearLayout container = view.findViewById(R.id.container_emoji);
+        if (container == null) return;
+        container.removeAllViews();
+
+        LayoutInflater inflater = LayoutInflater.from(context);
+        for (final String emoji : EMOJI_SUGGEST) {
+            View chip = inflater.inflate(R.layout.item_chip, container, false);
+            TextView label = chip.findViewById(R.id.tv_chip);
+            label.setText(emoji);
+            label.setTextSize(18f);
+            chip.setOnClickListener(v -> {
+                target.setText(emoji);
+                target.setSelection(target.getText().length());
+            });
+            container.addView(chip);
+        }
+    }
+
+    // ------------------------------------------------------------- sao luu
     private void backup() {
         if (getContext() == null) return;
         final Context app = getContext().getApplicationContext();
@@ -342,7 +461,7 @@ public class SettingsFragment extends Fragment {
                 new FirebaseSyncManager(app).uploadAllLocal();
                 Prefs.setLastBackup(app, System.currentTimeMillis());
             } catch (Throwable ignored) {
-                // kh\u00f4ng c\u00f3 m\u1ea1ng th\u00ec b\u1ecf qua
+                // khong co mang thi bo qua
             }
             Db.ui(() -> {
                 toast("\u0110\u00e3 sao l\u01b0u xong");
@@ -365,7 +484,7 @@ public class SettingsFragment extends Fragment {
         }
     }
 
-    // ------------------------------------------------------------- ti\u1ec7n \u00edch
+    // ------------------------------------------------------------- tien ich
     private abstract static class SimpleWatcher implements TextWatcher {
         public abstract void changed(String value);
 
@@ -387,6 +506,12 @@ public class SettingsFragment extends Fragment {
         if (getContext() != null) {
             Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void show(int id, boolean visible) {
+        if (root == null) return;
+        View view = root.findViewById(id);
+        if (view != null) view.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
     private void text(int id, String value) {

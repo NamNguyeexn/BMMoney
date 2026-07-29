@@ -302,31 +302,60 @@
                     app:tint="@color/olive" />
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:layout_marginLeft="8dp"
                     android:text="Danh mục tùy chỉnh"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/dark_green" />
 
-                <FrameLayout
+                <TextView
+                    android:id="@+id/tv_cat_count"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="8dp"
+                    android:text="0 mục"
+                    android:textSize="12sp"
+                    android:textColor="@color/olive" />
+
+                <LinearLayout
                     android:id="@+id/btn_add_category"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_olive_small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="14dp"
+                    android:background="@drawable/bg_pill_olive"
                     android:clickable="true"
                     android:focusable="true">
 
                     <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_gravity="center"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
                         android:src="@drawable/ic_add"
                         app:tint="@color/cream" />
-                </FrameLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="6dp"
+                        android:text="Thêm"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/cream" />
+                </LinearLayout>
             </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Chạm vào tên để sửa · ↑ ↓ đổi thứ tự hiển thị · ✕ để xóa"
+                android:textSize="12sp"
+                android:textColor="@color/subtle_text" />
             <ScrollView
                 android:id="@+id/scroll_categories"
                 android:layout_width="match_parent"
@@ -341,6 +370,17 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
             </ScrollView>
+
+            <TextView
+                android:id="@+id/tv_cat_scroll_hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="Cuộn trong khung để xem thêm danh mục"
+                android:textSize="11sp"
+                android:textColor="@color/subtle_text"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/tv_no_category"
