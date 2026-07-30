@@ -16,7 +16,9 @@ import com.example.bmmoney.ui.AnalyticsFragment;
 import com.example.bmmoney.ui.DashboardFragment;
 import com.example.bmmoney.ui.SearchFragment;
 import com.example.bmmoney.ui.SettingsFragment;
+import com.example.bmmoney.ui.WelcomeDialog;
 import com.example.bmmoney.remote.FirebaseSyncManager;
+import com.example.bmmoney.util.Prefs;
 
 /**
  * Man hinh chinh duy nhat cua ung dung.
@@ -66,6 +68,16 @@ public class MainActivity extends AppCompatActivity {
         }
         showTab(TAB_HOME);
 
+        // Lan dau mo app: hien popup Xin chao de thiet lap thong tin co ban
+        if (savedInstanceState == null && !Prefs.onboarded(this)) {
+            WelcomeDialog.show(this, new Runnable() {
+                @Override
+                public void run() {
+                    refreshCurrentTab();
+                }
+            });
+        }
+
         // Dong bo du lieu tu cloud (neu da cau hinh Firebase)
         if (savedInstanceState == null && !syncDone) {
             syncDone = true;
@@ -81,6 +93,16 @@ public class MainActivity extends AppCompatActivity {
             });
         } catch (Throwable ignored) {
         }
+        }
+    }
+
+    /** Nap lai man dang mo (dung sau khi doi thiet lap o popup Xin chao). */
+    private void refreshCurrentTab() {
+        Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        if (f instanceof DashboardFragment) {
+            ((DashboardFragment) f).reload();
+        } else if (f instanceof SettingsFragment) {
+            ((SettingsFragment) f).reload();
         }
     }
 

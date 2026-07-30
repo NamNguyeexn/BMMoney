@@ -30,6 +30,8 @@ Thumbs.db
 out/
 captures/
 
+keystore/debug.keystore
+
 # Native build cache
 .externalNativeBuild/
 .cxx/

@@ -18,6 +18,7 @@ public final class Prefs {
     private static final String KEY_WARN_PERCENT = "warn_percent";
     private static final String KEY_BIG_PERCENT = "big_percent";
     private static final String KEY_REMINDERS = "reminders";
+    private static final String KEY_ONBOARDED = "onboarded";
 
     public static final double DEFAULT_BUDGET = 80500000d;
 
@@ -102,6 +103,15 @@ public final class Prefs {
 
     public static void setRemindersRaw(Context context, String raw) {
         prefs(context).edit().putString(KEY_REMINDERS, raw).apply();
+    }
+
+    /** Da qua popup Xin chao lan dau chua. */
+    public static boolean onboarded(Context context) {
+        return prefs(context).getBoolean(KEY_ONBOARDED, false);
+    }
+
+    public static void setOnboarded(Context context, boolean value) {
+        prefs(context).edit().putBoolean(KEY_ONBOARDED, value).apply();
     }
 
     private static int clamp(int value, int min, int max) {

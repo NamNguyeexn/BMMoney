@@ -57,6 +57,7 @@ public class AnalyticsFragment extends Fragment {
         List<String> names = new ArrayList<>();
         List<Double> thisAmounts = new ArrayList<>();
         List<Double> lastAmounts = new ArrayList<>();
+        boolean hasPrevious = false;
         String bestName = "\u2014";
         double bestChange = 0;
         String worstName = "\u2014";
@@ -159,10 +160,11 @@ public class AnalyticsFragment extends Fragment {
                 count++;
             }
 
-            // \u0110i\u1ec3m s\u00e1ng: gi\u1ea3m nhi\u1ec1u nh\u1ea5t. \u0110i\u1ec3m c\u1ea7n l\u01b0u \u00fd: t\u0103ng nhi\u1ec1u nh\u1ea5t.
+            // \u0110i\u1ec3m s\u00e1ng / \u0111i\u1ec3m c\u1ea7n l\u01b0u \u00fd ch\u1ec9 c\u00f3 \u00fd ngh\u0129a khi \u0111\u00e3 c\u00f3 s\u1ed1 li\u1ec7u k\u1ef3 tr\u01b0\u1edbc
+            data.hasPrevious = !lastMap.isEmpty();
             double bestChange = Double.MAX_VALUE;
             double worstChange = -Double.MAX_VALUE;
-            for (String key : union(thisMap, lastMap)) {
+            for (String key : data.hasPrevious ? union(thisMap, lastMap) : new ArrayList<String>()) {
                 double a = thisMap.containsKey(key) ? thisMap.get(key) : 0d;
                 double b = lastMap.containsKey(key) ? lastMap.get(key) : 0d;
                 if (a <= 0 && b <= 0) continue;
@@ -217,6 +219,15 @@ public class AnalyticsFragment extends Fragment {
                 bar(AN_THIS[i], 0f, false, 0);
                 bar(AN_LAST[i], 0f, false, 0);
             }
+        }
+
+        if (!data.hasPrevious) {
+            // K\u1ef3 \u0111\u1ea7u ti\u00ean: ch\u01b0a c\u00f3 g\u00ec \u0111\u1ec3 so s\u00e1nh n\u00ean \u0111\u1ec3 tr\u1ed1ng
+            text(R.id.tv_best_category, "\u2014");
+            text(R.id.tv_best_note, "Ch\u01b0a c\u00f3 s\u1ed1 li\u1ec7u k\u1ef3 tr\u01b0\u1edbc \u0111\u1ec3 so s\u00e1nh");
+            text(R.id.tv_worst_category, "\u2014");
+            text(R.id.tv_worst_note, "Ghi \u0111\u1ee7 m\u1ed9t k\u1ef3 n\u1eefa l\u00e0 xem \u0111\u01b0\u1ee3c so s\u00e1nh");
+            return;
         }
 
         text(R.id.tv_best_category, data.bestName);

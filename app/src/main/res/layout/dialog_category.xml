@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@drawable/bg_dialog"
+    android:background="@color/card_cream"
     android:padding="20dp">
 
     <TextView
@@ -42,7 +42,7 @@
             android:paddingLeft="12dp"
             android:background="@drawable/bg_field"
             android:hint="Tên danh mục"
-            android:inputType="textCapSentences|text"
+            android:inputType="text"
             android:maxLength="40"
             android:textSize="15sp"
             android:textColor="@color/dark_green"
@@ -50,27 +50,28 @@
     </LinearLayout>
 
     <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:text="Chọn nhanh biểu tượng"
-        android:textSize="12sp"
-        android:textColor="@color/olive" />
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="Chọn nhanh biểu tượng"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/olive" />
 
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:scrollbars="none">
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/container_emoji"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
 
         <LinearLayout
-            android:id="@+id/container_emoji"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal" />
-    </HorizontalScrollView>
-
-    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"

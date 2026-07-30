@@ -3,6 +3,7 @@ package com.example.bmmoney.ui;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -25,11 +26,20 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.GoogleAuthProvider;
+
 import com.example.bmmoney.R;
 import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.CategoryTotal;
-import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionDao;
+import com.example.bmmoney.data.Db;
 import com.example.bmmoney.remote.FirebaseSyncManager;
 import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Cycle;
@@ -39,7 +49,6 @@ import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Reminders;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -49,20 +58,21 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Man Cai dat: ho so, tuy chon chu ky - nhac ghi chu - cac nguong phan tram,
- * danh muc tuy chinh va sao luu du lieu.
+ * M\u00e0n C\u00e0i \u0111\u1eb7t: h\u1ed3 s\u01a1, t\u00f9y ch\u1ecdn chu k\u1ef3 \u2013 nh\u1eafc ghi ch\u00fa \u2013 c\u00e1c ng\u01b0\u1ee1ng ph\u1ea7n tr\u0103m,
+ * danh m\u1ee5c t\u00f9y ch\u1ec9nh v\u00e0 sao l\u01b0u d\u1eef li\u1ec7u.
  */
 public class SettingsFragment extends Fragment {
 
     private static final int REQ_NOTIFICATION = 7001;
+    private static final int REQ_GOOGLE = 7002;
 
-    /** Bieu tuong goi y khi them danh muc moi. */
+    /** Bi\u1ec3u t\u01b0\u1ee3ng g\u1ee3i \u00fd cho danh m\u1ee5c. */
     private static final String[] EMOJI_SUGGEST = {
-            "\ud83c\udf5c", "\ud83c\udf54", "\u2615", "\ud83d\ude97", "\u26fd",
-            "\ud83e\uddfe", "\ud83d\udca1", "\ud83c\udfe0", "\ud83d\udecd", "\ud83d\udc55",
-            "\ud83d\udc8a", "\ud83c\udfac", "\ud83c\udfae", "\ud83d\udcda", "\u2708",
-            "\ud83c\udf81", "\ud83d\udc36", "\ud83c\udfcb", "\ud83d\udcb0", "\ud83c\udff7"
-    };
+            "\ud83c\udf5c", "\u2615", "\ud83d\uded2", "\ud83d\ude97", "\u26fd", "\ud83e\uddfe",
+            "\ud83c\udfe0", "\ud83d\udca1", "\ud83d\udc8a", "\ud83c\udfac", "\ud83d\udcda",
+            "\u2708\ufe0f", "\ud83c\udf81", "\ud83d\udc36", "\ud83c\udfcb", "\ud83d\udcb0"};
+
+    private GoogleSignInClient googleClient;
 
     private View root;
     private SwipeRefreshLayout refresh;
@@ -75,7 +85,6 @@ public class SettingsFragment extends Fragment {
         refresh = Refresh.setup(root, R.id.refresh_settings, this::reload);
 
         bindProfile();
-        allowInnerScroll();
 
         root.findViewById(R.id.tv_cycle_day).setOnClickListener(v ->
                 CycleDialog.show(getContext(), this::reload));
@@ -112,7 +121,10 @@ public class SettingsFragment extends Fragment {
             });
         });
 
+        allowInnerScroll();
+
         root.findViewById(R.id.btn_add_category).setOnClickListener(v -> editCategory(-1));
+        root.findViewById(R.id.btn_google_auth).setOnClickListener(v -> toggleGoogleAccount());
         root.findViewById(R.id.btn_backup_now).setOnClickListener(v -> backup());
         root.findViewById(R.id.btn_sync_now).setOnClickListener(v -> sync());
 
@@ -128,8 +140,8 @@ public class SettingsFragment extends Fragment {
     }
 
     /**
-     * Khung danh muc nam ben trong mot ScrollView khac nen man cha se doat thao tac cuon.
-     * O day ta yeu cau man cha nhuong lai su kien cham khi ngon tay dang o tren khung nay.
+     * Khung danh m\u1ee5c n\u1eb1m b\u00ean trong m\u1ed9t ScrollView kh\u00e1c n\u00ean m\u00e0n cha s\u1ebd \u0111o\u1ea1t thao t\u00e1c cu\u1ed9n.
+     * \u1ede \u0111\u00e2y ta y\u00eau c\u1ea7u m\u00e0n cha nh\u01b0\u1eddng l\u1ea1i s\u1ef1 ki\u1ec7n ch\u1ea1m khi ng\u00f3n tay \u0111ang \u1edf tr\u00ean khung n\u00e0y.
      */
     private void allowInnerScroll() {
         final View scroll = root.findViewById(R.id.scroll_categories);
@@ -153,7 +165,7 @@ public class SettingsFragment extends Fragment {
         });
     }
 
-    // ------------------------------------------------------------- ho so
+    // ------------------------------------------------------------- h\u1ed3 s\u01a1
     private void bindProfile() {
         final EditText name = root.findViewById(R.id.edt_name);
         final EditText budget = root.findViewById(R.id.edt_budget);
@@ -189,7 +201,7 @@ public class SettingsFragment extends Fragment {
         text(R.id.tv_avatar, value.substring(0, 1).toUpperCase(Locale.getDefault()));
     }
 
-    // ------------------------------------------------------------- nap lai toan man
+    // ------------------------------------------------------------- n\u1ea1p l\u1ea1i to\u00e0n m\u00e0n
     public void reload() {
         if (root == null || getContext() == null) return;
 
@@ -203,13 +215,14 @@ public class SettingsFragment extends Fragment {
                 : "L\u1ea7n cu\u1ed1i: " + new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
                 .format(new Date(backup)));
 
+        bindAccount();
         buildReminders();
         buildCategories();
 
         if (refresh != null) refresh.setRefreshing(false);
     }
 
-    // ------------------------------------------------------------- nhac ghi chu
+    // ------------------------------------------------------------- nh\u1eafc ghi ch\u00fa
     private void buildReminders() {
         LinearLayout container = root.findViewById(R.id.container_reminders);
         if (container == null) return;
@@ -268,117 +281,122 @@ public class SettingsFragment extends Fragment {
         }
     }
 
-    // ------------------------------------------------------------- danh muc tuy chinh
-    /** Nap danh sach danh muc kem so tien da chi trong ky hien tai. */
+    // ------------------------------------------------------------- danh m\u1ee5c
     private void buildCategories() {
         final LinearLayout container = root.findViewById(R.id.container_categories);
         if (container == null || getContext() == null) return;
 
         final List<Categories.Item> list = Categories.all(getContext());
         text(R.id.tv_cat_count, list.size() + " m\u1ee5c");
-        show(R.id.tv_no_category, list.isEmpty());
-        show(R.id.tv_cat_scroll_hint, list.size() > 5);
+        root.findViewById(R.id.tv_no_category).setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+        View scrollHint = root.findViewById(R.id.tv_cat_scroll_hint);
+        if (scrollHint != null) scrollHint.setVisibility(list.size() > 5 ? View.VISIBLE : View.GONE);
 
+        // N\u1ea1p t\u1ed5ng chi c\u1ee7a k\u1ef3 hi\u1ec7n t\u1ea1i \u0111\u1ec3 m\u1ed7i danh m\u1ee5c c\u00f3 th\u00eam d\u00f2ng ph\u1ee5 h\u1eefu \u00edch
+        final TransactionDao dao = AppDatabase.dao(getContext());
         final long[] bounds = Cycle.bounds(Prefs.cycleDay(getContext()), System.currentTimeMillis(), 0);
-        final TransactionDao dao = AppDatabase.dao(getContext().getApplicationContext());
-
         Db.load(() -> {
-            Map<String, Double> spent = new HashMap<>();
+            Map<String, Double> map = new HashMap<>();
             List<CategoryTotal> totals = dao.getExpenseByCategoryInRange(bounds[0], bounds[1]);
             if (totals != null) {
-                for (CategoryTotal item : totals) {
-                    if (item != null && item.category != null) spent.put(item.category, item.total);
+                for (CategoryTotal c : totals) {
+                    if (c.category != null) map.put(c.category, c.total);
                 }
             }
-            return spent;
-        }, spent -> renderCategories(container, list, spent == null ? new HashMap<>() : spent));
+            return map;
+        }, map -> {
+            if (root == null) return;
+            renderCategories(container, list, map == null ? new HashMap<>() : map);
+        });
     }
 
     private void renderCategories(LinearLayout container, final List<Categories.Item> list,
-                                  final Map<String, Double> spent) {
-        if (root == null || getContext() == null) return;
+                                  Map<String, Double> spentByCategory) {
         container.removeAllViews();
-
         LayoutInflater inflater = LayoutInflater.from(getContext());
+
         for (int i = 0; i < list.size(); i++) {
             final int index = i;
-            final Categories.Item item = list.get(i);
-
+            Categories.Item item = list.get(i);
             View row = inflater.inflate(R.layout.item_category, container, false);
+
             ((TextView) row.findViewById(R.id.tv_cat_emoji)).setText(item.emoji);
             ((TextView) row.findViewById(R.id.tv_cat_name)).setText(item.name);
 
-            Double total = spent.get(item.name);
-            ((TextView) row.findViewById(R.id.tv_cat_hint)).setText(
-                    total == null || total <= 0d
-                            ? "Ch\u01b0a d\u00f9ng trong k\u1ef3 n\u00e0y"
-                            : "\u0110\u00e3 chi " + Money.shortVnd(total) + " trong k\u1ef3 n\u00e0y");
+            Double spentValue = spentByCategory.get(item.name);
+            final double spent = spentValue == null ? 0d : spentValue;
+            ((TextView) row.findViewById(R.id.tv_cat_hint)).setText(spent > 0
+                    ? "\u0110\u00e3 chi " + Money.vnd(spent) + " trong k\u1ef3 n\u00e0y"
+                    : "Ch\u01b0a d\u00f9ng trong k\u1ef3 n\u00e0y");
 
             row.findViewById(R.id.box_cat_info).setOnClickListener(v -> editCategory(index));
 
             View up = row.findViewById(R.id.btn_cat_up);
             View down = row.findViewById(R.id.btn_cat_down);
-            up.setEnabled(index > 0);
-            up.setAlpha(index > 0 ? 1f : 0.3f);
-            down.setEnabled(index < list.size() - 1);
-            down.setAlpha(index < list.size() - 1 ? 1f : 0.3f);
+            setEnabledLook(up, index > 0);
+            setEnabledLook(down, index < list.size() - 1);
+            up.setOnClickListener(v -> moveCategory(index, -1));
+            down.setOnClickListener(v -> moveCategory(index, 1));
 
-            up.setOnClickListener(v -> move(index, -1));
-            down.setOnClickListener(v -> move(index, 1));
-            row.findViewById(R.id.btn_cat_remove).setOnClickListener(v ->
-                    confirmDelete(index, item, spent.get(item.name)));
-
+            row.findViewById(R.id.btn_cat_remove).setOnClickListener(v -> confirmDeleteCategory(index, spent));
             container.addView(row);
         }
     }
 
-    /** Doi thu tu hien thi cua danh muc (anh huong ca dai chon o man Them giao dich). */
-    private void move(int index, int delta) {
+    private void setEnabledLook(View view, boolean enabled) {
+        if (view == null) return;
+        view.setEnabled(enabled);
+        view.setAlpha(enabled ? 1f : 0.25f);
+    }
+
+    /** \u0110\u1ed5i th\u1ee9 t\u1ef1 danh m\u1ee5c, th\u1ee9 t\u1ef1 n\u00e0y d\u00f9ng lu\u00f4n cho m\u00e0n Th\u00eam giao d\u1ecbch. */
+    private void moveCategory(int index, int direction) {
         if (getContext() == null) return;
-        List<Categories.Item> list = new ArrayList<>(Categories.all(getContext()));
-        int target = index + delta;
+        List<Categories.Item> list = Categories.all(getContext());
+        int target = index + direction;
         if (index < 0 || index >= list.size() || target < 0 || target >= list.size()) return;
 
-        Collections.swap(list, index, target);
+        Categories.Item moving = list.remove(index);
+        list.add(target, moving);
         Categories.save(getContext(), list);
         buildCategories();
     }
 
-    private void confirmDelete(final int index, final Categories.Item item, final Double total) {
+    private void confirmDeleteCategory(final int index, double spent) {
         if (getContext() == null) return;
+        final List<Categories.Item> list = Categories.all(getContext());
+        if (index < 0 || index >= list.size()) return;
 
-        String message = total == null || total <= 0d
-                ? "Danh m\u1ee5c n\u00e0y ch\u01b0a d\u00f9ng trong k\u1ef3 hi\u1ec7n t\u1ea1i. X\u00f3a kh\u1ecfi danh s\u00e1ch?"
-                : "K\u1ef3 n\u00e0y \u0111\u00e3 chi " + Money.shortVnd(total) + " cho danh m\u1ee5c n\u00e0y. "
-                + "C\u00e1c giao d\u1ecbch c\u0169 v\u1eabn \u0111\u01b0\u1ee3c gi\u1eef nguy\u00ean, ch\u1ec9 danh m\u1ee5c b\u1ecb x\u00f3a kh\u1ecfi danh s\u00e1ch ch\u1ecdn.";
+        String message = "Danh m\u1ee5c \u201c" + list.get(index).name + "\u201d s\u1ebd kh\u00f4ng c\u00f2n hi\u1ec7n khi ghi chi ti\u00eau.";
+        if (spent > 0) {
+            message += "\n\nK\u1ef3 n\u00e0y \u0111\u00e3 ghi " + Money.vnd(spent) + " cho danh m\u1ee5c n\u00e0y. "
+                    + "C\u00e1c giao d\u1ecbch c\u0169 v\u1eabn \u0111\u01b0\u1ee3c gi\u1eef nguy\u00ean.";
+        }
 
-        new AlertDialog.Builder(getContext())
-                .setTitle("X\u00f3a " + item.name + "?")
+        new AlertDialog.Builder(requireContext())
+                .setTitle("X\u00f3a danh m\u1ee5c?")
                 .setMessage(message)
-                .setNegativeButton("H\u1ee7y", null)
-                .setPositiveButton("X\u00f3a", (dialog, which) -> {
-                    List<Categories.Item> list = new ArrayList<>(Categories.all(getContext()));
-                    if (index >= 0 && index < list.size()) list.remove(index);
-                    Categories.save(getContext(), list);
-                    toast("\u0110\u00e3 x\u00f3a " + item.name);
+                .setNegativeButton("Gi\u1eef l\u1ea1i", null)
+                .setPositiveButton("X\u00f3a", (d, w) -> {
+                    list.remove(index);
+                    Categories.save(requireContext(), list);
                     buildCategories();
                 })
                 .show();
     }
 
-    /** index = -1 la them moi. */
+    /** index = -1 l\u00e0 th\u00eam m\u1edbi. */
     private void editCategory(final int index) {
         if (getContext() == null) return;
         final Context context = getContext();
-        final List<Categories.Item> list = new ArrayList<>(Categories.all(context));
+        final List<Categories.Item> list = Categories.all(context);
 
         View view = LayoutInflater.from(context).inflate(R.layout.dialog_category, null, false);
         final EditText emoji = view.findViewById(R.id.edt_cat_emoji);
         final EditText name = view.findViewById(R.id.edt_cat_name);
         View delete = view.findViewById(R.id.btn_cat_delete);
 
-        final boolean editing = index >= 0 && index < list.size();
-        if (editing) {
+        if (index >= 0 && index < list.size()) {
             emoji.setText(list.get(index).emoji);
             name.setText(list.get(index).name);
             name.setSelection(name.getText().length());
@@ -388,7 +406,7 @@ public class SettingsFragment extends Fragment {
             delete.setVisibility(View.GONE);
         }
 
-        buildEmojiSuggest(context, view, emoji);
+        buildEmojiSuggestions(view, emoji);
 
         final AlertDialog dialog = new AlertDialog.Builder(context).setView(view).create();
         if (dialog.getWindow() != null) {
@@ -398,7 +416,7 @@ public class SettingsFragment extends Fragment {
         view.findViewById(R.id.btn_cat_cancel).setOnClickListener(v -> dialog.dismiss());
         delete.setOnClickListener(v -> {
             dialog.dismiss();
-            if (editing) confirmDelete(index, list.get(index), null);
+            confirmDeleteCategory(index, 0d);
         });
         view.findViewById(R.id.btn_cat_save).setOnClickListener(v -> {
             String newName = name.getText().toString().trim();
@@ -414,9 +432,9 @@ public class SettingsFragment extends Fragment {
             }
 
             String newEmoji = emoji.getText().toString().trim();
-            if (newEmoji.isEmpty()) newEmoji = EMOJI_SUGGEST[EMOJI_SUGGEST.length - 1];
+            if (newEmoji.isEmpty()) newEmoji = "\ud83c\udff7";
 
-            if (editing) {
+            if (index >= 0 && index < list.size()) {
                 list.get(index).emoji = newEmoji;
                 list.get(index).name = newName;
             } else {
@@ -424,36 +442,153 @@ public class SettingsFragment extends Fragment {
             }
             Categories.save(context, list);
             dialog.dismiss();
-            toast(editing ? "\u0110\u00e3 l\u01b0u thay \u0111\u1ed5i" : "\u0110\u00e3 th\u00eam " + newName);
             buildCategories();
         });
 
         dialog.show();
     }
 
-    /** Dai bieu tuong goi y, cham mot cai la dien ngay vao o emoji. */
-    private void buildEmojiSuggest(Context context, View view, final EditText target) {
-        LinearLayout container = view.findViewById(R.id.container_emoji);
-        if (container == null) return;
-        container.removeAllViews();
+    /** D\u1ea3i bi\u1ec3u t\u01b0\u1ee3ng b\u1ea5m m\u1ed9t c\u00e1i l\u00e0 \u0111i\u1ec1n, \u0111\u1ee1 ph\u1ea3i m\u1edf b\u00e0n ph\u00edm emoji. */
+    private void buildEmojiSuggestions(View dialogView, final EditText target) {
+        LinearLayout box = dialogView.findViewById(R.id.container_emoji);
+        if (box == null || getContext() == null) return;
+        box.removeAllViews();
 
-        LayoutInflater inflater = LayoutInflater.from(context);
-        for (final String emoji : EMOJI_SUGGEST) {
-            View chip = inflater.inflate(R.layout.item_chip, container, false);
+        LayoutInflater inflater = LayoutInflater.from(getContext());
+        for (String value : EMOJI_SUGGEST) {
+            View chip = inflater.inflate(R.layout.item_chip, box, false);
             TextView label = chip.findViewById(R.id.tv_chip);
-            label.setText(emoji);
-            label.setTextSize(18f);
+            label.setText(value);
             chip.setOnClickListener(v -> {
-                target.setText(emoji);
+                target.setText(value);
                 target.setSelection(target.getText().length());
             });
-            container.addView(chip);
+            box.addView(chip);
         }
     }
 
-    // ------------------------------------------------------------- sao luu
+    // ------------------------------------------------------------- t\u00e0i kho\u1ea3n Google
+    /** Hi\u1ec3n th\u1ecb tr\u1ea1ng th\u00e1i \u0111\u0103ng nh\u1eadp \u1edf kh\u1ed1i \u0110\u1ed3ng b\u1ed9 & Sao l\u01b0u. */
+    private void bindAccount() {
+        if (root == null) return;
+        boolean signedIn = FirebaseSyncManager.isSignedIn();
+
+        if (signedIn) {
+            String name = FirebaseSyncManager.displayName();
+            String mail = FirebaseSyncManager.email();
+            text(R.id.tv_account_name, name == null || name.isEmpty()
+                    ? "T\u00e0i kho\u1ea3n Google" : name);
+            text(R.id.tv_account_email, mail == null ? "" : mail);
+            text(R.id.tv_account_badge, "\u0110\u00e3 k\u1ebft n\u1ed1i");
+            text(R.id.btn_google_auth, "\u0110\u0103ng xu\u1ea5t kh\u1ecfi t\u00e0i kho\u1ea3n n\u00e0y");
+        } else {
+            text(R.id.tv_account_name, "Ch\u01b0a \u0111\u0103ng nh\u1eadp");
+            text(R.id.tv_account_email,
+                    "\u0110\u0103ng nh\u1eadp Google \u0111\u1ec3 sao l\u01b0u chi ti\u00eau v\u00e0 thi\u1ebft l\u1eadp");
+            text(R.id.tv_account_badge, "Ch\u01b0a k\u1ebft n\u1ed1i");
+            text(R.id.btn_google_auth, "\u0110\u0103ng nh\u1eadp b\u1eb1ng Google");
+        }
+    }
+
+    private GoogleSignInClient googleClient() {
+        if (googleClient == null && getContext() != null) {
+            GoogleSignInOptions.Builder builder =
+                    new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail();
+            int id = getResources().getIdentifier(
+                    "default_web_client_id", "string", requireContext().getPackageName());
+            if (id != 0) builder.requestIdToken(getString(id));
+            googleClient = GoogleSignIn.getClient(requireContext(), builder.build());
+        }
+        return googleClient;
+    }
+
+    private void toggleGoogleAccount() {
+        if (getContext() == null) return;
+        if (FirebaseSyncManager.isSignedIn()) {
+            signOutGoogle();
+        } else {
+            int id = getResources().getIdentifier(
+                    "default_web_client_id", "string", requireContext().getPackageName());
+            if (id == 0) {
+                toast("C\u1ea7n b\u1eadt Google Sign-In trong Firebase r\u1ed3i t\u1ea3i l\u1ea1i google-services.json");
+                return;
+            }
+            GoogleSignInClient client = googleClient();
+            if (client == null) return;
+            startActivityForResult(client.getSignInIntent(), REQ_GOOGLE);
+        }
+    }
+
+    private void signOutGoogle() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("\u0110\u0103ng xu\u1ea5t?")
+                .setMessage("D\u1eef li\u1ec7u \u0111\u00e3 sao l\u01b0u v\u1eabn \u1edf tr\u00ean cloud, "
+                        + "\u0111\u0103ng nh\u1eadp l\u1ea1i l\u00e0 kh\u00f4i ph\u1ee5c \u0111\u01b0\u1ee3c.")
+                .setNegativeButton("Hu\u1ef7", null)
+                .setPositiveButton("\u0110\u0103ng xu\u1ea5t", (d, w) -> {
+                    try {
+                        FirebaseAuth.getInstance().signOut();
+                        GoogleSignInClient client = googleClient();
+                        if (client != null) client.signOut();
+                    } catch (Throwable ignored) {
+                    }
+                    toast("\u0110\u00e3 \u0111\u0103ng xu\u1ea5t");
+                    bindAccount();
+                })
+                .show();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQ_GOOGLE) return;
+
+        try {
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            GoogleSignInAccount account = task.getResult(com.google.android.gms.common.api.ApiException.class);
+            if (account == null || account.getIdToken() == null) {
+                toast("Kh\u00f4ng l\u1ea5y \u0111\u01b0\u1ee3c th\u00f4ng tin t\u00e0i kho\u1ea3n");
+                return;
+            }
+            AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
+            FirebaseAuth.getInstance().signInWithCredential(credential)
+                    .addOnSuccessListener(result -> {
+                        toast("\u0110\u00e3 \u0111\u0103ng nh\u1eadp Google");
+                        bindAccount();
+                        syncAfterSignIn();
+                    })
+                    .addOnFailureListener(e -> toast("\u0110\u0103ng nh\u1eadp th\u1ea5t b\u1ea1i"));
+        } catch (Throwable e) {
+            toast("\u0110\u0103ng nh\u1eadp th\u1ea5t b\u1ea1i");
+        }
+    }
+
+    /** Sau khi \u0111\u0103ng nh\u1eadp: \u0111\u1ea9y d\u1eef li\u1ec7u m\u00e1y l\u00ean r\u1ed3i k\u00e9o d\u1eef li\u1ec7u cloud v\u1ec1. */
+    private void syncAfterSignIn() {
+        if (getContext() == null) return;
+        final Context app = getContext().getApplicationContext();
+        toast("\u0110ang \u0111\u1ed3ng b\u1ed9 d\u1eef li\u1ec7u...");
+        Db.io(() -> {
+            final FirebaseSyncManager manager = new FirebaseSyncManager(app);
+            try {
+                manager.uploadAllLocal();
+                Prefs.setLastBackup(app, System.currentTimeMillis());
+            } catch (Throwable ignored) {
+            }
+            Db.ui(() -> manager.syncAll(() -> {
+                toast("\u0110\u00e3 \u0111\u1ed3ng b\u1ed9 xong");
+                reload();
+            }));
+        });
+    }
+
+    // ------------------------------------------------------------- sao l\u01b0u
     private void backup() {
         if (getContext() == null) return;
+        if (!FirebaseSyncManager.isSignedIn()) {
+            toast("\u0110\u0103ng nh\u1eadp Google tr\u01b0\u1edbc \u0111\u1ec3 sao l\u01b0u nh\u00e9");
+            return;
+        }
         final Context app = getContext().getApplicationContext();
         toast("\u0110ang sao l\u01b0u...");
         Db.io(() -> {
@@ -461,7 +596,7 @@ public class SettingsFragment extends Fragment {
                 new FirebaseSyncManager(app).uploadAllLocal();
                 Prefs.setLastBackup(app, System.currentTimeMillis());
             } catch (Throwable ignored) {
-                // khong co mang thi bo qua
+                // kh\u00f4ng c\u00f3 m\u1ea1ng th\u00ec b\u1ecf qua
             }
             Db.ui(() -> {
                 toast("\u0110\u00e3 sao l\u01b0u xong");
@@ -472,10 +607,14 @@ public class SettingsFragment extends Fragment {
 
     private void sync() {
         if (getContext() == null) return;
+        if (!FirebaseSyncManager.isSignedIn()) {
+            toast("\u0110\u0103ng nh\u1eadp Google tr\u01b0\u1edbc \u0111\u1ec3 \u0111\u1ed3ng b\u1ed9 nh\u00e9");
+            return;
+        }
         toast("\u0110ang \u0111\u1ed3ng b\u1ed9...");
         try {
             new FirebaseSyncManager(getContext().getApplicationContext())
-                    .downloadToLocal(() -> {
+                    .syncAll(() -> {
                         toast("\u0110\u00e3 \u0111\u1ed3ng b\u1ed9 xong");
                         reload();
                     });
@@ -484,7 +623,7 @@ public class SettingsFragment extends Fragment {
         }
     }
 
-    // ------------------------------------------------------------- tien ich
+    // ------------------------------------------------------------- ti\u1ec7n \u00edch
     private abstract static class SimpleWatcher implements TextWatcher {
         public abstract void changed(String value);
 
@@ -506,12 +645,6 @@ public class SettingsFragment extends Fragment {
         if (getContext() != null) {
             Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private void show(int id, boolean visible) {
-        if (root == null) return;
-        View view = root.findViewById(id);
-        if (view != null) view.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
     private void text(int id, String value) {

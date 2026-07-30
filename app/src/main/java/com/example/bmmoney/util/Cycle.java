@@ -72,10 +72,16 @@ public final class Cycle {
         return Math.max(0, days);
     }
 
-    /** Nhan hai moc thoi gian, vi du "7/2026 - 8/2026". */
+    /**
+     * Nhan hai moc thoi gian, vi du "7/2026 - 8/2026".
+     *
+     * <p>"to" tra ve tu {@link #bounds(int, long, int)} la thoi diem ngay truoc lan chot ke tiep
+     * (23:59:59.999 hom truoc). Neu lay thang cua moc do thi ngay chot = 1 se cho ra
+     * "7/2026 - 7/2026". Vi vay o day ta cong them 1 mili giay de lay dung ngay chot ke tiep.</p>
+     */
     public static String rangeLabel(long from, long to) {
         Calendar a = midnight(from);
-        Calendar b = midnight(to);
+        Calendar b = midnight(to + 1);
         return String.format(Locale.US, "%d/%d - %d/%d",
                 a.get(Calendar.MONTH) + 1, a.get(Calendar.YEAR),
                 b.get(Calendar.MONTH) + 1, b.get(Calendar.YEAR));
