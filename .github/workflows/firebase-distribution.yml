@@ -27,6 +27,12 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
+      - name: Recovery debug keystore
+        run: |
+          mkdir -p keystore
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > keystore/debug.keystore
+          ls -la keystore/
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
         env:
