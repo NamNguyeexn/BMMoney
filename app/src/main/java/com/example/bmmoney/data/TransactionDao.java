@@ -24,4 +24,30 @@ public interface TransactionDao {
 
     @Query("SELECT * FROM transactions ORDER BY date DESC LIMIT :limit")
     List<TransactionEntity> getRecent(int limit);
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'INCOME' AND date BETWEEN :start AND :end")
+    Double getIncomeInRange(long start, long end);
+
+    // ---- Dung cho sao luu / khoi phuc toan bo ----
+    @Insert
+    void insertAll(List<TransactionEntity> list);
+
+    @Query("DELETE FROM transactions")
+    void deleteAll();
+
+    @Query("SELECT COUNT(*) FROM transactions")
+    int count();
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'INCOME' AND date BETWEEN :start AND :end")
+    Double getIncomeInRange(long start, long end);
+
+    // ---- Dung cho sao luu / khoi phuc toan bo ----
+    @Insert
+    void insertAll(List<TransactionEntity> list);
+
+    @Query("DELETE FROM transactions")
+    void deleteAll();
+
+    @Query("SELECT COUNT(*) FROM transactions")
+    int count();
 }

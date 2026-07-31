@@ -18,6 +18,7 @@ import com.example.bmmoney.ui.SearchFragment;
 import com.example.bmmoney.ui.SettingsFragment;
 import com.example.bmmoney.ui.WelcomeDialog;
 import com.example.bmmoney.remote.FirebaseSyncManager;
+import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Prefs;
 import com.example.bmmoney.util.Reminders;
 
@@ -50,8 +51,8 @@ public class MainActivity extends AppCompatActivity {
             R.id.nav_search_dot, R.id.nav_settings_dot};
 
     private int current = -1;
-    /** Chỉ đồng bộ cloud một lần cho mỗi phiên, tránh nạp lại nhiều lần. */
-    private boolean syncDone = false;
+    /** Chỉ sao lưu tối đa một lần cho mỗi phiên mở app. */
+    private boolean backupDone = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -79,29 +80,21 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Dat lai cac moc nhac (bao thuc bi xoa khi cai lai app hoac tat may)
+        // Dat lai bao thuc nhac nho + lich sao luu buoi sang
         try {
             Reminders.rescheduleAll(getApplicationContext());
+            AutoBackup.scheduleDaily(getApplicationContext());
         } catch (Throwable ignored) {
         }
 
-        // Dong bo du lieu tu cloud, chi khi da dang nhap Google
-        if (savedInstanceState == null && !syncDone && FirebaseSyncManager.isSignedIn()) {
-            syncDone = true;
+        // Neu hom nay chua sao luu duoc lan nao thi sao luu bu ngay bay gio.
+        // Khong tu dong keo du lieu cloud ve: viec do se xoa du lieu duoi may
+        // nen chi lam khi nguoi dung bam Dong bo hoac vua dang nhap.
+        if (savedInstanceState == null && !backupDone && FirebaseSyncManager.isSignedIn()) {
+            backupDone = true;
             try {
-                new FirebaseSyncManager(getApplicationContext()).downloadToLocal(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (isFinishing() || isDestroyed()) return;
-                        Fragment f = getSupportFragmentManager()
-                                .findFragmentById(R.id.fragment_container);
-                        if (f instanceof DashboardFragment && f.isAdded()) {
-                            ((DashboardFragment) f).reloadQuiet();
-                        }
-                    }
-                });
+                AutoBackup.runIfDue(getApplicationContext(), null);
             } catch (Throwable ignored) {
-                // loi cloud khong duoc phep lam app khong mo len duoc
             }
         }
     }

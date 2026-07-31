@@ -41,6 +41,7 @@ import com.example.bmmoney.data.CategoryTotal;
 import com.example.bmmoney.data.TransactionDao;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.remote.FirebaseSyncManager;
+import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
@@ -553,7 +554,6 @@ public class SettingsFragment extends Fragment {
             AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
             FirebaseAuth.getInstance().signInWithCredential(credential)
                     .addOnSuccessListener(result -> {
-                        if (!isAdded() || root == null) return;
                         toast("\u0110\u00e3 \u0111\u0103ng nh\u1eadp Google");
                         bindAccount();
                         syncAfterSignIn();
@@ -564,54 +564,96 @@ public class SettingsFragment extends Fragment {
         }
     }
 
-    /** Sau khi \u0111\u0103ng nh\u1eadp: \u0111\u1ea9y d\u1eef li\u1ec7u m\u00e1y l\u00ean r\u1ed3i k\u00e9o d\u1eef li\u1ec7u cloud v\u1ec1. */
+    /**
+     * Sau khi \u0111\u0103ng nh\u1eadp: h\u1ecfi xem d\u00f9ng b\u1ea3n sao l\u01b0u tr\u00ean cloud hay \u0111\u1ea9y d\u1eef li\u1ec7u m\u00e1y l\u00ean.
+     * Hai h\u01b0\u1edbng \u0111\u1ec1u ghi \u0111\u00e8 to\u00e0n b\u1ed9 n\u00ean lu\u00f4n \u0111\u1ec3 ng\u01b0\u1eddi d\u00f9ng ch\u1ecdn.
+     */
     private void syncAfterSignIn() {
         if (getContext() == null) return;
         final Context app = getContext().getApplicationContext();
-        toast("\u0110ang \u0111\u1ed3ng b\u1ed9 d\u1eef li\u1ec7u...");
-        // syncAll tu lo phan luong nen; callback duoi day luon ve luong giao dien
-        new FirebaseSyncManager(app).syncAll(() -> {
-            Prefs.setLastBackup(app, System.currentTimeMillis());
-            if (!isAdded() || root == null) return;
-            toast("\u0110\u00e3 \u0111\u1ed3ng b\u1ed9 xong");
-            reload();
+        final FirebaseSyncManager manager = new FirebaseSyncManager(app);
+        manager.saveAccountProfile();
+
+        manager.loadInfo(info -> {
+            if (!isAdded() || getContext() == null) return;
+
+            if (!info.exists || info.count <= 0) {
+                // Cloud ch\u01b0a c\u00f3 g\u00ec: sao l\u01b0u d\u1eef li\u1ec7u m\u00e1y l\u00ean lu\u00f4n
+                runBackup(manager);
+                return;
+            }
+
+            String when = android.text.format.DateFormat
+                    .format("dd/MM/yyyy HH:mm", info.updatedAt).toString();
+            new androidx.appcompat.app.AlertDialog.Builder(getContext())
+                    .setTitle("T\u00e0i kho\u1ea3n n\u00e0y \u0111\u00e3 c\u00f3 b\u1ea3n sao l\u01b0u")
+                    .setMessage("B\u1ea3n sao l\u01b0u l\u00fac " + when + " g\u1ed3m " + info.count
+                            + " giao d\u1ecbch.\n\nD\u00f9ng b\u1ea3n n\u00e0y s\u1ebd xo\u00e1 d\u1eef li\u1ec7u \u0111ang c\u00f3 tr\u00ean m\u00e1y.")
+                    .setPositiveButton("D\u00f9ng b\u1ea3n tr\u00ean cloud", (d, w) -> runRestore(manager))
+                    .setNegativeButton("Gi\u1eef d\u1eef li\u1ec7u m\u00e1y", (d, w) -> runBackup(manager))
+                    .setCancelable(false)
+                    .show();
         });
     }
 
-    // ------------------------------------------------------------- sao l\u01b0u
+    // ------------------------------------------------------------- sao l\u01b0u / \u0111\u1ed3ng b\u1ed9
+    /** Ghi \u0111\u00e8 b\u1ea3n sao l\u01b0u tr\u00ean cloud b\u1eb1ng d\u1eef li\u1ec7u hi\u1ec7n t\u1ea1i c\u1ee7a m\u00e1y. */
     private void backup() {
         if (getContext() == null) return;
         if (!FirebaseSyncManager.isSignedIn()) {
             toast("\u0110\u0103ng nh\u1eadp Google tr\u01b0\u1edbc \u0111\u1ec3 sao l\u01b0u nh\u00e9");
             return;
         }
-        final Context app = getContext().getApplicationContext();
+        runBackup(new FirebaseSyncManager(getContext().getApplicationContext()));
+    }
+
+    private void runBackup(FirebaseSyncManager manager) {
         toast("\u0110ang sao l\u01b0u...");
-        new FirebaseSyncManager(app).uploadAllLocal(() -> {
-            Prefs.setLastBackup(app, System.currentTimeMillis());
+        manager.backupNow((ok, count, error) -> {
             if (!isAdded() || root == null) return;
-            toast("\u0110\u00e3 sao l\u01b0u xong");
-            reload();
+            if (ok) {
+                Prefs.setAutoBackupDay(getContext(), AutoBackup.todayKey());
+                toast("\u0110\u00e3 sao l\u01b0u " + count + " giao d\u1ecbch");
+                reload();
+            } else {
+                toast("Sao l\u01b0u th\u1ea5t b\u1ea1i" + (error == null ? "" : ": " + error));
+            }
         });
     }
 
+    /**
+     * \u0110\u1ed3ng b\u1ed9 = l\u1ea5y b\u1ea3n sao l\u01b0u cu\u1ed1i c\u00f9ng l\u00e0m b\u1ea3n \u0111\u00fang, k\u1ec3 c\u1ea3 khi n\u00f3 r\u1ed7ng.
+     * D\u1eef li\u1ec7u \u0111ang c\u00f3 tr\u00ean m\u00e1y s\u1ebd b\u1ecb xo\u00e1 n\u00ean ph\u1ea3i x\u00e1c nh\u1eadn tr\u01b0\u1edbc.
+     */
     private void sync() {
         if (getContext() == null) return;
         if (!FirebaseSyncManager.isSignedIn()) {
             toast("\u0110\u0103ng nh\u1eadp Google tr\u01b0\u1edbc \u0111\u1ec3 \u0111\u1ed3ng b\u1ed9 nh\u00e9");
             return;
         }
-        toast("\u0110ang \u0111\u1ed3ng b\u1ed9...");
-        try {
-            new FirebaseSyncManager(getContext().getApplicationContext())
-                    .syncAll(() -> {
-                        if (!isAdded() || root == null) return;
-                        toast("\u0110\u00e3 \u0111\u1ed3ng b\u1ed9 xong");
-                        reload();
-                    });
-        } catch (Throwable ignored) {
-            toast("Kh\u00f4ng k\u1ebft n\u1ed1i \u0111\u01b0\u1ee3c m\u00e1y ch\u1ee7");
-        }
+        final FirebaseSyncManager manager =
+                new FirebaseSyncManager(getContext().getApplicationContext());
+        new androidx.appcompat.app.AlertDialog.Builder(getContext())
+                .setTitle("L\u1ea5y d\u1eef li\u1ec7u t\u1eeb b\u1ea3n sao l\u01b0u")
+                .setMessage("To\u00e0n b\u1ed9 d\u1eef li\u1ec7u \u0111ang c\u00f3 tr\u00ean m\u00e1y s\u1ebd b\u1ecb xo\u00e1 v\u00e0 thay b\u1eb1ng "
+                        + "b\u1ea3n sao l\u01b0u g\u1ea7n nh\u1ea5t. Ti\u1ebfp t\u1ee5c?")
+                .setPositiveButton("L\u1ea5y v\u1ec1", (d, w) -> runRestore(manager))
+                .setNegativeButton("Hu\u1ef7", null)
+                .show();
+    }
+
+    private void runRestore(FirebaseSyncManager manager) {
+        toast("\u0110ang l\u1ea5y d\u1eef li\u1ec7u...");
+        manager.restoreLatest((ok, count, error) -> {
+            if (!isAdded() || root == null) return;
+            if (ok) {
+                toast("\u0110\u00e3 kh\u00f4i ph\u1ee5c " + count + " giao d\u1ecbch");
+                reload();
+            } else {
+                toast("Kh\u00f4ng l\u1ea5y \u0111\u01b0\u1ee3c d\u1eef li\u1ec7u"
+                        + (error == null ? "" : ": " + error));
+            }
+        });
     }
 
     // ------------------------------------------------------------- ti\u1ec7n \u00edch

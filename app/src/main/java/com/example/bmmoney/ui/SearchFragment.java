@@ -25,7 +25,7 @@ import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionDao;
 import com.example.bmmoney.data.TransactionEntity;
-import com.example.bmmoney.remote.FirebaseSyncManager;
+import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
@@ -188,17 +188,15 @@ public class SearchFragment extends Fragment {
                 active ? R.color.cream : R.color.dark_green));
     }
 
-    /** Xoa mot ban ghi chi tieu (da hoi xac nhan o adapter) roi nap lai ket qua. */
+    /** Xoa mot ban ghi (da hoi xac nhan o adapter) roi nap lai ket qua. */
     private void deleteTransaction(final TransactionEntity item) {
         if (getContext() == null || item == null) return;
-        final TransactionDao dao = AppDatabase.dao(getContext());
+        final android.content.Context app = getContext().getApplicationContext();
+        final TransactionDao dao = AppDatabase.dao(app);
         Db.io(() -> {
             dao.delete(item);
-            try {
-                new FirebaseSyncManager(requireContext().getApplicationContext())
-                        .deleteTransaction(item);
-            } catch (Throwable ignored) {
-            }
+            // Hen sao luu sau vai phut de gom nhieu thay doi vao mot lan ghi cloud
+            AutoBackup.scheduleSoon(app);
             Db.ui(() -> {
                 if (getContext() == null) return;
                 Toast.makeText(getContext(), "\u0110\u00e3 x\u00f3a b\u1ea3n ghi chi ti\u00eau",

@@ -19,6 +19,8 @@ public final class Prefs {
     private static final String KEY_BIG_PERCENT = "big_percent";
     private static final String KEY_REMINDERS = "reminders";
     private static final String KEY_ONBOARDED = "onboarded";
+    private static final String KEY_AUTO_BACKUP_DAY = "auto_backup_day";
+    private static final String KEY_LEGACY_CLEANED = "legacy_cleaned";
 
     public static final double DEFAULT_BUDGET = 80500000d;
 
@@ -112,6 +114,24 @@ public final class Prefs {
 
     public static void setOnboarded(Context context, boolean value) {
         prefs(context).edit().putBoolean(KEY_ONBOARDED, value).apply();
+    }
+
+    /** Ngay da tu dong sao luu gan nhat, dang yyyyMMdd. */
+    public static int autoBackupDay(Context context) {
+        return prefs(context).getInt(KEY_AUTO_BACKUP_DAY, 0);
+    }
+
+    public static void setAutoBackupDay(Context context, int day) {
+        prefs(context).edit().putInt(KEY_AUTO_BACKUP_DAY, day).apply();
+    }
+
+    /** Da don xong cac ban ghi cloud kieu cu (moi giao dich mot document) chua. */
+    public static boolean legacyCleaned(Context context) {
+        return prefs(context).getBoolean(KEY_LEGACY_CLEANED, false);
+    }
+
+    public static void setLegacyCleaned(Context context, boolean value) {
+        prefs(context).edit().putBoolean(KEY_LEGACY_CLEANED, value).apply();
     }
 
     private static int clamp(int value, int min, int max) {

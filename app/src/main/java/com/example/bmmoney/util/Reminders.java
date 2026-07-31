@@ -4,9 +4,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Build;
-import android.provider.Settings;
 
 import com.example.bmmoney.remote.ReminderReceiver;
 
@@ -99,18 +97,20 @@ public final class Reminders {
         PendingIntent pending = pendingIntent(context, item);
         long at = target.getTimeInMillis();
         try {
-            if (canScheduleExact(manager)) {
+            if (!canScheduleExact(manager)) {
+                // Android 12+ chua cho dat bao thuc chinh xac -> van nhac, chi lech vai phut
+                manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pending);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pending);
             } else {
-                // Khong duoc phep bao thuc chinh xac -> van bao duoc, chi le vai phut
-                manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pending);
+                manager.setExact(AlarmManager.RTC_WAKEUP, at, pending);
             }
-        } catch (SecurityException e) {
+        } catch (Throwable e) {
             manager.set(AlarmManager.RTC_WAKEUP, at, pending);
         }
     }
 
-    /** Tu Android 12 tro len, bao thuc chinh xac can nguoi dung cho phep rieng. */
+    /** True khi may cho phep dat bao thuc chinh xac tung phut. */
     public static boolean canScheduleExact(AlarmManager manager) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
         try {
@@ -120,12 +120,12 @@ public final class Reminders {
         }
     }
 
-    /** Mo thang man hinh cap quyen bao thuc chinh xac cua he thong. */
+    /** Mo trang cai dat de nguoi dung bat quyen bao thuc chinh xac. */
     public static void openExactAlarmSettings(Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
         try {
-            Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
-                    Uri.parse("package:" + context.getPackageName()));
+            Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+            intent.setData(android.net.Uri.parse("package:" + context.getPackageName()));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
         } catch (Throwable ignored) {

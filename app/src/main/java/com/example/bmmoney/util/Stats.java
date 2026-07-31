@@ -14,6 +14,7 @@ import java.util.Map;
 public final class Stats {
 
     public static final String EXPENSE = "EXPENSE";
+    public static final String INCOME = "INCOME";
 
     private Stats() {
     }
