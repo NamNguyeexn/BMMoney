@@ -6,6 +6,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 
 import com.example.bmmoney.data.AppDatabase;
+import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.util.Prefs;
 import com.google.firebase.auth.FirebaseAuth;
@@ -15,6 +16,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.SetOptions;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +31,10 @@ import java.util.Set;
  * - transactions/{date_localId}: tung ban ghi thu chi
  * - settings/preferences: cac tham so trong man Cai dat (khong gom mau sac / giao dien)</p>
  *
- * <p>Neu chua dang nhap thi moi thao tac cloud deu bi bo qua.</p>
+ * <p>QUY TAC QUAN TRONG: moi truy van Room deu phai chay trong Db.io(...).
+ * Cac callback cua Firestore chay tren luong giao dien, neu goi thang Room
+ * o do thi Room se nem IllegalStateException va app tat ngay.
+ * Moi callback "done" tra ve cho ben goi luon chay tren luong giao dien.</p>
  */
 public class FirebaseSyncManager {
 
@@ -39,7 +44,7 @@ public class FirebaseSyncManager {
 
     public FirebaseSyncManager(Context context) {
         this.context = context.getApplicationContext();
-        this.db = AppDatabase.getInstance(context);
+        this.db = AppDatabase.getInstance(this.context);
         this.firestore = FirebaseFirestore.getInstance();
     }
 
@@ -75,17 +80,20 @@ public class FirebaseSyncManager {
         return user == null ? null : user.getDisplayName();
     }
 
+    @Nullable
     private DocumentReference rootRef() {
         String id = uid();
         if (id == null) return null;
         return firestore.collection("users").document(id);
     }
 
+    @Nullable
     private CollectionReference transactionsRef() {
         DocumentReference root = rootRef();
         return root == null ? null : root.collection("transactions");
     }
 
+    @Nullable
     private DocumentReference settingsRef() {
         DocumentReference root = rootRef();
         return root == null ? null : root.collection("settings").document("preferences");
@@ -93,6 +101,11 @@ public class FirebaseSyncManager {
 
     private static String docId(TransactionEntity t) {
         return t.getDate() + "_" + t.getId();
+    }
+
+    /** Chay callback tren luong giao dien, bo qua neu khong co. */
+    private static void finish(@Nullable Runnable done) {
+        if (done != null) Db.ui(done);
     }
 
     /** Luu ho so tai khoan de de nhan dien khi xem tren Firebase Console. */
@@ -103,7 +116,7 @@ public class FirebaseSyncManager {
         data.put("email", email());
         data.put("displayName", displayName());
         data.put("lastSeenAt", System.currentTimeMillis());
-        root.set(data, com.google.firebase.firestore.SetOptions.merge());
+        root.set(data, SetOptions.merge());
     }
 
     // ------------------------------------------------------------- giao dich
@@ -130,12 +143,35 @@ public class FirebaseSyncManager {
         ref.document(docId(t)).delete();
     }
 
+    /** Day toan bo du lieu may len cloud. Goi tu bat ky luong nao cung an toan. */
     public void uploadAllLocal() {
+        uploadAllLocal(null);
+    }
+
+    public void uploadAllLocal(@Nullable Runnable done) {
+        if (!isSignedIn()) {
+            finish(done);
+            return;
+        }
+        Db.io(() -> {
+            uploadAllLocalNow();
+            finish(done);
+        });
+    }
+
+    /** Phai duoc goi tren luong nen (co doc Room). */
+    private void uploadAllLocalNow() {
         if (!isSignedIn()) return;
-        saveAccountProfile();
-        List<TransactionEntity> all = db.transactionDao().getAllTransactions();
-        for (TransactionEntity t : all) uploadTransaction(t);
-        uploadSettings();
+        try {
+            saveAccountProfile();
+            List<TransactionEntity> all = db.transactionDao().getAllTransactions();
+            if (all != null) {
+                for (TransactionEntity t : all) uploadTransaction(t);
+            }
+            uploadSettings();
+        } catch (Throwable ignored) {
+            // mat mang hoac cloud tu choi -> giu nguyen du lieu duoi may
+        }
     }
 
     // ------------------------------------------------------------- thiet lap app
@@ -161,17 +197,18 @@ public class FirebaseSyncManager {
     public void downloadSettings(@Nullable Runnable done) {
         DocumentReference ref = settingsRef();
         if (ref == null) {
-            if (done != null) done.run();
+            finish(done);
             return;
         }
         ref.get()
                 .addOnSuccessListener(d -> {
-                    if (d != null && d.exists()) applySettings(d);
-                    if (done != null) done.run();
+                    try {
+                        if (d != null && d.exists()) applySettings(d);
+                    } catch (Throwable ignored) {
+                    }
+                    finish(done);
                 })
-                .addOnFailureListener(e -> {
-                    if (done != null) done.run();
-                });
+                .addOnFailureListener(e -> finish(done));
     }
 
     private void applySettings(DocumentSnapshot d) {
@@ -206,40 +243,56 @@ public class FirebaseSyncManager {
     public void downloadToLocal(@Nullable Runnable done) {
         CollectionReference ref = transactionsRef();
         if (ref == null) {
-            if (done != null) done.run();
+            finish(done);
             return;
         }
         ref.orderBy("date", Query.Direction.DESCENDING)
                 .get()
-                .addOnSuccessListener(snapshot -> {
-                    // Gop du lieu: chi them ban ghi cloud chua co duoi may (khoa = ngay|so tien|ten)
-                    Set<String> existing = new HashSet<>();
-                    for (TransactionEntity t : db.transactionDao().getAllTransactions()) {
-                        existing.add(key(t.getDate(), t.getAmount(), t.getTitle()));
+                // Callback nay chay tren luong giao dien -> day toan bo phan doc/ghi Room sang Db.io
+                .addOnSuccessListener(snapshot -> Db.io(() -> {
+                    try {
+                        mergeIntoLocal(snapshot.getDocuments());
+                    } catch (Throwable ignored) {
                     }
-
-                    for (DocumentSnapshot d : snapshot.getDocuments()) {
-                        String title = d.getString("title");
-                        Double amount = d.getDouble("amount");
-                        String type = d.getString("type");
-                        String category = d.getString("category");
-                        String note = d.getString("note");
-                        Long date = d.getLong("date");
-                        if (title == null || amount == null || type == null
-                                || category == null || date == null) continue;
-
-                        String k = key(date, amount, title);
-                        if (existing.contains(k)) continue;
-                        existing.add(k);
-                        db.transactionDao().insert(new TransactionEntity(
-                                title, amount, type, category, note == null ? "" : note, date));
-                    }
-                    if (done != null) done.run();
-                })
+                    finish(done);
+                }))
                 .addOnFailureListener(e -> {
-                    Toast.makeText(context, "Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c d\u1eef li\u1ec7u online", Toast.LENGTH_SHORT).show();
-                    if (done != null) done.run();
+                    Toast.makeText(context,
+                            "Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c d\u1eef li\u1ec7u online",
+                            Toast.LENGTH_SHORT).show();
+                    finish(done);
                 });
+    }
+
+    /**
+     * Gop du lieu cloud vao may: chi them ban ghi chua co (khoa = ngay|so tien|ten).
+     * Phai chay tren luong nen.
+     */
+    private void mergeIntoLocal(List<DocumentSnapshot> documents) {
+        Set<String> existing = new HashSet<>();
+        List<TransactionEntity> local = db.transactionDao().getAllTransactions();
+        if (local != null) {
+            for (TransactionEntity t : local) {
+                existing.add(key(t.getDate(), t.getAmount(), t.getTitle()));
+            }
+        }
+
+        for (DocumentSnapshot d : documents) {
+            String title = d.getString("title");
+            Double amount = d.getDouble("amount");
+            String type = d.getString("type");
+            String category = d.getString("category");
+            String note = d.getString("note");
+            Long date = d.getLong("date");
+            if (title == null || amount == null || type == null
+                    || category == null || date == null) continue;
+
+            String k = key(date, amount, title);
+            if (existing.contains(k)) continue;
+            existing.add(k);
+            db.transactionDao().insert(new TransactionEntity(
+                    title, amount, type, category, note == null ? "" : note, date));
+        }
     }
 
     private static String key(long date, double amount, String title) {
@@ -249,10 +302,13 @@ public class FirebaseSyncManager {
     /** Day het len roi keo het ve, dung cho nut "\u0110\u1ed3ng b\u1ed9 ngay". */
     public void syncAll(@Nullable Runnable done) {
         if (!isSignedIn()) {
-            if (done != null) done.run();
+            finish(done);
             return;
         }
-        uploadAllLocal();
-        downloadSettings(() -> downloadToLocal(done));
+        Db.io(() -> {
+            uploadAllLocalNow();
+            // Firestore phai duoc goi tu luong giao dien
+            Db.ui(() -> downloadSettings(() -> downloadToLocal(done)));
+        });
     }
 }

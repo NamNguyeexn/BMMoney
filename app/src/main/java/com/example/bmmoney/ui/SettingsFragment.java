@@ -553,6 +553,7 @@ public class SettingsFragment extends Fragment {
             AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
             FirebaseAuth.getInstance().signInWithCredential(credential)
                     .addOnSuccessListener(result -> {
+                        if (!isAdded() || root == null) return;
                         toast("\u0110\u00e3 \u0111\u0103ng nh\u1eadp Google");
                         bindAccount();
                         syncAfterSignIn();
@@ -568,17 +569,12 @@ public class SettingsFragment extends Fragment {
         if (getContext() == null) return;
         final Context app = getContext().getApplicationContext();
         toast("\u0110ang \u0111\u1ed3ng b\u1ed9 d\u1eef li\u1ec7u...");
-        Db.io(() -> {
-            final FirebaseSyncManager manager = new FirebaseSyncManager(app);
-            try {
-                manager.uploadAllLocal();
-                Prefs.setLastBackup(app, System.currentTimeMillis());
-            } catch (Throwable ignored) {
-            }
-            Db.ui(() -> manager.syncAll(() -> {
-                toast("\u0110\u00e3 \u0111\u1ed3ng b\u1ed9 xong");
-                reload();
-            }));
+        // syncAll tu lo phan luong nen; callback duoi day luon ve luong giao dien
+        new FirebaseSyncManager(app).syncAll(() -> {
+            Prefs.setLastBackup(app, System.currentTimeMillis());
+            if (!isAdded() || root == null) return;
+            toast("\u0110\u00e3 \u0111\u1ed3ng b\u1ed9 xong");
+            reload();
         });
     }
 
@@ -591,17 +587,11 @@ public class SettingsFragment extends Fragment {
         }
         final Context app = getContext().getApplicationContext();
         toast("\u0110ang sao l\u01b0u...");
-        Db.io(() -> {
-            try {
-                new FirebaseSyncManager(app).uploadAllLocal();
-                Prefs.setLastBackup(app, System.currentTimeMillis());
-            } catch (Throwable ignored) {
-                // kh\u00f4ng c\u00f3 m\u1ea1ng th\u00ec b\u1ecf qua
-            }
-            Db.ui(() -> {
-                toast("\u0110\u00e3 sao l\u01b0u xong");
-                reload();
-            });
+        new FirebaseSyncManager(app).uploadAllLocal(() -> {
+            Prefs.setLastBackup(app, System.currentTimeMillis());
+            if (!isAdded() || root == null) return;
+            toast("\u0110\u00e3 sao l\u01b0u xong");
+            reload();
         });
     }
 
@@ -615,6 +605,7 @@ public class SettingsFragment extends Fragment {
         try {
             new FirebaseSyncManager(getContext().getApplicationContext())
                     .syncAll(() -> {
+                        if (!isAdded() || root == null) return;
                         toast("\u0110\u00e3 \u0111\u1ed3ng b\u1ed9 xong");
                         reload();
                     });

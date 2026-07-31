@@ -19,6 +19,7 @@ import com.example.bmmoney.ui.SettingsFragment;
 import com.example.bmmoney.ui.WelcomeDialog;
 import com.example.bmmoney.remote.FirebaseSyncManager;
 import com.example.bmmoney.util.Prefs;
+import com.example.bmmoney.util.Reminders;
 
 /**
  * Man hinh chinh duy nhat cua ung dung.
@@ -78,21 +79,30 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Dong bo du lieu tu cloud (neu da cau hinh Firebase)
-        if (savedInstanceState == null && !syncDone) {
-            syncDone = true;
+        // Dat lai cac moc nhac (bao thuc bi xoa khi cai lai app hoac tat may)
         try {
-            new FirebaseSyncManager(this).downloadToLocal(new Runnable() {
-                @Override
-                public void run() {
-                    Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-                    if (f instanceof DashboardFragment) {
-                        ((DashboardFragment) f).reloadQuiet();
-                    }
-                }
-            });
+            Reminders.rescheduleAll(getApplicationContext());
         } catch (Throwable ignored) {
         }
+
+        // Dong bo du lieu tu cloud, chi khi da dang nhap Google
+        if (savedInstanceState == null && !syncDone && FirebaseSyncManager.isSignedIn()) {
+            syncDone = true;
+            try {
+                new FirebaseSyncManager(getApplicationContext()).downloadToLocal(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (isFinishing() || isDestroyed()) return;
+                        Fragment f = getSupportFragmentManager()
+                                .findFragmentById(R.id.fragment_container);
+                        if (f instanceof DashboardFragment && f.isAdded()) {
+                            ((DashboardFragment) f).reloadQuiet();
+                        }
+                    }
+                });
+            } catch (Throwable ignored) {
+                // loi cloud khong duoc phep lam app khong mo len duoc
+            }
         }
     }
 
