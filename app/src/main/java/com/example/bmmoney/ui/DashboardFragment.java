@@ -65,7 +65,7 @@ public class DashboardFragment extends Fragment {
     private static class Data {
         double expense;
         double previous;
-        double income;
+//        double income;
         List<CategoryTotal> categories = new ArrayList<>();
         List<TransactionEntity> recent = new ArrayList<>();
     }
@@ -153,7 +153,7 @@ public class DashboardFragment extends Fragment {
             Data data = new Data();
             data.expense = value(dao.getExpenseInRange(current[0], current[1]));
             data.previous = value(dao.getExpenseInRange(previous[0], previous[1]));
-            data.income = value(dao.getIncomeInRange(current[0], current[1]));
+//            data.income = value(dao.getIncomeInRange(current[0], current[1]));
             List<CategoryTotal> cats = dao.getExpenseByCategoryInRange(current[0], current[1]);
             if (cats != null) data.categories = cats;
             List<TransactionEntity> recent = dao.getRecent(5);
@@ -178,7 +178,7 @@ public class DashboardFragment extends Fragment {
         text(R.id.tv_total_expense, Money.vnd(expense));
         text(R.id.tv_budget_line, "Ng\u00e2n s\u00e1ch: " + Money.vnd(budget));
         text(R.id.tv_remaining, "C\u00f2n l\u1ea1i: " + Money.vnd(remaining));
-        text(R.id.tv_income_line, "Thu: " + Money.vnd(data.income));
+//        text(R.id.tv_income_line, "Thu: " + Money.vnd(data.income));
         text(R.id.tv_used_percent, Money.percent(usedPercent) + " \u0111\u00e3 d\u00f9ng");
         text(R.id.tv_vs_last_month, Money.signedPercent(Stats.changePercent(expense, data.previous)));
 

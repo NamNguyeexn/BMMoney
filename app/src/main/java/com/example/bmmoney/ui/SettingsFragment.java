@@ -564,10 +564,38 @@ public class SettingsFragment extends Fragment {
         }
     }
 
-    /**
-     * Sau khi \u0111\u0103ng nh\u1eadp: h\u1ecfi xem d\u00f9ng b\u1ea3n sao l\u01b0u tr\u00ean cloud hay \u0111\u1ea9y d\u1eef li\u1ec7u m\u00e1y l\u00ean.
-     * Hai h\u01b0\u1edbng \u0111\u1ec1u ghi \u0111\u00e8 to\u00e0n b\u1ed9 n\u00ean lu\u00f4n \u0111\u1ec3 ng\u01b0\u1eddi d\u00f9ng ch\u1ecdn.
-     */
+//    /**
+//     * Sau khi \u0111\u0103ng nh\u1eadp: h\u1ecfi xem d\u00f9ng b\u1ea3n sao l\u01b0u tr\u00ean cloud hay \u0111\u1ea9y d\u1eef li\u1ec7u m\u00e1y l\u00ean.
+//     * Hai h\u01b0\u1edbng \u0111\u1ec1u ghi \u0111\u00e8 to\u00e0n b\u1ed9 n\u00ean lu\u00f4n \u0111\u1ec3 ng\u01b0\u1eddi d\u00f9ng ch\u1ecdn.
+//     */
+//    private void syncAfterSignIn() {
+//        if (getContext() == null) return;
+//        final Context app = getContext().getApplicationContext();
+//        final FirebaseSyncManager manager = new FirebaseSyncManager(app);
+//        manager.saveAccountProfile();
+//
+//        manager.loadInfo(info -> {
+//            if (!isAdded() || getContext() == null) return;
+//
+//            if (!info.exists || info.count <= 0) {
+//                // Cloud ch\u01b0a c\u00f3 g\u00ec: sao l\u01b0u d\u1eef li\u1ec7u m\u00e1y l\u00ean lu\u00f4n
+//                runBackup(manager);
+//                return;
+//            }
+//
+//            String when = android.text.format.DateFormat
+//                    .format("dd/MM/yyyy HH:mm", info.updatedAt).toString();
+//            new androidx.appcompat.app.AlertDialog.Builder(getContext())
+//                    .setTitle("T\u00e0i kho\u1ea3n n\u00e0y \u0111\u00e3 c\u00f3 b\u1ea3n sao l\u01b0u")
+//                    .setMessage("B\u1ea3n sao l\u01b0u l\u00fac " + when + " g\u1ed3m " + info.count
+//                            + " giao d\u1ecbch.\n\nD\u00f9ng b\u1ea3n n\u00e0y s\u1ebd xo\u00e1 d\u1eef li\u1ec7u \u0111ang c\u00f3 tr\u00ean m\u00e1y.")
+//                    .setPositiveButton("D\u00f9ng b\u1ea3n tr\u00ean cloud", (d, w) -> runRestore(manager))
+//                    .setNegativeButton("Gi\u1eef d\u1eef li\u1ec7u m\u00e1y", (d, w) -> runBackup(manager))
+//                    .setCancelable(false)
+//                    .show();
+//        });
+//    }
+    /** Sau khi đăng nhập chỉ HỎI, không tự động đụng vào dữ liệu. */
     private void syncAfterSignIn() {
         if (getContext() == null) return;
         final Context app = getContext().getApplicationContext();
@@ -576,22 +604,29 @@ public class SettingsFragment extends Fragment {
 
         manager.loadInfo(info -> {
             if (!isAdded() || getContext() == null) return;
+            reload();
 
             if (!info.exists || info.count <= 0) {
-                // Cloud ch\u01b0a c\u00f3 g\u00ec: sao l\u01b0u d\u1eef li\u1ec7u m\u00e1y l\u00ean lu\u00f4n
-                runBackup(manager);
+                new androidx.appcompat.app.AlertDialog.Builder(getContext())
+                        .setTitle("Sao l\u01b0u d\u1eef li\u1ec7u?")
+                        .setMessage("T\u00e0i kho\u1ea3n n\u00e0y ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u n\u00e0o. "
+                                + "B\u1ea1n c\u00f3 mu\u1ed1n sao l\u01b0u d\u1eef li\u1ec7u hi\u1ec7n t\u1ea1i l\u00ean Google kh\u00f4ng?")
+                        .setPositiveButton("Sao l\u01b0u ngay", (d, w) -> runBackup(manager))
+                        .setNegativeButton("\u0110\u1ec3 sau", null)
+                        .show();
                 return;
             }
 
             String when = android.text.format.DateFormat
                     .format("dd/MM/yyyy HH:mm", info.updatedAt).toString();
             new androidx.appcompat.app.AlertDialog.Builder(getContext())
-                    .setTitle("T\u00e0i kho\u1ea3n n\u00e0y \u0111\u00e3 c\u00f3 b\u1ea3n sao l\u01b0u")
+                    .setTitle("T\u00e0i kho\u1ea3n \u0111\u00e3 c\u00f3 b\u1ea3n sao l\u01b0u")
                     .setMessage("B\u1ea3n sao l\u01b0u l\u00fac " + when + " g\u1ed3m " + info.count
-                            + " giao d\u1ecbch.\n\nD\u00f9ng b\u1ea3n n\u00e0y s\u1ebd xo\u00e1 d\u1eef li\u1ec7u \u0111ang c\u00f3 tr\u00ean m\u00e1y.")
-                    .setPositiveButton("D\u00f9ng b\u1ea3n tr\u00ean cloud", (d, w) -> runRestore(manager))
-                    .setNegativeButton("Gi\u1eef d\u1eef li\u1ec7u m\u00e1y", (d, w) -> runBackup(manager))
-                    .setCancelable(false)
+                            + " giao d\u1ecbch.\n\nL\u1ea5y v\u1ec1: xo\u00e1 d\u1eef li\u1ec7u tr\u00ean m\u00e1y v\u00e0 d\u00f9ng b\u1ea3n n\u00e0y."
+                            + "\nSao l\u01b0u \u0111\u00e8: ghi d\u1eef li\u1ec7u tr\u00ean m\u00e1y l\u00ean cloud.")
+                    .setPositiveButton("L\u1ea5y b\u1ea3n cloud v\u1ec1", (d, w) -> runRestore(manager))
+                    .setNeutralButton("Sao l\u01b0u \u0111\u00e8", (d, w) -> runBackup(manager))
+                    .setNegativeButton("\u0110\u1ec3 sau", null)
                     .show();
         });
     }
@@ -647,7 +682,9 @@ public class SettingsFragment extends Fragment {
         manager.restoreLatest((ok, count, error) -> {
             if (!isAdded() || root == null) return;
             if (ok) {
-                toast("\u0110\u00e3 kh\u00f4i ph\u1ee5c " + count + " giao d\u1ecbch");
+                toast(count > 0
+                        ? "\u0110\u00e3 kh\u00f4i ph\u1ee5c " + count + " giao d\u1ecbch"
+                        : "B\u1ea3n sao l\u01b0u cu\u1ed1i c\u00f9ng kh\u00f4ng c\u00f3 giao d\u1ecbch n\u00e0o");
                 reload();
             } else {
                 toast("Kh\u00f4ng l\u1ea5y \u0111\u01b0\u1ee3c d\u1eef li\u1ec7u"

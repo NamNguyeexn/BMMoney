@@ -83,7 +83,14 @@ public final class AutoBackup {
     // ------------------------------------------------------------- chay sao luu
     /** Sao luu bu neu hom nay chua co lan nao thanh cong. */
     public static void runIfDue(Context context, @Nullable Runnable done) {
-        if (!FirebaseSyncManager.isSignedIn() || todayKey() == Prefs.autoBackupDay(context)) {
+//        if (!FirebaseSyncManager.isSignedIn() || todayKey() == Prefs.autoBackupDay(context)) {
+//            if (done != null) done.run();
+//            return;
+//        }
+//        run(context, done);
+        if (!FirebaseSyncManager.isSignedIn()
+                || Prefs.lastBackup(context) <= 0
+                || todayKey() == Prefs.autoBackupDay(context)) {
             if (done != null) done.run();
             return;
         }

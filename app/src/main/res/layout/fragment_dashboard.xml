@@ -144,15 +144,15 @@
                 android:textColor="@color/subtle_text"
                 android:layout_weight="1"
                 />
-            <TextView
-                android:id="@+id/tv_income_line"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="12dp"
-                android:text="Thu: 0 ₫"
-                android:textSize="13sp"
-                android:textColor="@color/olive"
-                />
+<!--            <TextView-->
+<!--                android:id="@+id/tv_income_line"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_marginRight="12dp"-->
+<!--                android:text="Thu: 0 ₫"-->
+<!--                android:textSize="13sp"-->
+<!--                android:textColor="@color/olive"-->
+<!--                />-->
             <TextView
                 android:id="@+id/tv_remaining"
                 android:layout_width="wrap_content"
