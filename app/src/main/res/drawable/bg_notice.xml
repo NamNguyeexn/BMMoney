@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nen the thong bao: kem nhu the tren cac man hinh khac, vien duoc doi mau trong code -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/card_cream" />
+    <corners android:radius="18dp" />
+    <stroke
+        android:width="1.5dp"
+        android:color="@color/hairline" />
+</shape>

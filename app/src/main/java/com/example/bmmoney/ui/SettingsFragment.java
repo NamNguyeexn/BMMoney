@@ -45,6 +45,7 @@ import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
+import com.example.bmmoney.util.Notice;
 import com.example.bmmoney.util.Prefs;
 import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Reminders;
@@ -374,7 +375,7 @@ public class SettingsFragment extends Fragment {
                     + "C\u00e1c giao d\u1ecbch c\u0169 v\u1eabn \u0111\u01b0\u1ee3c gi\u1eef nguy\u00ean.";
         }
 
-        new AlertDialog.Builder(requireContext())
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.Theme_Bmm_Dialog)
                 .setTitle("X\u00f3a danh m\u1ee5c?")
                 .setMessage(message)
                 .setNegativeButton("Gi\u1eef l\u1ea1i", null)
@@ -521,7 +522,7 @@ public class SettingsFragment extends Fragment {
     }
 
     private void signOutGoogle() {
-        new AlertDialog.Builder(requireContext())
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.Theme_Bmm_Dialog)
                 .setTitle("\u0110\u0103ng xu\u1ea5t?")
                 .setMessage("D\u1eef li\u1ec7u \u0111\u00e3 sao l\u01b0u v\u1eabn \u1edf tr\u00ean cloud, "
                         + "\u0111\u0103ng nh\u1eadp l\u1ea1i l\u00e0 kh\u00f4i ph\u1ee5c \u0111\u01b0\u1ee3c.")
@@ -607,7 +608,7 @@ public class SettingsFragment extends Fragment {
             reload();
 
             if (!info.exists || info.count <= 0) {
-                new androidx.appcompat.app.AlertDialog.Builder(getContext())
+                new androidx.appcompat.app.AlertDialog.Builder(getContext(), R.style.Theme_Bmm_Dialog)
                         .setTitle("Sao l\u01b0u d\u1eef li\u1ec7u?")
                         .setMessage("T\u00e0i kho\u1ea3n n\u00e0y ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u n\u00e0o. "
                                 + "B\u1ea1n c\u00f3 mu\u1ed1n sao l\u01b0u d\u1eef li\u1ec7u hi\u1ec7n t\u1ea1i l\u00ean Google kh\u00f4ng?")
@@ -619,7 +620,7 @@ public class SettingsFragment extends Fragment {
 
             String when = android.text.format.DateFormat
                     .format("dd/MM/yyyy HH:mm", info.updatedAt).toString();
-            new androidx.appcompat.app.AlertDialog.Builder(getContext())
+            new androidx.appcompat.app.AlertDialog.Builder(getContext(), R.style.Theme_Bmm_Dialog)
                     .setTitle("T\u00e0i kho\u1ea3n \u0111\u00e3 c\u00f3 b\u1ea3n sao l\u01b0u")
                     .setMessage("B\u1ea3n sao l\u01b0u l\u00fac " + when + " g\u1ed3m " + info.count
                             + " giao d\u1ecbch.\n\nL\u1ea5y v\u1ec1: xo\u00e1 d\u1eef li\u1ec7u tr\u00ean m\u00e1y v\u00e0 d\u00f9ng b\u1ea3n n\u00e0y."
@@ -643,15 +644,20 @@ public class SettingsFragment extends Fragment {
     }
 
     private void runBackup(FirebaseSyncManager manager) {
-        toast("\u0110ang sao l\u01b0u...");
+        // The thong bao giu nguyen tren man hinh cho den khi co ket qua that su,
+        // nho vay khong con canh bam Sao luu roi khong biet no xong hay chua.
+        final Notice.Handle notice = Notice.loading(root, "\u0110ang sao l\u01b0u l\u00ean Google\u2026");
         manager.backupNow((ok, count, error) -> {
-            if (!isAdded() || root == null) return;
+            if (!isAdded() || root == null) {
+                notice.dismiss();
+                return;
+            }
             if (ok) {
                 Prefs.setAutoBackupDay(getContext(), AutoBackup.todayKey());
-                toast("\u0110\u00e3 sao l\u01b0u " + count + " giao d\u1ecbch");
+                notice.success("\u0110\u00e3 sao l\u01b0u " + count + " giao d\u1ecbch");
                 reload();
             } else {
-                toast("Sao l\u01b0u th\u1ea5t b\u1ea1i" + (error == null ? "" : ": " + error));
+                notice.error("Sao l\u01b0u th\u1ea5t b\u1ea1i", error);
             }
         });
     }
@@ -668,7 +674,7 @@ public class SettingsFragment extends Fragment {
         }
         final FirebaseSyncManager manager =
                 new FirebaseSyncManager(getContext().getApplicationContext());
-        new androidx.appcompat.app.AlertDialog.Builder(getContext())
+        new androidx.appcompat.app.AlertDialog.Builder(getContext(), R.style.Theme_Bmm_Dialog)
                 .setTitle("L\u1ea5y d\u1eef li\u1ec7u t\u1eeb b\u1ea3n sao l\u01b0u")
                 .setMessage("To\u00e0n b\u1ed9 d\u1eef li\u1ec7u \u0111ang c\u00f3 tr\u00ean m\u00e1y s\u1ebd b\u1ecb xo\u00e1 v\u00e0 thay b\u1eb1ng "
                         + "b\u1ea3n sao l\u01b0u g\u1ea7n nh\u1ea5t. Ti\u1ebfp t\u1ee5c?")
@@ -678,17 +684,19 @@ public class SettingsFragment extends Fragment {
     }
 
     private void runRestore(FirebaseSyncManager manager) {
-        toast("\u0110ang l\u1ea5y d\u1eef li\u1ec7u...");
+        final Notice.Handle notice = Notice.loading(root, "\u0110ang l\u1ea5y d\u1eef li\u1ec7u v\u1ec1\u2026");
         manager.restoreLatest((ok, count, error) -> {
-            if (!isAdded() || root == null) return;
+            if (!isAdded() || root == null) {
+                notice.dismiss();
+                return;
+            }
             if (ok) {
-                toast(count > 0
+                notice.success(count > 0
                         ? "\u0110\u00e3 kh\u00f4i ph\u1ee5c " + count + " giao d\u1ecbch"
                         : "B\u1ea3n sao l\u01b0u cu\u1ed1i c\u00f9ng kh\u00f4ng c\u00f3 giao d\u1ecbch n\u00e0o");
                 reload();
             } else {
-                toast("Kh\u00f4ng l\u1ea5y \u0111\u01b0\u1ee3c d\u1eef li\u1ec7u"
-                        + (error == null ? "" : ": " + error));
+                notice.error("Kh\u00f4ng l\u1ea5y \u0111\u01b0\u1ee3c d\u1eef li\u1ec7u", error);
             }
         });
     }
@@ -711,8 +719,14 @@ public class SettingsFragment extends Fragment {
         }
     }
 
+    /**
+     * Moi thong bao ngan cua man Tuy chon deu di qua day. Truoc dung Toast xam den
+     * cua he thong, nay dung the noi mau kem cua app cho dong bo giao dien.
+     */
     private void toast(String message) {
-        if (getContext() != null) {
+        if (root != null) {
+            Notice.info(root, message);
+        } else if (getContext() != null) {
             Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
         }
     }

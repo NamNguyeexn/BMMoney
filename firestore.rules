@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Dat noi dung nay vao Firebase Console > Firestore Database > Rules > Publish.
+// Neu Rules dang chan, app se bao "tai khoan chua co quyen ghi (xem Firestore Rules)".
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Moi nguoi chi duoc doc/ghi dung ho so va ban sao luu cua chinh minh
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}

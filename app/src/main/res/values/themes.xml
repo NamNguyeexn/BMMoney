@@ -12,6 +12,34 @@
         <item name="android:textColor">@color/dark_green</item>
     </style>
 
+    <!-- Hộp thoại xác nhận (Sao lưu / Lấy về / Đăng xuất / Xoá danh mục) theo màu app -->
+    <style name="Theme.Bmm.Dialog" parent="Theme.MaterialComponents.Light.Dialog.Alert">
+        <item name="colorPrimary">@color/olive</item>
+        <item name="colorAccent">@color/burnt</item>
+        <item name="android:textColorPrimary">@color/dark_green</item>
+        <item name="android:textColorSecondary">@color/olive</item>
+        <item name="android:background">@color/card_cream</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Bmm.DialogButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Bmm.DialogButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Bmm.DialogButton</item>
+        <item name="shapeAppearanceOverlay">@style/Bmm.DialogShape</item>
+    </style>
+
+    <style name="Bmm.DialogShape" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">20dp</item>
+    </style>
+
+    <style name="Bmm.DialogButton" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/olive</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Bmm.DialogButton.Positive" parent="Bmm.DialogButton">
+        <item name="android:textColor">@color/burnt</item>
+    </style>
+
     <!-- Kiểu chữ bám theo thiết kế web -->
     <!-- Style cha bat buoc phai co vi ten cac style con dung dau cham (Text.H1...) -->
     <style name="Text" parent="" />

@@ -23,6 +23,10 @@ import java.util.Calendar;
  *   <li>Neu hom nay chua sao luu duoc lan nao (may tat, mat mang) thi lan mo app
  *       ke tiep se sao luu bu.</li>
  * </ul>
+ *
+ * <p><b>Ban va 01/08:</b> dieu kien cu co them {@code Prefs.lastBackup(context) <= 0}
+ * nen may nao CHUA tung sao luu thanh cong se khong bao gio duoc sao luu tu dong -
+ * dung nhung may dang can nhat. Dieu kien do da duoc bo.</p>
  */
 public final class AutoBackup {
 
@@ -83,13 +87,7 @@ public final class AutoBackup {
     // ------------------------------------------------------------- chay sao luu
     /** Sao luu bu neu hom nay chua co lan nao thanh cong. */
     public static void runIfDue(Context context, @Nullable Runnable done) {
-//        if (!FirebaseSyncManager.isSignedIn() || todayKey() == Prefs.autoBackupDay(context)) {
-//            if (done != null) done.run();
-//            return;
-//        }
-//        run(context, done);
         if (!FirebaseSyncManager.isSignedIn()
-                || Prefs.lastBackup(context) <= 0
                 || todayKey() == Prefs.autoBackupDay(context)) {
             if (done != null) done.run();
             return;

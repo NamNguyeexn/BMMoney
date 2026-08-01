@@ -5,26 +5,49 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.os.Build;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
-import com.google.firebase.firestore.MemoryCacheSettings;
+import com.google.firebase.firestore.PersistentCacheSettings;
 
 /**
- * Cau hinh toan app, dong thoi giam bo nho Firestore giu lai
- * (khong dung cache tren dia, chi cache trong bo nho va giai phong khi can).
+ * Cau hinh toan app.
+ *
+ * <p><b>Ban va 01/08:</b> truoc day Firestore duoc dat MemoryCacheSettings, tuc la
+ * KHONG luu gi xuong dia. Hau qua:</p>
+ * <ul>
+ *   <li>Mat mang mot nhip la lenh doc bao thang
+ *       "Failed to get document because the client is offline" vi khong con ban cache nao.</li>
+ *   <li>Lenh ghi dang xep hang bi mat khi app bi tat, nen ban sao luu "nhu da gui" ma
+ *       thuc te chua bao gio len toi may chu.</li>
+ * </ul>
+ *
+ * <p>Nay dung cache tren dia (100MB) de doc con lui ve duoc ban cu va lenh ghi con
+ * song qua lan mo app sau.</p>
  */
 public class BmmApp extends Application {
 
     /** Kenh thong bao cho loi nhac ghi chi tieu. */
     public static final String CHANNEL_REMINDER = "bmm_reminder";
 
+    /** Cache Firestore toi da giu duoi may. */
+    private static final long CACHE_BYTES = 100L * 1024L * 1024L;
+
     @Override
     public void onCreate() {
         super.onCreate();
         createReminderChannel();
+        setupFirestore();
+    }
+
+    /** Phai chay TRUOC moi thao tac Firestore dau tien, neu khong se bi nem loi. */
+    private void setupFirestore() {
         try {
+            FirebaseApp.initializeApp(this);
             FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-                    .setLocalCacheSettings(MemoryCacheSettings.newBuilder().build())
+                    .setLocalCacheSettings(PersistentCacheSettings.newBuilder()
+                            .setSizeBytes(CACHE_BYTES)
+                            .build())
                     .build();
             FirebaseFirestore.getInstance().setFirestoreSettings(settings);
         } catch (Throwable ignored) {
