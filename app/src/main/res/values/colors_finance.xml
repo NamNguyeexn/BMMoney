@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ban va 02/08. File rieng de KHONG phai ghi de colors.xml goc.
+  Mau lay tu dung bang mau cua app: dark_green / olive / burnt / sandy / cream.
+-->
+<resources>
+    <!-- Mau nhan dien bon loai ghi chu tai chinh -->
+    <color name="line_expense">#BC6C25</color>   <!-- chi tieu  - burnt -->
+    <color name="line_income">#606C38</color>    <!-- thu nhap  - olive -->
+    <color name="line_lend">#DDA15E</color>      <!-- cho vay   - sandy -->
+    <color name="line_debt">#283618</color>      <!-- no phai tra - dark green -->
+
+    <!-- Nen o tron cua tung loai trong danh sach -->
+    <color name="tint_lend">#F7E7D0</color>
+    <color name="tint_debt">#DFE7CE</color>
+
+    <!-- Cham bao bien dong tren lich -->
+    <color name="dot_strong">#BC6C25</color>
+    <color name="dot_medium">#DDA15E</color>
+    <color name="dot_light">#C3CBA6</color>
+
+    <!-- O ngay dang chon tren lich -->
+    <color name="day_selected">#606C38</color>
+    <color name="day_today">#F0E8C8</color>
+</resources>

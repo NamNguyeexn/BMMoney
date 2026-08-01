@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Ban va 02/08: kieu chu cho hang thu trong tuan o man Lich.
+    Tach rieng ra mot file de khong dung vao styles.xml / themes.xml san co.
+-->
+<resources>
+    <style name="BmmWeekday">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/subtle_text</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>

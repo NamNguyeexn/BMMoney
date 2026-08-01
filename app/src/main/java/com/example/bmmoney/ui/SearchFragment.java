@@ -49,6 +49,14 @@ public class SearchFragment extends Fragment {
     private static final int TIME_MONTH = 1;
     private static final int TIME_YEAR = 2;
 
+    /**
+     * Ban va 02/08: loc theo loai ghi chu. null nghia la xem tat ca.
+     * Voi LEND va DEBT, man hinh chuyen sang che do "so du con treo":
+     * bo qua bo loc thoi gian, chi liet ke khoan chua tat toan va xep theo
+     * han gan nhat truoc, dong thoi khoa cac the danh muc lai.
+     */
+    private String kind = null;
+
     private View root;
     private SwipeRefreshLayout refresh;
     private TransactionAdapter adapter;
@@ -115,8 +123,14 @@ public class SearchFragment extends Fragment {
             reload();
         });
 
+        root.findViewById(R.id.chip_kind_expense).setOnClickListener(v -> setKind(Stats.EXPENSE));
+        root.findViewById(R.id.chip_kind_income).setOnClickListener(v -> setKind(Stats.INCOME));
+        root.findViewById(R.id.chip_kind_lend).setOnClickListener(v -> setKind(Stats.LEND));
+        root.findViewById(R.id.chip_kind_debt).setOnClickListener(v -> setKind(Stats.DEBT));
+
         buildCategoryChips();
         styleTimeChips();
+        styleKindChips();
         return root;
     }
 
@@ -163,9 +177,53 @@ public class SearchFragment extends Fragment {
                 reload();
             });
             styleChip(chip, pickedCategories.contains(name));
+            // Cho vay / dang no khong thuoc danh muc chi tieu nao nen khoa lai
+            boolean usable = !isDebtKind();
+            chip.setEnabled(usable);
+            chip.setClickable(usable);
+            chip.setAlpha(usable ? 1f : 0.4f);
             container.addView(view);
             categoryChips.add(chip);
         }
+    }
+
+    /** Bam lai dung the dang chon thi bo chon, quay ve xem tat ca. */
+    private void setKind(String next) {
+        kind = next.equals(kind) ? null : next;
+        if (isDebtKind()) {
+            // Danh muc khong con y nghia voi khoan cho vay / no phai tra
+            pickedCategories.clear();
+        }
+        styleKindChips();
+        buildCategoryChips();
+        reload();
+    }
+
+    private boolean isDebtKind() {
+        return Stats.LEND.equals(kind) || Stats.DEBT.equals(kind);
+    }
+
+    private void styleKindChips() {
+        if (root == null) return;
+        styleChip(root.findViewById(R.id.chip_kind_expense), Stats.EXPENSE.equals(kind));
+        styleChip(root.findViewById(R.id.chip_kind_income), Stats.INCOME.equals(kind));
+        styleChip(root.findViewById(R.id.chip_kind_lend), Stats.LEND.equals(kind));
+        styleChip(root.findViewById(R.id.chip_kind_debt), Stats.DEBT.equals(kind));
+
+        // Khoa nhom the thoi gian khi dang xem so du con treo
+        boolean timeUsable = !isDebtKind();
+        dim(R.id.chip_week, timeUsable);
+        dim(R.id.chip_month, timeUsable);
+        dim(R.id.chip_year, timeUsable);
+    }
+
+    /** Lam mo va chan bam mot the khi bo loc do khong con y nghia. */
+    private void dim(int id, boolean usable) {
+        View view = root.findViewById(id);
+        if (view == null) return;
+        view.setEnabled(usable);
+        view.setClickable(usable);
+        view.setAlpha(usable ? 1f : 0.4f);
     }
 
     private void setTime(int filter) {
@@ -199,8 +257,7 @@ public class SearchFragment extends Fragment {
             AutoBackup.scheduleSoon(app);
             Db.ui(() -> {
                 if (getContext() == null) return;
-                Toast.makeText(getContext(), "\u0110\u00e3 x\u00f3a b\u1ea3n ghi chi ti\u00eau",
-                        Toast.LENGTH_SHORT).show();
+                com.example.bmmoney.util.Notice.success(root, "\u0110\u00e3 x\u00f3a b\u1ea3n ghi");
                 reload();
             });
         });
@@ -216,6 +273,8 @@ public class SearchFragment extends Fragment {
         final int filter = timeFilter;
         final boolean over100k = onlyOver100k;
         final boolean big = onlyBig;
+        final String kindFilter = kind;
+        final boolean debtMode = isDebtKind();
         final Set<String> cats = new HashSet<>(pickedCategories);
 
         final long from;
@@ -236,29 +295,47 @@ public class SearchFragment extends Fragment {
 
         Db.load(() -> {
             Data data = new Data();
-            List<TransactionEntity> all = dao.getTransactionsByDateRange(from, to);
+
+            // Nguon du lieu: khoan cho vay / no phai tra lay theo so du con treo,
+            // hai loai con lai van lay theo khoang thoi gian nhu truoc.
+            List<TransactionEntity> all = debtMode
+                    ? dao.getOpenByType(kindFilter)
+                    : dao.getTransactionsByDateRange(from, to);
             if (all == null) return data;
 
+            // Nguong "dang chu y" tinh tren tong cua chinh loai dang xem,
+            // nho vay nut nay dung duoc cho ca bon loai ma logic khong doi.
             double periodTotal = 0;
             for (TransactionEntity t : all) {
-                if (Stats.EXPENSE.equals(t.getType())) periodTotal += t.getAmount();
+                if (kindFilter == null) {
+                    if (Stats.EXPENSE.equals(t.getType())) periodTotal += t.getAmount();
+                } else if (kindFilter.equals(t.getType())) {
+                    periodTotal += t.getAmount();
+                }
             }
             data.periodTotal = periodTotal;
             double threshold = periodTotal * bigPercent / 100d;
 
             for (TransactionEntity t : all) {
+                if (kindFilter != null && !kindFilter.equals(t.getType())) continue;
                 if (!key.isEmpty()) {
                     String title = t.getTitle() == null ? "" : t.getTitle().toLowerCase(Locale.getDefault());
                     String note = t.getNote() == null ? "" : t.getNote().toLowerCase(Locale.getDefault());
                     String category = t.getCategory() == null ? "" : t.getCategory().toLowerCase(Locale.getDefault());
-                    if (!title.contains(key) && !note.contains(key) && !category.contains(key)) continue;
+                    String person = t.personOrEmpty().toLowerCase(Locale.getDefault());
+                    if (!title.contains(key) && !note.contains(key)
+                            && !category.contains(key) && !person.contains(key)) continue;
                 }
-                if (!cats.isEmpty() && !cats.contains(t.getCategory())) continue;
+                if (!debtMode && !cats.isEmpty() && !cats.contains(t.getCategory())) continue;
                 if (over100k && t.getAmount() < 100000) continue;
                 if (big && (threshold <= 0 || t.getAmount() < threshold)) continue;
 
                 data.items.add(t);
-                if (Stats.EXPENSE.equals(t.getType())) data.total += t.getAmount();
+                if (kindFilter == null) {
+                    if (Stats.EXPENSE.equals(t.getType())) data.total += t.getAmount();
+                } else {
+                    data.total += t.getAmount();
+                }
             }
             return data;
         }, data -> {
@@ -267,10 +344,14 @@ public class SearchFragment extends Fragment {
 
             adapter.setTransactions(data.items);
             text(R.id.tv_result_count, data.items.size() + " k\u1ebft qu\u1ea3");
-            text(R.id.tv_search_total_label, "T\u1ed5ng chi c\u1ee7a k\u1ebft qu\u1ea3");
+            text(R.id.tv_search_total_label, totalLabel(kindFilter));
             text(R.id.tv_search_total, Money.vnd(data.total));
             text(R.id.tv_search_sub, big
-                    ? "Kho\u1ea3n chi t\u1eeb " + bigPercent + "% t\u1ed5ng chi c\u1ee7a k\u1ef3 tr\u1edf l\u00ean"
+                    ? "Kho\u1ea3n t\u1eeb " + bigPercent + "% t\u1ed5ng c\u1ee7a nh\u00f3m n\u00e0y tr\u1edf l\u00ean"
+                    : debtMode
+                    ? (Stats.LEND.equals(kindFilter)
+                            ? "C\u00f2n ph\u1ea3i \u0111\u00f2i \u00b7 h\u1ea1n g\u1ea7n nh\u1ea5t tr\u01b0\u1edbc"
+                            : "C\u00f2n ph\u1ea3i tr\u1ea3 \u00b7 h\u1ea1n g\u1ea7n nh\u1ea5t tr\u01b0\u1edbc")
                     : subtitle(filter));
 
             root.findViewById(R.id.tv_empty_results)
@@ -278,6 +359,14 @@ public class SearchFragment extends Fragment {
             root.findViewById(R.id.recycler_results)
                     .setVisibility(data.items.isEmpty() ? View.GONE : View.VISIBLE);
         });
+    }
+
+    /** Nhan cua o tong tien doi theo loai dang xem. */
+    private String totalLabel(String kindFilter) {
+        if (Stats.LEND.equals(kindFilter)) return "T\u1ed5ng s\u1ed1 ti\u1ec1n c\u1ea7n \u0111\u00f2i";
+        if (Stats.DEBT.equals(kindFilter)) return "T\u1ed5ng s\u1ed1 ti\u1ec1n \u0111ang n\u1ee3";
+        if (Stats.INCOME.equals(kindFilter)) return "T\u1ed5ng thu nh\u1eadp";
+        return "T\u1ed5ng chi c\u1ee7a k\u1ebft qu\u1ea3";
     }
 
     private String subtitle(int filter) {

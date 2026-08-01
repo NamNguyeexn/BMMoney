@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.bmmoney.ui.AddExpenseFragment;
 import com.example.bmmoney.ui.AnalyticsFragment;
+import com.example.bmmoney.ui.CalendarFragment;
 import com.example.bmmoney.ui.DashboardFragment;
 import com.example.bmmoney.ui.SearchFragment;
 import com.example.bmmoney.ui.SettingsFragment;
@@ -24,31 +25,35 @@ import com.example.bmmoney.util.Reminders;
 
 /**
  * Man hinh chinh duy nhat cua ung dung.
- * Chua 5 man moi (Trang chu / Them / Phan tich / Tim kiem / Cai dat)
+ * Chua 6 man (Trang chu / Them / Lich / Phan tich / Tim kiem / Cai dat)
  * va thanh dieu huong duoi giong ban thiet ke.
  */
 public class MainActivity extends AppCompatActivity {
 
     public static final int TAB_HOME = 0;
     public static final int TAB_ADD = 1;
-    public static final int TAB_ANALYTICS = 2;
-    public static final int TAB_SEARCH = 3;
-    public static final int TAB_SETTINGS = 4;
+    /** Ban va 02/08: man Lich, dat giua Them va Phan tich. */
+    public static final int TAB_CALENDAR = 2;
+    public static final int TAB_ANALYTICS = 3;
+    public static final int TAB_SEARCH = 4;
+    public static final int TAB_SETTINGS = 5;
 
+    // Nam mang duoi day phai cung thu tu voi cac hang so TAB_* o tren
     private static final int[] NAV_IDS = {
-            R.id.nav_home, R.id.nav_add, R.id.nav_analytics, R.id.nav_search, R.id.nav_settings};
+            R.id.nav_home, R.id.nav_add, R.id.nav_calendar,
+            R.id.nav_analytics, R.id.nav_search, R.id.nav_settings};
     private static final int[] PILL_IDS = {
-            R.id.nav_home_pill, R.id.nav_add_pill, R.id.nav_analytics_pill,
-            R.id.nav_search_pill, R.id.nav_settings_pill};
+            R.id.nav_home_pill, R.id.nav_add_pill, R.id.nav_calendar_pill,
+            R.id.nav_analytics_pill, R.id.nav_search_pill, R.id.nav_settings_pill};
     private static final int[] ICON_IDS = {
-            R.id.nav_home_icon, R.id.nav_add_icon, R.id.nav_analytics_icon,
-            R.id.nav_search_icon, R.id.nav_settings_icon};
+            R.id.nav_home_icon, R.id.nav_add_icon, R.id.nav_calendar_icon,
+            R.id.nav_analytics_icon, R.id.nav_search_icon, R.id.nav_settings_icon};
     private static final int[] LABEL_IDS = {
-            R.id.nav_home_label, R.id.nav_add_label, R.id.nav_analytics_label,
-            R.id.nav_search_label, R.id.nav_settings_label};
+            R.id.nav_home_label, R.id.nav_add_label, R.id.nav_calendar_label,
+            R.id.nav_analytics_label, R.id.nav_search_label, R.id.nav_settings_label};
     private static final int[] DOT_IDS = {
-            R.id.nav_home_dot, R.id.nav_add_dot, R.id.nav_analytics_dot,
-            R.id.nav_search_dot, R.id.nav_settings_dot};
+            R.id.nav_home_dot, R.id.nav_add_dot, R.id.nav_calendar_dot,
+            R.id.nav_analytics_dot, R.id.nav_search_dot, R.id.nav_settings_dot};
 
     private int current = -1;
     /** Chỉ sao lưu tối đa một lần cho mỗi phiên mở app. */
@@ -106,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
             ((DashboardFragment) f).reload();
         } else if (f instanceof SettingsFragment) {
             ((SettingsFragment) f).reload();
+        } else if (f instanceof CalendarFragment) {
+            ((CalendarFragment) f).reload();
         }
     }
 
@@ -117,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
         Fragment fragment;
         switch (index) {
             case TAB_ADD: fragment = new AddExpenseFragment(); break;
+            case TAB_CALENDAR: fragment = new CalendarFragment(); break;
             case TAB_ANALYTICS: fragment = new AnalyticsFragment(); break;
             case TAB_SEARCH: fragment = new SearchFragment(); break;
             case TAB_SETTINGS: fragment = new SettingsFragment(); break;

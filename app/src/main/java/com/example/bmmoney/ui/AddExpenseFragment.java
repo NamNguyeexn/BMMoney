@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,6 +20,7 @@ import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Categories;
+import com.example.bmmoney.util.Notice;
 import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Stats;
 
@@ -32,16 +32,30 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Man Them giao dich, dung chung cho hai che do:
+ * Man "Them ghi chu" (truoc day ten la Them chi tieu).
  *
+ * <p><b>Ban va 02/08.</b> Man nay gio phuc vu BON loai ghi chu:</p>
  * <ul>
- *   <li>Chi tieu: so tien, mo ta, danh muc, ngay gio, phuong thuc thanh toan, ghi chu</li>
- *   <li>Thu nhap: so tien, ngay gio, cach nhan</li>
+ *   <li>Chi tieu: so tien, mo ta, danh muc, thoi gian, thanh toan, ghi chu</li>
+ *   <li>Thu nhap: so tien, thoi gian, nguon thu</li>
+ *   <li>Vay no (cho vay): ai vay, vay khi nao, vay bao nhieu, thoi han nguoi do vay, thanh toan</li>
+ *   <li>Tra no: tra ai, tra khi nao, tra bao nhieu, thoi han can phai tra, thanh toan</li>
  * </ul>
+ *
+ * <p><b>Quan trong ve ke toan:</b> hai loai vay no va tra no KHONG lam thay doi
+ * so du vi. Chung duoc luu voi type rieng ({@link Stats#LEND} va
+ * {@link Stats#DEBT}) nen moi truy van tong thu / tong chi / ngan sach cu van
+ * chay dung ma khong can sua gi them.</p>
  */
 public class AddExpenseFragment extends Fragment {
 
-    /** Phuong thuc thanh toan cho khoan chi. */
+    /** Bon che do cua man hinh. */
+    private static final int MODE_EXPENSE = 0;
+    private static final int MODE_INCOME = 1;
+    private static final int MODE_LEND = 2;
+    private static final int MODE_DEBT = 3;
+
+    /** Phuong thuc thanh toan, dung cho ca chi tieu lan vay no / tra no. */
     private static final List<String> PAYMENTS = Arrays.asList(
             "\ud83c\udfe6 Chuy\u1ec3n kho\u1ea3n",
             "\ud83d\udcb5 Ti\u1ec1n m\u1eb7t",
@@ -59,8 +73,10 @@ public class AddExpenseFragment extends Fragment {
             new String[]{"\ud83e\uddfe", "Kh\u00e1c"});
 
     private View root;
-    private boolean income = false;
+    private int mode = MODE_EXPENSE;
     private long pickedTime = System.currentTimeMillis();
+    /** 0 nghia la nguoi dung chua dat thoi han. */
+    private long dueTime = 0L;
     private String payment = PAYMENTS.get(0);
     private String category = "";
     private String method = METHODS.get(0)[1];
@@ -71,6 +87,8 @@ public class AddExpenseFragment extends Fragment {
 
     private final SimpleDateFormat format =
             new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+    private final SimpleDateFormat dayFormat =
+            new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
     @Nullable
     @Override
@@ -92,6 +110,15 @@ public class AddExpenseFragment extends Fragment {
                     text(R.id.tv_date, format.format(new Date(pickedTime)));
                 }));
 
+        // Thoi han doi / thoi han phai tra
+        root.findViewById(R.id.tv_due).setOnClickListener(v ->
+                DateTimeDialog.show(getContext(),
+                        dueTime > 0 ? dueTime : pickedTime + 7L * 24 * 60 * 60 * 1000,
+                        time -> {
+                            dueTime = time;
+                            text(R.id.tv_due, dayFormat.format(new Date(dueTime)));
+                        }));
+
         root.findViewById(R.id.tv_payment).setOnClickListener(v ->
                 SelectDialog.show(getContext(), "Ph\u01b0\u01a1ng th\u1ee9c thanh to\u00e1n",
                         PAYMENTS, payment, (index, value) -> {
@@ -99,8 +126,10 @@ public class AddExpenseFragment extends Fragment {
                             text(R.id.tv_payment, payment);
                         }));
 
-        root.findViewById(R.id.btn_mode_expense).setOnClickListener(v -> setMode(false));
-        root.findViewById(R.id.btn_mode_income).setOnClickListener(v -> setMode(true));
+        root.findViewById(R.id.btn_mode_expense).setOnClickListener(v -> setMode(MODE_EXPENSE));
+        root.findViewById(R.id.btn_mode_income).setOnClickListener(v -> setMode(MODE_INCOME));
+        root.findViewById(R.id.btn_mode_lend).setOnClickListener(v -> setMode(MODE_LEND));
+        root.findViewById(R.id.btn_mode_debt).setOnClickListener(v -> setMode(MODE_DEBT));
         root.findViewById(R.id.btn_submit).setOnClickListener(v -> save());
 
         buildCategories();
@@ -125,27 +154,88 @@ public class AddExpenseFragment extends Fragment {
     }
 
     // ------------------------------------------------------------- che do nhap
-    private void setMode(boolean toIncome) {
-        if (income == toIncome) return;
-        income = toIncome;
+    private void setMode(int next) {
+        if (mode == next) return;
+        mode = next;
         applyMode();
     }
 
-    /** Bat/tat cac o nhap theo che do dang chon. */
+    private boolean isLend() {
+        return mode == MODE_LEND;
+    }
+
+    private boolean isDebt() {
+        return mode == MODE_DEBT;
+    }
+
+    private boolean isDebtKind() {
+        return isLend() || isDebt();
+    }
+
+    /** Bat/tat va doi nhan cho tung o nhap theo che do dang chon. */
     private void applyMode() {
         if (root == null) return;
 
-        text(R.id.tv_add_title, income ? "Th\u00eam thu nh\u1eadp" : "Th\u00eam chi ti\u00eau");
-        text(R.id.btn_submit, income ? "Th\u00eam thu nh\u1eadp" : "Th\u00eam chi ti\u00eau");
+        // Tieu de man giu nguyen la "Them ghi chu" cho ca bon che do
+        text(R.id.tv_add_title, "Th\u00eam ghi ch\u00fa");
 
-        show(R.id.box_description, !income);
-        show(R.id.box_category, !income);
-        show(R.id.box_payment, !income);
-        show(R.id.box_note, !income);
+        switch (mode) {
+            case MODE_INCOME:
+                text(R.id.btn_submit, "L\u01b0u kho\u1ea3n thu");
+                text(R.id.tv_amount_label, "S\u1ed1 ti\u1ec1n nh\u1eadn");
+                text(R.id.tv_date_label, "Nh\u1eadn khi n\u00e0o");
+                text(R.id.tv_mode_hint,
+                        "Kho\u1ea3n n\u00e0y c\u1ed9ng v\u00e0o t\u1ed5ng thu nh\u1eadp c\u1ee7a k\u1ef3.");
+                break;
+            case MODE_LEND:
+                text(R.id.btn_submit, "L\u01b0u kho\u1ea3n cho vay");
+                text(R.id.tv_amount_label, "Vay bao nhi\u00eau");
+                text(R.id.tv_person_label, "Ai vay");
+                text(R.id.tv_date_label, "Vay khi n\u00e0o");
+                text(R.id.tv_due_label, "Th\u1eddi h\u1ea1n ng\u01b0\u1eddi \u0111\u00f3 vay");
+                text(R.id.tv_mode_hint,
+                        "Cho vay \u2014 ng\u01b0\u1eddi kh\u00e1c n\u1ee3 b\u1ea1n. "
+                                + "Kho\u1ea3n n\u00e0y KH\u00d4NG t\u00ednh v\u00e0o thu chi hay ng\u00e2n s\u00e1ch.");
+                break;
+            case MODE_DEBT:
+                text(R.id.btn_submit, "L\u01b0u kho\u1ea3n n\u1ee3");
+                text(R.id.tv_amount_label, "Tr\u1ea3 bao nhi\u00eau");
+                text(R.id.tv_person_label, "Tr\u1ea3 ai");
+                text(R.id.tv_date_label, "Tr\u1ea3 khi n\u00e0o");
+                text(R.id.tv_due_label, "Th\u1eddi h\u1ea1n c\u1ea7n ph\u1ea3i tr\u1ea3");
+                text(R.id.tv_mode_hint,
+                        "N\u1ee3 ph\u1ea3i tr\u1ea3 \u2014 b\u1ea1n n\u1ee3 ng\u01b0\u1eddi kh\u00e1c. "
+                                + "Kho\u1ea3n n\u00e0y KH\u00d4NG t\u00ednh v\u00e0o thu chi hay ng\u00e2n s\u00e1ch.");
+                break;
+            default:
+                text(R.id.btn_submit, "L\u01b0u kho\u1ea3n chi");
+                text(R.id.tv_amount_label, "S\u1ed1 ti\u1ec1n");
+                text(R.id.tv_date_label, "Th\u1eddi gian");
+                text(R.id.tv_mode_hint,
+                        "Kho\u1ea3n n\u00e0y tr\u1eeb v\u00e0o ng\u00e2n s\u00e1ch chi ti\u00eau c\u1ee7a k\u1ef3.");
+                break;
+        }
+
+        boolean expense = mode == MODE_EXPENSE;
+        boolean income = mode == MODE_INCOME;
+
+        show(R.id.box_person, isDebtKind());
+        show(R.id.box_due, isDebtKind());
+        show(R.id.box_description, expense);
+        show(R.id.box_category, expense);
         show(R.id.box_income_method, income);
+        // Nguoi dung yeu cau co phan "thanh toan" o ca hai giao dien vay no va tra no
+        show(R.id.box_payment, expense || isDebtKind());
+        show(R.id.box_note, !income);
 
-        tab(R.id.btn_mode_expense, !income);
+        text(R.id.tv_due, dueTime > 0
+                ? dayFormat.format(new Date(dueTime))
+                : "Ch\u01b0a \u0111\u1eb7t th\u1eddi h\u1ea1n");
+
+        tab(R.id.btn_mode_expense, expense);
         tab(R.id.btn_mode_income, income);
+        tab(R.id.btn_mode_lend, isLend());
+        tab(R.id.btn_mode_debt, isDebt());
     }
 
     private void show(int id, boolean visible) {
@@ -153,13 +243,14 @@ public class AddExpenseFragment extends Fragment {
         if (view != null) view.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
+    /** To dam nut che do dang chon. */
     private void tab(int id, boolean active) {
         View view = root.findViewById(id);
         if (view == null) return;
-        view.setBackgroundResource(active ? R.drawable.bg_cat_selected : R.drawable.bg_cat_unselected);
+        view.setBackgroundResource(active ? R.drawable.bg_pill_olive : R.drawable.bg_pill_cream);
         if (view instanceof TextView) {
             ((TextView) view).setTextColor(getResources().getColor(
-                    active ? R.color.dark_green : R.color.olive));
+                    active ? R.color.cream : R.color.olive));
         }
     }
 
@@ -240,34 +331,48 @@ public class AddExpenseFragment extends Fragment {
         EditText amountField = root.findViewById(R.id.edt_amount);
         String rawAmount = amountField.getText().toString().replaceAll("[^0-9]", "");
         if (rawAmount.isEmpty()) {
-            toast("Nh\u1eadp s\u1ed1 ti\u1ec1n tr\u01b0\u1edbc \u0111\u00e3 nh\u00e9");
+            Notice.error(root, "Nh\u1eadp s\u1ed1 ti\u1ec1n tr\u01b0\u1edbc \u0111\u00e3 nh\u00e9", null);
             return;
         }
         double amount = Double.parseDouble(rawAmount);
 
-        final TransactionEntity entity = income ? buildIncome(amount) : buildExpense(amount);
+        final TransactionEntity entity;
+        switch (mode) {
+            case MODE_INCOME: entity = buildIncome(amount); break;
+            case MODE_LEND: entity = buildDebtKind(amount, Stats.LEND); break;
+            case MODE_DEBT: entity = buildDebtKind(amount, Stats.DEBT); break;
+            default: entity = buildExpense(amount); break;
+        }
         if (entity == null) return;
 
         final Context app = getContext().getApplicationContext();
-        final boolean wasIncome = income;
+        final int savedMode = mode;
 
         Db.io(() -> {
             AppDatabase.dao(app).insert(entity);
             // Khong day len cloud ngay: gom thay doi roi sao luu mot lan cho do ton bo nho
             AutoBackup.scheduleSoon(app);
             Db.ui(() -> {
-                toast(wasIncome ? "\u0110\u00e3 l\u01b0u kho\u1ea3n thu"
-                        : "\u0110\u00e3 l\u01b0u giao d\u1ecbch");
+                Notice.success(root, doneMessage(savedMode));
                 resetForm();
                 open(MainActivity.TAB_HOME);
             });
         });
     }
 
+    private String doneMessage(int savedMode) {
+        switch (savedMode) {
+            case MODE_INCOME: return "\u0110\u00e3 l\u01b0u kho\u1ea3n thu";
+            case MODE_LEND: return "\u0110\u00e3 l\u01b0u kho\u1ea3n cho vay";
+            case MODE_DEBT: return "\u0110\u00e3 l\u01b0u kho\u1ea3n n\u1ee3";
+            default: return "\u0110\u00e3 l\u01b0u giao d\u1ecbch";
+        }
+    }
+
     @Nullable
     private TransactionEntity buildExpense(double amount) {
         if (category.isEmpty()) {
-            toast("Ch\u1ecdn m\u1ed9t danh m\u1ee5c nh\u00e9");
+            Notice.error(root, "Ch\u1ecdn m\u1ed9t danh m\u1ee5c nh\u00e9", null);
             return null;
         }
         EditText descField = root.findViewById(R.id.edt_description);
@@ -287,13 +392,44 @@ public class AddExpenseFragment extends Fragment {
         return new TransactionEntity(method, amount, Stats.INCOME, method, "", pickedTime);
     }
 
+    /**
+     * Khoan cho vay hoac khoan no phai tra.
+     *
+     * <p>Cot category duoc dung de luu phuong thuc thanh toan, con person / dueDate
+     * la hai cot moi them o ban va nay. settled = 0 nghia la chua tat toan.</p>
+     */
+    @Nullable
+    private TransactionEntity buildDebtKind(double amount, String type) {
+        EditText personField = root.findViewById(R.id.edt_person);
+        String person = personField.getText().toString().trim();
+        if (person.isEmpty()) {
+            Notice.error(root, Stats.LEND.equals(type)
+                    ? "Ghi t\u00ean ng\u01b0\u1eddi vay nh\u00e9"
+                    : "Ghi t\u00ean ng\u01b0\u1eddi c\u1ea7n tr\u1ea3 nh\u00e9", null);
+            return null;
+        }
+
+        EditText noteField = root.findViewById(R.id.edt_note);
+        String note = noteField.getText().toString().trim();
+
+        TransactionEntity entity = new TransactionEntity(
+                person, amount, type, payment, note, pickedTime);
+        entity.setPerson(person);
+        entity.setDueDate(dueTime > 0 ? dueTime : null);
+        entity.setSettled(0);
+        return entity;
+    }
+
     private void resetForm() {
         if (root == null) return;
         ((EditText) root.findViewById(R.id.edt_amount)).setText("");
         ((EditText) root.findViewById(R.id.edt_description)).setText("");
+        ((EditText) root.findViewById(R.id.edt_person)).setText("");
         ((EditText) root.findViewById(R.id.edt_note)).setText("");
         pickedTime = System.currentTimeMillis();
+        dueTime = 0L;
         text(R.id.tv_date, format.format(new Date(pickedTime)));
+        text(R.id.tv_due, "Ch\u01b0a \u0111\u1eb7t th\u1eddi h\u1ea1n");
         buildCategories();
         androidx.swiperefreshlayout.widget.SwipeRefreshLayout refresh =
                 root.findViewById(R.id.refresh_add_expense);
@@ -303,12 +439,6 @@ public class AddExpenseFragment extends Fragment {
     private void open(int tab) {
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).showTab(tab);
-        }
-    }
-
-    private void toast(String message) {
-        if (getContext() != null) {
-            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
         }
     }
 

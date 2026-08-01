@@ -68,6 +68,13 @@ public class DashboardFragment extends Fragment {
 //        double income;
         List<CategoryTotal> categories = new ArrayList<>();
         List<TransactionEntity> recent = new ArrayList<>();
+
+        // Ban va 02/08: hai o thong ke moi o trang chu.
+        // lend/debt = phat sinh trong ky, lendOpen/debtOpen = tong con chua tat toan.
+        double lend;
+        double debt;
+        double lendOpen;
+        double debtOpen;
     }
 
     @Nullable
@@ -78,6 +85,8 @@ public class DashboardFragment extends Fragment {
 
         RecyclerView recycler = root.findViewById(R.id.recycler_recent);
         adapter = new TransactionAdapter();
+        // Cho phep xoa ngay tren trang chu; popup chi tiet do TransactionAdapter mo
+        adapter.setOnDelete(t -> reloadQuiet());
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
         recycler.setHasFixedSize(true);
         recycler.setItemAnimator(null);
@@ -158,6 +167,12 @@ public class DashboardFragment extends Fragment {
             if (cats != null) data.categories = cats;
             List<TransactionEntity> recent = dao.getRecent(5);
             if (recent != null) data.recent = recent;
+
+            // Hai loai nay khong dung chung truy van voi thu chi vi khong doi so du vi
+            data.lend = value(dao.getSumInRange(Stats.LEND, current[0], current[1]));
+            data.debt = value(dao.getSumInRange(Stats.DEBT, current[0], current[1]));
+            data.lendOpen = value(dao.getOpenTotal(Stats.LEND));
+            data.debtOpen = value(dao.getOpenTotal(Stats.DEBT));
             return data;
         }, data -> {
             if (refresh != null) refresh.setRefreshing(false);
@@ -219,6 +234,13 @@ public class DashboardFragment extends Fragment {
         donut.setData(slices.isEmpty() ? null : percents, Money.shortVnd(expense),
                 arrow + " " + String.format(Locale.US, "%.1f", Math.abs(change)) + "% so v\u1edbi k\u1ef3 tr\u01b0\u1edbc");
         if (animate) donut.animateSweep(DELAY_DONUT, DUR_DONUT);
+
+        // Ban va 02/08: hai o cho vay / no phai tra.
+        // Chung khong tham gia vao ngan sach hay % da dung ben tren.
+        text(R.id.tv_lend_total, Money.vnd(data.lend));
+        text(R.id.tv_debt_total, Money.vnd(data.debt));
+        text(R.id.tv_lend_open, "C\u00f2n ph\u1ea3i \u0111\u00f2i " + Money.vnd(data.lendOpen));
+        text(R.id.tv_debt_open, "C\u00f2n ph\u1ea3i tr\u1ea3 " + Money.vnd(data.debtOpen));
 
         adapter.setTransactions(data.recent);
         root.findViewById(R.id.tv_empty_recent).setVisibility(data.recent.isEmpty() ? View.VISIBLE : View.GONE);

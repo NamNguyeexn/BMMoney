@@ -349,7 +349,8 @@ public class FirebaseSyncManager {
         final long now = System.currentTimeMillis();
 
         Map<String, Object> meta = new HashMap<>();
-        meta.put("version", 2);
+        // v3: them person / dueDate / settled. Van doc duoc ban v2 cu.
+        meta.put("version", 3);
         meta.put("updatedAt", now);
         meta.put("count", count);
         meta.put("parts", parts.size());
@@ -631,6 +632,10 @@ public class FirebaseSyncManager {
                 item.put("c", t.getCategory());
                 item.put("n", t.getNote() == null ? "" : t.getNote());
                 item.put("d", t.getDate());
+                // Ban va 02/08: ba truong cua khoan cho vay / no phai tra
+                item.put("p", t.getPerson() == null ? "" : t.getPerson());
+                item.put("u", t.dueMillis());
+                item.put("s", t.isSettled() ? 1 : 0);
             } catch (Throwable ignored) {
                 continue;
             }
@@ -652,8 +657,17 @@ public class FirebaseSyncManager {
             String category = item.optString("c", "");
             long date = item.optLong("d", 0L);
             if (date <= 0) continue;
-            list.add(new TransactionEntity(title, item.optDouble("a", 0d), type, category,
-                    item.optString("n", ""), date));
+            TransactionEntity entity = new TransactionEntity(title, item.optDouble("a", 0d),
+                    type, category, item.optString("n", ""), date);
+
+            // Ban sao luu cu (v2) khong co ba truong nay, khi do de nguyen gia tri rong
+            String person = item.optString("p", "");
+            if (!person.isEmpty()) entity.setPerson(person);
+            long due = item.optLong("u", 0L);
+            if (due > 0) entity.setDueDate(due);
+            entity.setSettled(item.optInt("s", 0));
+
+            list.add(entity);
         }
         return list;
     }

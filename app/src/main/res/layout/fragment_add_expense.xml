@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Man "Them ghi chu" (ten cu: Them chi tieu).
+  Ban va 02/08: bon che do Chi tieu / Thu nhap / Vay no / Tra no.
+  Cac khoi duoc an hien bang code tuy theo che do dang chon.
+-->
 <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -22,18 +27,19 @@
             android:paddingTop="8dp"
             android:paddingBottom="120dp">
 
+            <!-- ============================ Tieu de ============================ -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:paddingTop="8dp">
 
                 <FrameLayout
                     android:id="@+id/btn_back"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:background="@drawable/bg_circle_chip"
+                    android:background="@drawable/bg_icon_chip"
                     android:clickable="true"
                     android:focusable="true">
 
@@ -47,56 +53,127 @@
 
                 <TextView
                     android:id="@+id/tv_add_title"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="16dp"
-                    android:text="Thêm chi tiêu"
+                    android:layout_marginLeft="12dp"
+                    android:layout_weight="1"
+                    android:text="Thêm ghi chú"
+                    android:textColor="@color/dark_green"
                     android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/dark_green" />
+                    android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Chuyển giữa ghi chi tiêu và ghi thu nhập -->
-            <LinearLayout
+            <!-- ===================== Bon che do ghi chu ======================== -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                app:cardBackgroundColor="@color/card_cream"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btn_mode_expense"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginRight="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_olive"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:padding="12dp"
+                            android:text="💸 Chi tiêu"
+                            android:textColor="@color/cream"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/btn_mode_income"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_cream"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:padding="12dp"
+                            android:text="💰 Thu nhập"
+                            android:textColor="@color/olive"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btn_mode_lend"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginRight="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_cream"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:padding="12dp"
+                            android:text="🤝 Vay nợ"
+                            android:textColor="@color/olive"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/btn_mode_debt"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_cream"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:padding="12dp"
+                            android:text="🧾 Trả nợ"
+                            android:textColor="@color/olive"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_mode_hint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_badge_cream"
+                        android:padding="10dp"
+                        android:text="Khoản này trừ vào ngân sách chi tiêu của kỳ."
+                        android:textColor="@color/olive"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ============================ So tien ============================ -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/btn_mode_expense"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:background="@drawable/bg_cat_selected"
-                    android:text="↓ Chi tiêu"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/dark_green"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <TextView
-                    android:id="@+id/btn_mode_income"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:gravity="center"
-                    android:background="@drawable/bg_cat_unselected"
-                    android:text="↑ Thu nhập"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/olive"
-                    android:clickable="true"
-                    android:focusable="true" />
-            </LinearLayout>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
                 app:cardBackgroundColor="@color/card_cream"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp"
@@ -109,93 +186,36 @@
                     android:padding="20dp">
 
                     <TextView
+                        android:id="@+id/tv_amount_label"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Số tiền *"
-                        android:textSize="18sp"
-                        android:textColor="@color/dark_green"
-                        android:textStyle="bold" />
-
-                    <FrameLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="64dp"
-                        android:layout_marginTop="12dp"
-                        android:background="@drawable/bg_field_focus">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="left|center_vertical"
-                            android:layout_marginLeft="16dp"
-                            android:src="@drawable/ic_dollar"
-                            app:tint="@color/sandy" />
-
-                        <EditText
-                            android:id="@+id/edt_amount"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:layout_gravity="center"
-                            android:paddingLeft="48dp"
-                            android:paddingRight="16dp"
-                            android:background="@android:color/transparent"
-                            android:gravity="center"
-                            android:hint="0 ₫"
-                            android:inputType="number"
-                            android:textColorHint="@color/subtle_text"
-                            android:textSize="28sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/dark_green" />
-                    </FrameLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Chỉ dùng cho chi tiêu -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/box_description"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                app:cardBackgroundColor="@color/card_cream"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Mô tả *"
-                        android:textSize="18sp"
-                        android:textColor="@color/dark_green"
+                        android:text="Số tiền"
+                        android:textColor="@color/subtle_text"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <EditText
-                        android:id="@+id/edt_description"
-                        android:inputType="textCapSentences|text"
+                        android:id="@+id/edt_amount"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center_vertical"
-                        android:paddingLeft="16dp"
-                        android:paddingRight="16dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
                         android:background="@drawable/bg_field"
-                        android:hint="Ví dụ: VinMart Trần Duy Hưng"
+                        android:gravity="center"
+                        android:hint="0"
+                        android:inputType="numberDecimal"
+                        android:padding="16dp"
+                        android:textColor="@color/dark_green"
                         android:textColorHint="@color/subtle_text"
-                        android:textSize="15sp"
-                        android:textColor="@color/dark_green" />
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- ======================= Chi tiet ghi chu ======================== -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/box_category"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="16dp"
                 app:cardBackgroundColor="@color/card_cream"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp"
@@ -207,208 +227,252 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Danh mục *"
-                        android:textSize="18sp"
-                        android:textColor="@color/dark_green"
-                        android:textStyle="bold" />
-
-                    <HorizontalScrollView
+                    <!-- Ai vay / Tra ai : chi hien o hai che do vay no va tra no -->
+                    <LinearLayout
+                        android:id="@+id/box_person"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:scrollbars="none">
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tv_person_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ai vay"
+                            android:textColor="@color/subtle_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <EditText
+                            android:id="@+id/edt_person"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="16dp"
+                            android:background="@drawable/bg_field"
+                            android:hint="Tên người liên quan"
+                            android:inputType="textCapWords"
+                            android:padding="14dp"
+                            android:singleLine="true"
+                            android:textColor="@color/dark_green"
+                            android:textColorHint="@color/subtle_text"
+                            android:textSize="15sp" />
+                    </LinearLayout>
+
+                    <!-- Mo ta : chi hien o chi tieu va thu nhap -->
+                    <LinearLayout
+                        android:id="@+id/box_description"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Mô tả"
+                            android:textColor="@color/subtle_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <EditText
+                            android:id="@+id/edt_description"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="16dp"
+                            android:background="@drawable/bg_field"
+                            android:hint="Ví dụ: Cà phê sáng"
+                            android:inputType="textCapSentences"
+                            android:padding="14dp"
+                            android:singleLine="true"
+                            android:textColor="@color/dark_green"
+                            android:textColorHint="@color/subtle_text"
+                            android:textSize="15sp" />
+                    </LinearLayout>
+
+                    <!-- Danh muc chi tieu -->
+                    <LinearLayout
+                        android:id="@+id/box_category"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Danh mục"
+                            android:textColor="@color/subtle_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
 
                         <LinearLayout
                             android:id="@+id/container_cats"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal" />
-                    </HorizontalScrollView>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="16dp"
+                            android:orientation="vertical" />
+                    </LinearLayout>
 
-            <!-- Chỉ dùng cho thu nhập -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/box_income_method"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:visibility="gone"
-                app:cardBackgroundColor="@color/card_cream"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Cách nhận *"
-                        android:textSize="18sp"
-                        android:textColor="@color/dark_green"
-                        android:textStyle="bold" />
-
-                    <HorizontalScrollView
+                    <!-- Nguon thu nhap -->
+                    <LinearLayout
+                        android:id="@+id/box_income_method"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:scrollbars="none">
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Nguồn thu"
+                            android:textColor="@color/subtle_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
 
                         <LinearLayout
                             android:id="@+id/container_methods"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal" />
-                    </HorizontalScrollView>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="20dp">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    app:cardBackgroundColor="@color/card_cream"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="4dp"
-                    app:strokeWidth="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Ngày &amp; giờ"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/olive" />
-
-                        <TextView
-                            android:id="@+id/tv_date"
                             android:layout_width="match_parent"
-                            android:layout_height="40dp"
+                            android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:gravity="center_vertical"
-                            android:paddingLeft="12dp"
-                            android:background="@drawable/bg_field_small"
-                            android:text="--"
-                            android:textSize="13sp"
-                            android:textColor="@color/dark_green" />
+                            android:layout_marginBottom="16dp"
+                            android:orientation="vertical" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/box_payment"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    app:cardBackgroundColor="@color/card_cream"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="4dp"
-                    app:strokeWidth="0dp">
+                    <!-- Thoi diem ghi nhan -->
+                    <TextView
+                        android:id="@+id/tv_date_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Thời gian"
+                        android:textColor="@color/subtle_text"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
-                    <LinearLayout
+                    <TextView
+                        android:id="@+id/tv_date"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_field"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="14dp"
+                        android:text="01/01/2025 08:00"
+                        android:textColor="@color/dark_green"
+                        android:textSize="15sp" />
+
+                    <!-- Han doi / han phai tra -->
+                    <LinearLayout
+                        android:id="@+id/box_due"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tv_due_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Thời hạn người đó vay"
+                            android:textColor="@color/subtle_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_due"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:background="@drawable/bg_field"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="14dp"
+                            android:text="Chưa đặt thời hạn"
+                            android:textColor="@color/dark_green"
+                            android:textSize="15sp" />
+                    </LinearLayout>
+
+                    <!-- Phuong thuc thanh toan -->
+                    <LinearLayout
+                        android:id="@+id/box_payment"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Thanh toán"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/olive" />
+                            android:textColor="@color/subtle_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/tv_payment"
                             android:layout_width="match_parent"
-                            android:layout_height="40dp"
+                            android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:gravity="center_vertical"
-                            android:paddingLeft="12dp"
-                            android:background="@drawable/bg_field_small"
-                            android:text="💳 Thẻ tín dụng"
-                            android:textSize="13sp"
-                            android:textColor="@color/dark_green" />
+                            android:background="@drawable/bg_field"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="14dp"
+                            android:text="🏦 Chuyển khoản"
+                            android:textColor="@color/dark_green"
+                            android:textSize="15sp" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/box_note"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                app:cardBackgroundColor="@color/card_cream"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ghi chú (Tùy chọn)"
-                        android:textSize="18sp"
-                        android:textColor="@color/dark_green"
-                        android:textStyle="bold" />
-
-                    <EditText
-                        android:id="@+id/edt_note"
-                        android:inputType="textCapSentences|textMultiLine"
+                    <!-- Ghi chu them -->
+                    <LinearLayout
+                        android:id="@+id/box_note"
                         android:layout_width="match_parent"
-                        android:layout_height="80dp"
-                        android:layout_marginTop="12dp"
-                        android:padding="16dp"
-                        android:gravity="top|left"
-                        android:background="@drawable/bg_field"
-                        android:hint="Mua đồ ăn hàng tuần..."
-                        android:textColorHint="@color/subtle_text"
-                        android:textSize="14sp"
-                        android:textColor="@color/dark_green" />
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ghi chú"
+                            android:textColor="@color/subtle_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <EditText
+                            android:id="@+id/edt_note"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:background="@drawable/bg_field"
+                            android:gravity="top|left"
+                            android:hint="Ghi thêm nếu cần..."
+                            android:inputType="textMultiLine|textCapSentences"
+                            android:minLines="2"
+                            android:padding="14dp"
+                            android:textColor="@color/dark_green"
+                            android:textColorHint="@color/subtle_text"
+                            android:textSize="15sp" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/btn_submit"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="24dp"
-                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
                 android:background="@drawable/bg_button_gradient"
-                android:elevation="6dp"
-                android:text="Thêm chi tiêu"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="@color/cream"
                 android:clickable="true"
-                android:focusable="true" />
+                android:focusable="true"
+                android:gravity="center"
+                android:padding="16dp"
+                android:text="Lưu ghi chú"
+                android:textColor="@color/cream"
+                android:textSize="16sp"
+                android:textStyle="bold" />
         </LinearLayout>
     </ScrollView>
-
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

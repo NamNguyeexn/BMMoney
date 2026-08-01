@@ -17,6 +17,7 @@ import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.CategoryTotal;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionDao;
+import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Prefs;
@@ -25,7 +26,10 @@ import com.example.bmmoney.util.Stats;
 import com.example.bmmoney.util.ViewUtils;
 import com.example.bmmoney.view.TrendChartView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +56,23 @@ public class AnalyticsFragment extends Fragment {
     private static class Data {
         double[] trend;
         String[] labels;
+
+        // Ban va 02/08: ba duong bo sung cho bieu do xu huong
+        double[] trendIncome;
+        double[] trendLend;
+        double[] trendDebt;
+
+        // So lieu cua ky hien tai va ky truoc, dung cho the "Danh gia"
+        double income;
+        double previousIncome;
+        double lend;
+        double previousLend;
+        double debt;
+        double previousDebt;
+        double debtOpen;
+
+        /** Danh sach khoan cho vay va khoan no con treo, han gan nhat truoc. */
+        List<TransactionEntity> debts = new ArrayList<>();
         double total;
         double previousTotal;
         List<String> names = new ArrayList<>();
@@ -131,6 +152,9 @@ public class AnalyticsFragment extends Fragment {
         Db.load(() -> {
             Data data = new Data();
             data.trend = new double[steps];
+            data.trendIncome = new double[steps];
+            data.trendLend = new double[steps];
+            data.trendDebt = new double[steps];
             data.labels = new String[steps];
 
             for (int i = 0; i < steps; i++) {
@@ -138,10 +162,34 @@ public class AnalyticsFragment extends Fragment {
                 long[] bounds = Cycle.bounds(cycleDay, now, offset);
                 Double sum = dao.getExpenseInRange(bounds[0], bounds[1]);
                 data.trend[i] = sum == null ? 0d : sum;
+                // Ba duong con lai. Cho vay va tra no lay rieng vi khong nam trong thu chi.
+                data.trendIncome[i] = zero(dao.getIncomeInRange(bounds[0], bounds[1]));
+                data.trendLend[i] = zero(dao.getSumInRange(Stats.LEND, bounds[0], bounds[1]));
+                data.trendDebt[i] = zero(dao.getSumInRange(Stats.DEBT, bounds[0], bounds[1]));
                 data.labels[i] = Cycle.label(cycleDay, bounds[0] + 1000L);
             }
             data.total = data.trend[steps - 1];
             data.previousTotal = steps > 1 ? data.trend[steps - 2] : 0d;
+            data.income = data.trendIncome[steps - 1];
+            data.previousIncome = steps > 1 ? data.trendIncome[steps - 2] : 0d;
+            data.lend = data.trendLend[steps - 1];
+            data.previousLend = steps > 1 ? data.trendLend[steps - 2] : 0d;
+            data.debt = data.trendDebt[steps - 1];
+            data.previousDebt = steps > 1 ? data.trendDebt[steps - 2] : 0d;
+            data.debtOpen = zero(dao.getOpenTotal(Stats.DEBT));
+
+            // Bao cao no: gop hai loai roi xep theo han gan nhat truoc
+            List<TransactionEntity> open = new ArrayList<>();
+            List<TransactionEntity> openLend = dao.getOpenByType(Stats.LEND);
+            List<TransactionEntity> openDebt = dao.getOpenByType(Stats.DEBT);
+            if (openLend != null) open.addAll(openLend);
+            if (openDebt != null) open.addAll(openDebt);
+            java.util.Collections.sort(open, (a, b) -> {
+                long da = a.dueMillis() > 0 ? a.dueMillis() : Long.MAX_VALUE;
+                long db = b.dueMillis() > 0 ? b.dueMillis() : Long.MAX_VALUE;
+                return Long.compare(da, db);
+            });
+            data.debts = open;
 
             long[] thisBounds = Cycle.bounds(cycleDay, now, 0);
             long[] lastBounds = Cycle.bounds(cycleDay, now, -1);
@@ -193,12 +241,14 @@ public class AnalyticsFragment extends Fragment {
         animated = true;
 
         TrendChartView chart = root.findViewById(R.id.trend_chart);
-        if (chart != null) chart.setData(data.trend, data.labels);
+        if (chart != null) {
+            // Thu tu bat buoc: chi / thu / cho vay / tra no, trung voi mau o phan chu thich
+            chart.setSeries(new double[][]{
+                    data.trend, data.trendIncome, data.trendLend, data.trendDebt}, data.labels);
+        }
 
-        double change = Stats.changePercent(data.total, data.previousTotal);
-        String direction = change >= 0 ? "t\u0103ng" : "gi\u1ea3m";
-        text(R.id.tv_trend_summary, "K\u1ef3 n\u00e0y \u0111\u00e3 chi " + Money.vnd(data.total)
-                + " \u00b7 " + direction + " " + Money.percent(Math.abs(change)) + " so v\u1edbi k\u1ef3 tr\u01b0\u1edbc");
+        bindEvaluation(data);
+        bindDebtReport(data);
 
         double max = 0;
         for (int i = 0; i < data.thisAmounts.size(); i++) {
@@ -238,6 +288,87 @@ public class AnalyticsFragment extends Fragment {
         text(R.id.tv_worst_note, data.worstChange > 0
                 ? "T\u0103ng " + Money.percent(data.worstChange) + " so v\u1edbi k\u1ef3 tr\u01b0\u1edbc, c\u00e2n nh\u1eafc c\u1eaft b\u1edbt"
                 : "M\u1ecdi danh m\u1ee5c \u0111\u1ec1u trong t\u1ea7m ki\u1ec3m so\u00e1t");
+    }
+
+    /**
+     * The "Danh gia": moi loai mot dong, dong nao khong co so lieu thi an di.
+     */
+    private void bindEvaluation(Data data) {
+        text(R.id.tv_trend_summary, "K\u1ef3 n\u00e0y \u0111\u00e3 chi " + Money.vnd(data.total)
+                + " \u00b7 " + Stats.changePhrase(data.total, data.previousTotal));
+
+        line(R.id.tv_eval_income, data.income > 0,
+                "K\u1ef3 n\u00e0y \u0111\u00e3 thu " + Money.vnd(data.income)
+                        + " \u00b7 " + Stats.changePhrase(data.income, data.previousIncome));
+
+        line(R.id.tv_eval_lend, data.lend > 0,
+                "K\u1ef3 n\u00e0y \u0111\u00e3 cho vay " + Money.vnd(data.lend)
+                        + " \u00b7 " + Stats.changePhrase(data.lend, data.previousLend));
+
+        line(R.id.tv_eval_debt, data.debt > 0 || data.debtOpen > 0,
+                "K\u1ef3 n\u00e0y \u0111\u00e3 tr\u1ea3 n\u1ee3 " + Money.vnd(data.debt)
+                        + " \u00b7 hi\u1ec7n c\u00f2n n\u1ee3 " + Money.vnd(data.debtOpen));
+    }
+
+    /**
+     * The "Bao cao no": biet can doi ai / tra ai truoc.
+     * Khung cao co dinh khoang ba dong roi cuon, giong phan Danh muc tuy chinh.
+     */
+    private void bindDebtReport(Data data) {
+        android.widget.LinearLayout container = root.findViewById(R.id.container_debts);
+        if (container == null) return;
+        container.removeAllViews();
+
+        boolean empty = data.debts.isEmpty();
+        View scroll = root.findViewById(R.id.scroll_debts);
+        if (scroll != null) scroll.setVisibility(empty ? View.GONE : View.VISIBLE);
+        View none = root.findViewById(R.id.tv_no_debt);
+        if (none != null) none.setVisibility(empty ? View.VISIBLE : View.GONE);
+        View hint = root.findViewById(R.id.tv_debt_scroll_hint);
+        if (hint != null) hint.setVisibility(data.debts.size() > 3 ? View.VISIBLE : View.GONE);
+        text(R.id.tv_debt_count, data.debts.size() + " kho\u1ea3n");
+        if (empty) return;
+
+        SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        LayoutInflater inflater = LayoutInflater.from(container.getContext());
+
+        for (final TransactionEntity t : data.debts) {
+            View row = inflater.inflate(R.layout.item_debt_row, container, false);
+            boolean lend = Stats.LEND.equals(t.getType());
+
+            TextView icon = row.findViewById(R.id.tv_debt_icon);
+            icon.setText(Stats.typeGlyph(t.getType()));
+            icon.setBackgroundResource(lend ? R.drawable.bg_lend : R.drawable.bg_debt);
+
+            ((TextView) row.findViewById(R.id.tv_debt_person)).setText(
+                    t.personOrEmpty().isEmpty() ? Stats.typeName(t.getType()) : t.personOrEmpty());
+
+            String due = t.dueMillis() > 0
+                    ? (lend ? "H\u1ea1n \u0111\u00f2i " : "H\u1ea1n tr\u1ea3 ")
+                            + df.format(new Date(t.dueMillis())) + " \u00b7 " + TxDialog.remain(t.dueMillis())
+                    : (lend ? "Ch\u01b0a \u0111\u1eb7t h\u1ea1n \u0111\u00f2i" : "Ch\u01b0a \u0111\u1eb7t h\u1ea1n tr\u1ea3");
+            ((TextView) row.findViewById(R.id.tv_debt_due)).setText(due);
+
+            TextView amount = row.findViewById(R.id.tv_debt_amount);
+            amount.setText(Money.vnd(t.getAmount()));
+            amount.setTextColor(ContextCompat.getColor(container.getContext(),
+                    lend ? R.color.sandy : R.color.dark_green));
+
+            row.setOnClickListener(v -> TxDialog.show(v.getContext(), t, false, this::reload));
+            container.addView(row);
+        }
+    }
+
+    /** Hien mot dong danh gia neu co so lieu, con khong thi an han di. */
+    private void line(int id, boolean visible, String value) {
+        View view = root.findViewById(id);
+        if (view == null) return;
+        view.setVisibility(visible ? View.VISIBLE : View.GONE);
+        if (visible && view instanceof TextView) ((TextView) view).setText(value);
+    }
+
+    private static double zero(Double v) {
+        return v == null ? 0d : v;
     }
 
     /** an_this_* v\u00e0 an_last_* l\u00e0 th\u1ebb View, ch\u1ec9 \u0111\u1eb7t \u0111\u1ed9 r\u1ed9ng ch\u1ee9 kh\u00f4ng g\u00e1n ch\u1eef. */

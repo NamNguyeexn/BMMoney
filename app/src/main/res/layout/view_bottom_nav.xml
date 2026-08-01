@@ -15,8 +15,8 @@
         android:layout_height="@dimen/nav_height"
         android:orientation="horizontal"
         android:background="@color/cream"
-        android:paddingLeft="8dp"
-        android:paddingRight="8dp">
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp">
 
         <FrameLayout
             android:id="@+id/nav_home"
@@ -28,7 +28,7 @@
 
             <LinearLayout
                 android:id="@+id/nav_home_pill"
-                android:layout_width="56dp"
+                android:layout_width="52dp"
                 android:layout_height="56dp"
                 android:layout_gravity="center"
                 android:orientation="vertical"
@@ -49,7 +49,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Trang chủ"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -73,7 +73,7 @@
 
             <LinearLayout
                 android:id="@+id/nav_add_pill"
-                android:layout_width="56dp"
+                android:layout_width="52dp"
                 android:layout_height="56dp"
                 android:layout_gravity="center"
                 android:orientation="vertical"
@@ -94,7 +94,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Thêm"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -108,6 +108,51 @@
                 android:visibility="gone" />
         </FrameLayout>
 
+            <!-- Ban va 02/08: them muc Lich, cung cap bac voi cac muc con lai -->
+        <FrameLayout
+            android:id="@+id/nav_calendar"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:id="@+id/nav_calendar_pill"
+                android:layout_width="52dp"
+                android:layout_height="56dp"
+                android:layout_gravity="center"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp">
+
+                <ImageView
+                    android:id="@+id/nav_calendar_icon"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_calendar"
+                    android:contentDescription="Lịch" />
+
+                <TextView
+                    android:id="@+id/nav_calendar_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Lịch"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/nav_calendar_dot"
+                android:layout_width="4dp"
+                android:layout_height="4dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/dot_olive"
+                android:visibility="gone" />
+        </FrameLayout>
         <FrameLayout
             android:id="@+id/nav_analytics"
             android:layout_width="0dp"
@@ -118,7 +163,7 @@
 
             <LinearLayout
                 android:id="@+id/nav_analytics_pill"
-                android:layout_width="56dp"
+                android:layout_width="52dp"
                 android:layout_height="56dp"
                 android:layout_gravity="center"
                 android:orientation="vertical"
@@ -139,7 +184,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Phân tích"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -163,7 +208,7 @@
 
             <LinearLayout
                 android:id="@+id/nav_search_pill"
-                android:layout_width="56dp"
+                android:layout_width="52dp"
                 android:layout_height="56dp"
                 android:layout_gravity="center"
                 android:orientation="vertical"
@@ -184,7 +229,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Tìm kiếm"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -208,7 +253,7 @@
 
             <LinearLayout
                 android:id="@+id/nav_settings_pill"
-                android:layout_width="56dp"
+                android:layout_width="52dp"
                 android:layout_height="56dp"
                 android:layout_gravity="center"
                 android:orientation="vertical"
@@ -229,7 +274,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Cài đặt"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
