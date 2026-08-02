@@ -58,6 +58,10 @@ public final class AutoBackup {
 
     /** Hen sao luu sau vai phut, goi moi khi du lieu duoi may thay doi. */
     public static void scheduleSoon(Context context) {
+        // Ban va 03/08: ghi nhan moc thay doi TRUOC khi kiem tra dang nhap.
+        // Truoc day may chua dang nhap se khong bao gio co moc nay, nen sau khi
+        // dang nhap nut Dong bo khong biet du lieu may la moi hay cu.
+        Prefs.touchLocal(context.getApplicationContext());
         if (!FirebaseSyncManager.isSignedIn()) return;
         set(context, CODE_SOON, System.currentTimeMillis() + SOON_DELAY, BackupReceiver.ACTION_SOON);
     }

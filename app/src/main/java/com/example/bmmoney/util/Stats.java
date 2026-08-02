@@ -13,26 +13,47 @@ import java.util.Map;
 /**
  * Tong hop so lieu tu danh sach giao dich Room.
  *
- * <p><b>Ban va 02/08 - bon loai ghi chu tai chinh.</b></p>
+ * <p><b>Ban va 03/08 - SAU loai ghi chu tai chinh theo nghiep vu ke toan.</b></p>
  * <ul>
- *   <li>{@link #EXPENSE} Chi tieu - tien ra khoi vi</li>
- *   <li>{@link #INCOME}  Thu nhap - tien vao vi</li>
- *   <li>{@link #LEND}    Cho vay  - nguoi khac vay cua minh, minh CAN DOI</li>
- *   <li>{@link #DEBT}    No phai tra - minh no nguoi khac, minh CAN TRA</li>
+ *   <li>{@link #EXPENSE} Chi tieu - tien ra vi, tinh vao loi nhuan</li>
+ *   <li>{@link #INCOME}  Thu nhap - tien vao vi, tinh vao loi nhuan</li>
+ *   <li>{@link #BORROW}  Di vay   - tien VAO vi, tang no phai tra</li>
+ *   <li>{@link #REPAY}   Tra no goc - tien RA vi, giam no phai tra</li>
+ *   <li>{@link #LEND}    Cho vay  - tien RA vi, tang phai thu</li>
+ *   <li>{@link #COLLECT} Thu hoi no goc - tien VAO vi, giam phai thu</li>
  * </ul>
  *
- * <p><b>Nguyen tac ke toan:</b> LEND va DEBT KHONG lam thay doi vi. Chung khong
- * duoc cong vao tong chi, tong thu, ngan sach hay bieu do tron theo danh muc.
- * Moi ham tinh tien trong lop nay deu loc theo type nen tu dong dam bao dieu do.</p>
+ * <p><b>Nguyen tac ke toan (khong tinh lai):</b></p>
+ * <pre>
+ * soDuVi    = INCOME - EXPENSE + BORROW - REPAY - LEND + COLLECT
+ * phaiThu   = LEND   - COLLECT
+ * phaiTra   = BORROW - REPAY
+ * taiSanRong= soDuVi + phaiThu - phaiTra
+ * loiNhuan  = INCOME - EXPENSE
+ * </pre>
+ *
+ * <p>Bon loai cong no LAM DOI SO DU VI nhung KHONG tinh vao thu nhap hay chi tieu,
+ * vi vay moi truy van ngan sach / bieu do danh muc van chi loc EXPENSE va INCOME.</p>
  */
 public final class Stats {
 
     public static final String EXPENSE = "EXPENSE";
     public static final String INCOME = "INCOME";
-    /** Cho vay: nguoi khac vay cua minh -> minh can doi lai. */
+    /** Di vay: minh vay nguoi khac -> tien vao vi, phat sinh no phai tra. */
+    public static final String BORROW = "BORROW";
+    /** Tra no goc: minh tra bot no -> tien ra vi, giam no phai tra. */
+    public static final String REPAY = "REPAY";
+    /** Cho vay: minh cho nguoi khac vay -> tien ra vi, phat sinh phai thu. */
     public static final String LEND = "LEND";
-    /** No phai tra: minh no nguoi khac -> minh can tra. */
-    public static final String DEBT = "DEBT";
+    /** Thu hoi no goc: nguoi ta tra minh -> tien vao vi, giam phai thu. */
+    public static final String COLLECT = "COLLECT";
+
+    /**
+     * Ten loai cu (truoc ban 03/08) cua khoan "No phai tra".
+     * Chi con dung khi doc du lieu cu tu cloud; trong may da doi sang BORROW
+     * boi migration 2 -> 3.
+     */
+    public static final String LEGACY_DEBT = "DEBT";
 
     private Stats() {
     }
@@ -49,37 +70,94 @@ public final class Stats {
 
     // ------------------------------------------------------------- loai ghi chu
 
-    /** Loai nay co lam thay doi so du vi khong. */
-    public static boolean affectsWallet(String type) {
-        return EXPENSE.equals(type) || INCOME.equals(type);
+    /** Doi ten loai kieu cu sang ten moi. Dung khi doc ban sao luu cu. */
+    public static String normalize(String type) {
+        if (LEGACY_DEBT.equals(type)) return BORROW;
+        if (type == null) return EXPENSE;
+        return type;
     }
 
-    /** Loai nay thuoc nhom vay / no khong. */
+    /**
+     * Dau tac dong len so du vi: +1 la tien vao vi, -1 la tien ra khoi vi.
+     * Day la ham goc de tinh so du vi va de chon dau hien thi.
+     */
+    public static int walletSign(String type) {
+        String t = normalize(type);
+        if (INCOME.equals(t) || BORROW.equals(t) || COLLECT.equals(t)) return 1;
+        return -1;
+    }
+
+    /** Loai nay co tinh vao lai / lo (thu nhap - chi tieu) khong. */
+    public static boolean affectsProfit(String type) {
+        String t = normalize(type);
+        return EXPENSE.equals(t) || INCOME.equals(t);
+    }
+
+    /** Loai nay thuoc nhom cong no khong (bon loai vay - tra - cho vay - thu hoi). */
     public static boolean isDebtKind(String type) {
-        return LEND.equals(type) || DEBT.equals(type);
+        return !affectsProfit(type);
+    }
+
+    /** Loai nay lam TANG khoan phai thu (minh cho vay). */
+    public static boolean isReceivable(String type) {
+        return LEND.equals(normalize(type));
+    }
+
+    /** Loai nay lam TANG khoan phai tra (minh di vay). */
+    public static boolean isPayable(String type) {
+        return BORROW.equals(normalize(type));
+    }
+
+    /** Loai nay la mot lan tra bot / thu bot goc cua mot khoan no da co. */
+    public static boolean isSettlement(String type) {
+        String t = normalize(type);
+        return REPAY.equals(t) || COLLECT.equals(t);
     }
 
     /** Ten hien thi tieng Viet cua mot loai. */
     public static String typeName(String type) {
-        if (INCOME.equals(type)) return "Thu nh\u1eadp";
-        if (LEND.equals(type)) return "Cho vay";
-        if (DEBT.equals(type)) return "N\u1ee3 ph\u1ea3i tr\u1ea3";
+        String t = normalize(type);
+        if (INCOME.equals(t)) return "Thu nh\u1eadp";
+        if (BORROW.equals(t)) return "\u0110i vay";
+        if (REPAY.equals(t)) return "Tr\u1ea3 n\u1ee3 g\u1ed1c";
+        if (LEND.equals(t)) return "Cho vay";
+        if (COLLECT.equals(t)) return "Thu h\u1ed3i n\u1ee3 g\u1ed1c";
         return "Chi ti\u00eau";
     }
 
-    /** Ky hieu mui ten hien o o tron ben trai moi dong danh sach. */
+    /** Ten ngan dung cho the loc va nut chon che do. */
+    public static String typeShortName(String type) {
+        String t = normalize(type);
+        if (INCOME.equals(t)) return "Thu";
+        if (BORROW.equals(t)) return "\u0110i vay";
+        if (REPAY.equals(t)) return "Tr\u1ea3 n\u1ee3";
+        if (LEND.equals(t)) return "Cho vay";
+        if (COLLECT.equals(t)) return "Thu n\u1ee3";
+        return "Chi";
+    }
+
+    /** Ky hieu hien o o tron ben trai moi dong danh sach. */
     public static String typeGlyph(String type) {
-        if (INCOME.equals(type)) return "\u2191";
-        if (LEND.equals(type)) return "\u21aa";
-        if (DEBT.equals(type)) return "\u21a9";
+        String t = normalize(type);
+        if (INCOME.equals(t)) return "\u2191";
+        if (BORROW.equals(t)) return "\u21a9";
+        if (REPAY.equals(t)) return "\u21aa";
+        if (LEND.equals(t)) return "\u2197";
+        if (COLLECT.equals(t)) return "\u2199";
         return "\u2193";
     }
 
-    /** Dau hien thi truoc so tien. LEND / DEBT khong doi vi nen khong co dau. */
+    /**
+     * Dau hien thi truoc so tien, bam theo tac dong len vi.
+     * Di vay va thu hoi no hien dau +, tra no va cho vay hien dau -.
+     */
     public static String typeSign(String type) {
-        if (INCOME.equals(type)) return "+ ";
-        if (isDebtKind(type)) return "";
-        return "- ";
+        return walletSign(type) > 0 ? "+ " : "- ";
+    }
+
+    /** So tien co dau, dung de cong don ra so du vi. */
+    public static double signedAmount(String type, double amount) {
+        return walletSign(type) * amount;
     }
 
     // ------------------------------------------------------------- moc thoi gian
@@ -118,7 +196,7 @@ public final class Stats {
         double sum = 0;
         if (list == null) return sum;
         for (TransactionEntity t : list) {
-            if (type.equals(t.getType()) && t.getDate() >= from && t.getDate() <= to) {
+            if (type.equals(normalize(t.getType())) && t.getDate() >= from && t.getDate() <= to) {
                 sum += t.getAmount();
             }
         }
@@ -129,7 +207,7 @@ public final class Stats {
     public static List<Slice> byCategory(List<TransactionEntity> list, long from, long to) {
         Map<String, Double> map = new LinkedHashMap<>();
         for (TransactionEntity t : list) {
-            if (!EXPENSE.equals(t.getType())) continue;
+            if (!EXPENSE.equals(normalize(t.getType()))) continue;
             if (t.getDate() < from || t.getDate() > to) continue;
             String key = t.getCategory() == null || t.getCategory().isEmpty() ? "Kh\u00e1c" : t.getCategory();
             Double old = map.get(key);
@@ -168,7 +246,7 @@ public final class Stats {
         return (now - before) / before * 100d;
     }
 
-    /** Cau mo ta bien dong: "t\u0103ng 12,5%" hoac "gi\u1ea3m 8%". */
+    /** Cau mo ta bien dong: "tang 12,5%" hoac "giam 8%". */
     public static String changePhrase(double now, double before) {
         double change = changePercent(now, before);
         String direction = change >= 0 ? "t\u0103ng" : "gi\u1ea3m";

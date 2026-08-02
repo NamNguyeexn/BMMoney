@@ -8,12 +8,14 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.util.Prefs;
+import com.example.bmmoney.util.Stats;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
@@ -349,8 +351,8 @@ public class FirebaseSyncManager {
         final long now = System.currentTimeMillis();
 
         Map<String, Object> meta = new HashMap<>();
-        // v3: them person / dueDate / settled. Van doc duoc ban v2 cu.
-        meta.put("version", 3);
+        // v4: them loanId / writtenOff cho nghiep vu cong no. Van doc duoc v2 va v3 cu.
+        meta.put("version", 4);
         meta.put("updatedAt", now);
         meta.put("count", count);
         meta.put("parts", parts.size());
@@ -425,6 +427,38 @@ public class FirebaseSyncManager {
             });
             return;
         }
+
+        // Ban va 03/08: chi bao dung MOT lan va co dong ho canh.
+        // Truoc day neu Firestore khong tra loi (mat mang, rules chan) thi callback
+        // khong bao gio chay, man Cai dat ket o trang thai "Dang kiem tra..." va nguoi
+        // dung thay nut Dong bo / Sao luu nhu bi liet.
+        final AtomicBoolean fired = new AtomicBoolean(false);
+        final Runnable[] watchdog = new Runnable[1];
+        final InfoResult once = new InfoResult() {
+            @Override
+            public void onDone(final Info info) {
+                if (fired.getAndSet(true)) return;
+                if (watchdog[0] != null) MAIN.removeCallbacks(watchdog[0]);
+                Db.ui(new Runnable() {
+                    @Override
+                    public void run() {
+                        result.onDone(info);
+                    }
+                });
+            }
+        };
+        watchdog[0] = new Runnable() {
+            @Override
+            public void run() {
+                once.onDone(new Info(false, 0, 0, ""));
+            }
+        };
+        MAIN.postDelayed(watchdog[0], TIMEOUT_MS);
+
+        if (!hasNetwork()) {
+            once.onDone(new Info(false, 0, 0, ""));
+            return;
+        }
         wakeNetwork();
         readDoc(backup.document("latest"), new DocRead() {
             @Override
@@ -440,12 +474,45 @@ public class FirebaseSyncManager {
                             count == null ? 0 : count.intValue(),
                             d.getString("device"));
                 }
-                Db.ui(new Runnable() {
-                    @Override
-                    public void run() {
-                        result.onDone(info);
-                    }
-                });
+                once.onDone(info);
+            }
+        });
+    }
+
+    /**
+     * Ban va 03/08. DONG BO THONG MINH cho nut "Dong bo".
+     *
+     * <p>Truoc day nut nay goi thang restoreLatest, tuc la LUON keo cloud ve va xoa
+     * trang du lieu duoi may. Ai vua nhap mot loat giao dich roi bam Dong bo la mat
+     * sach - dung trieu chung ma ban gap.</p>
+     *
+     * <p>Nay app so sanh hai moc thoi gian roi tu quyet dinh:</p>
+     * <ul>
+     *   <li>Duoi may moi hon cloud, hoac cloud chua co gi: DAY LEN (backupNow).</li>
+     *   <li>Cloud moi hon: KEO VE (restoreLatest).</li>
+     *   <li>Hai ben bang nhau: day len cho chac, khong xoa gi duoi may.</li>
+     * </ul>
+     *
+     * @param result bao ket qua; count la so ban ghi da day len hoac tai ve
+     */
+    public void syncNow(@Nullable final Result result) {
+        if (!isSignedIn()) {
+            new Once(result).finish(false, 0, "ch\u01b0a \u0111\u0103ng nh\u1eadp");
+            return;
+        }
+        if (!hasNetwork()) {
+            new Once(result).finish(false, 0, "m\u00e1y \u0111ang kh\u00f4ng c\u00f3 m\u1ea1ng");
+            return;
+        }
+        loadInfo(new InfoResult() {
+            @Override
+            public void onDone(Info info) {
+                long local = Prefs.localChangedAt(context);
+                if (!info.exists || info.updatedAt <= 0 || local >= info.updatedAt) {
+                    backupNow(result);
+                } else {
+                    restoreLatest(result);
+                }
             }
         });
     }
@@ -477,7 +544,9 @@ public class FirebaseSyncManager {
                             : friendly(error));
                     return;
                 }
-                applyRemoteSettings(meta);
+                // Ban va 03/08: KHONG ap cai dat cloud o day nua.
+                // Truoc day cai dat bi ghi de ngay ca khi buoc doc manh phia sau that bai,
+                // nen ngan sach / chu ky cua nguoi dung bi doi ma du lieu thi khong ve.
                 readParts(backup, meta, once);
             }
         });
@@ -489,18 +558,22 @@ public class FirebaseSyncManager {
      * document part_i theo dung so manh ghi trong "latest": it luot doc hon,
      * co the lui ve cache va bao ro manh nao thieu.
      */
-    private void readParts(final CollectionReference backup, DocumentSnapshot meta,
+    private void readParts(final CollectionReference backup, final DocumentSnapshot meta,
                            final Once once) {
         Long parts = meta.getLong("parts");
         final int total = parts == null ? 0 : parts.intValue();
         if (total <= 0) {
+            applyRemoteSettings(meta);
             replaceLocal("[]", once);
             return;
         }
 
+        // Ban va 03/08: dung Source.SERVER roi moi lui ve CACHE, giong readDoc.
+        // Truoc day .get() de Firestore tu chon nguon nen khi mang chap chon co the
+        // nhan lai manh cu trong cache ma van bao thanh cong -> khoi phuc ra du lieu cu.
         final List<Task<DocumentSnapshot>> tasks = new ArrayList<>();
         for (int i = 0; i < total; i++) {
-            tasks.add(backup.document("part_" + i).get());
+            tasks.add(readPart(backup, i));
         }
 
         Tasks.whenAllComplete(tasks)
@@ -518,6 +591,8 @@ public class FirebaseSyncManager {
                             String data = task.getResult().getString("data");
                             if (data != null) sb.append(data);
                         }
+                        // Doc du manh roi moi ap cai dat, tranh doi cai dat nua chung
+                        applyRemoteSettings(meta);
                         replaceLocal(sb.toString(), once);
                     }
                 })
@@ -525,6 +600,24 @@ public class FirebaseSyncManager {
                     @Override
                     public void onFailure(Exception e) {
                         once.finish(false, 0, friendly(e));
+                    }
+                });
+    }
+
+    /**
+     * Doc mot manh sao luu: uu tien may chu, that bai moi lui ve cache.
+     *
+     * <p>Truoc day cho goi thang {@code .get()} nen Firestore tu chon nguon; khi mang
+     * chap chon no co the tra ve manh CU trong cache ma van bao thanh cong, khien lan
+     * khoi phuc ghi de du lieu moi bang du lieu cu ma khong bao loi gi.</p>
+     */
+    private Task<DocumentSnapshot> readPart(final CollectionReference backup, final int index) {
+        return backup.document("part_" + index).get(Source.SERVER)
+                .continueWithTask(new com.google.android.gms.tasks.Continuation<DocumentSnapshot, Task<DocumentSnapshot>>() {
+                    @Override
+                    public Task<DocumentSnapshot> then(@NonNull Task<DocumentSnapshot> task) {
+                        if (task.isSuccessful()) return task;
+                        return backup.document("part_" + index).get(Source.CACHE);
                     }
                 });
     }
@@ -636,6 +729,9 @@ public class FirebaseSyncManager {
                 item.put("p", t.getPerson() == null ? "" : t.getPerson());
                 item.put("u", t.dueMillis());
                 item.put("s", t.isSettled() ? 1 : 0);
+                // Ban va 03/08 (v4): ma khoan vay goc va co xoa so
+                item.put("l", t.loanIdOrEmpty());
+                item.put("w", t.isWrittenOff() ? 1 : 0);
             } catch (Throwable ignored) {
                 continue;
             }
@@ -653,7 +749,8 @@ public class FirebaseSyncManager {
             JSONObject item = array.optJSONObject(i);
             if (item == null) continue;
             String title = item.optString("t", "");
-            String type = item.optString("y", "EXPENSE");
+            // Ban sao luu cu con luu "DEBT"; doi ngay sang BORROW cho khop nghiep vu moi
+            String type = Stats.normalize(item.optString("y", "EXPENSE"));
             String category = item.optString("c", "");
             long date = item.optLong("d", 0L);
             if (date <= 0) continue;
@@ -666,6 +763,11 @@ public class FirebaseSyncManager {
             long due = item.optLong("u", 0L);
             if (due > 0) entity.setDueDate(due);
             entity.setSettled(item.optInt("s", 0));
+
+            // Ban sao luu v2 / v3 khong co hai truong nay
+            String loanId = item.optString("l", "");
+            if (!loanId.isEmpty()) entity.setLoanId(loanId);
+            entity.setWrittenOff(item.optInt("w", 0));
 
             list.add(entity);
         }

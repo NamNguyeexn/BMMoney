@@ -1,18 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Ban va 02/08. File rieng de KHONG phai ghi de colors.xml goc.
+  Ban va 03/08. File rieng de KHONG phai ghi de colors.xml goc.
   Mau lay tu dung bang mau cua app: dark_green / olive / burnt / sandy / cream.
 -->
 <resources>
-    <!-- Mau nhan dien bon loai ghi chu tai chinh -->
-    <color name="line_expense">#BC6C25</color>   <!-- chi tieu  - burnt -->
-    <color name="line_income">#606C38</color>    <!-- thu nhap  - olive -->
-    <color name="line_lend">#DDA15E</color>      <!-- cho vay   - sandy -->
-    <color name="line_debt">#283618</color>      <!-- no phai tra - dark green -->
+    <!-- Mau nhan dien sau loai ghi chu tai chinh -->
+    <color name="line_expense">#BC6C25</color>   <!-- chi tieu        - burnt -->
+    <color name="line_income">#606C38</color>    <!-- thu nhap         - olive -->
+    <color name="line_borrow">#283618</color>    <!-- di vay           - dark green -->
+    <color name="line_repay">#8C5A2B</color>     <!-- tra no goc       - nau dat -->
+    <color name="line_lend">#DDA15E</color>      <!-- cho vay          - sandy -->
+    <color name="line_collect">#4F7A3A</color>   <!-- thu hoi no goc   - xanh la -->
+
+    <!-- Giu ten cu de cac layout san co khong bi vo -->
+    <color name="line_debt">#283618</color>
 
     <!-- Nen o tron cua tung loai trong danh sach -->
     <color name="tint_lend">#F7E7D0</color>
     <color name="tint_debt">#DFE7CE</color>
+    <color name="tint_borrow">#DFE7CE</color>
+    <color name="tint_repay">#F1E2CE</color>
+    <color name="tint_collect">#E2EFD5</color>
+
+    <!-- The tai san rong tren Trang chu -->
+    <color name="net_positive">#4F7A3A</color>
+    <color name="net_negative">#BC6C25</color>
 
     <!-- Cham bao bien dong tren lich -->
     <color name="dot_strong">#BC6C25</color>

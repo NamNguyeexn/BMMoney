@@ -196,7 +196,7 @@
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/chip_kind_debt"
+                    android:id="@+id/chip_kind_borrow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="8dp"
@@ -208,7 +208,43 @@
                     android:paddingTop="8dp"
                     android:paddingRight="16dp"
                     android:paddingBottom="8dp"
-                    android:text="Đang nợ"
+                    android:text="Đi vay"
+                    android:textColor="@color/olive"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/chip_kind_repay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="8dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_pill_cream"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingLeft="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingRight="16dp"
+                    android:paddingBottom="8dp"
+                    android:text="Trả nợ gốc"
+                    android:textColor="@color/olive"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/chip_kind_collect"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="8dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_pill_cream"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingLeft="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingRight="16dp"
+                    android:paddingBottom="8dp"
+                    android:text="Thu nợ gốc"
                     android:textColor="@color/olive"
                     android:textSize="13sp"
                     android:textStyle="bold" />

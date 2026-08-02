@@ -21,6 +21,8 @@ public final class Prefs {
     private static final String KEY_ONBOARDED = "onboarded";
     private static final String KEY_AUTO_BACKUP_DAY = "auto_backup_day";
     private static final String KEY_LEGACY_CLEANED = "legacy_cleaned";
+    /** Ban va 03/08: moc thoi gian du lieu duoi may doi lan cuoi (de so voi cloud). */
+    private static final String KEY_LOCAL_CHANGED = "local_changed";
 
     public static final double DEFAULT_BUDGET = 80500000d;
 
@@ -45,6 +47,25 @@ public final class Prefs {
 
     public static void setBudget(Context context, double budget) {
         prefs(context).edit().putFloat(KEY_BUDGET, (float) budget).apply();
+    }
+
+    /**
+     * Ban va 03/08. Lan cuoi du lieu duoi may thay doi.
+     *
+     * <p>Dung de nut Dong bo biet nen day len hay keo ve: neu may moi hon cloud
+     * thi sao luu de, con cloud moi hon thi lay ve.</p>
+     */
+    public static long localChangedAt(Context context) {
+        return prefs(context).getLong(KEY_LOCAL_CHANGED, 0L);
+    }
+
+    public static void setLocalChangedAt(Context context, long time) {
+        prefs(context).edit().putLong(KEY_LOCAL_CHANGED, time).apply();
+    }
+
+    /** Danh dau du lieu duoi may vua doi ngay bay gio. */
+    public static void touchLocal(Context context) {
+        setLocalChangedAt(context, System.currentTimeMillis());
     }
 
     public static long lastBackup(Context context) {

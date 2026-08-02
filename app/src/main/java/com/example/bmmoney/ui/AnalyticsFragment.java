@@ -57,7 +57,9 @@ public class AnalyticsFragment extends Fragment {
         double[] trend;
         String[] labels;
 
-        // Ban va 02/08: ba duong bo sung cho bieu do xu huong
+        // Ban va 03/08: ba duong bo sung cho bieu do xu huong.
+        // trendLend  = tien cho vay ra trong ky (LEND)
+        // trendDebt  = tien di vay ve trong ky (BORROW)
         double[] trendIncome;
         double[] trendLend;
         double[] trendDebt;
@@ -69,7 +71,12 @@ public class AnalyticsFragment extends Fragment {
         double previousLend;
         double debt;
         double previousDebt;
-        double debtOpen;
+
+        // Ban va 03/08: so lieu cong no theo nghiep vu ke toan
+        double receivable;
+        double payable;
+        double netProfit;
+        List<com.example.bmmoney.data.PartnerBalance> partners = new ArrayList<>();
 
         /** Danh sach khoan cho vay va khoan no con treo, han gan nhat truoc. */
         List<TransactionEntity> debts = new ArrayList<>();
@@ -165,7 +172,7 @@ public class AnalyticsFragment extends Fragment {
                 // Ba duong con lai. Cho vay va tra no lay rieng vi khong nam trong thu chi.
                 data.trendIncome[i] = zero(dao.getIncomeInRange(bounds[0], bounds[1]));
                 data.trendLend[i] = zero(dao.getSumInRange(Stats.LEND, bounds[0], bounds[1]));
-                data.trendDebt[i] = zero(dao.getSumInRange(Stats.DEBT, bounds[0], bounds[1]));
+                data.trendDebt[i] = zero(dao.getSumInRange(Stats.BORROW, bounds[0], bounds[1]));
                 data.labels[i] = Cycle.label(cycleDay, bounds[0] + 1000L);
             }
             data.total = data.trend[steps - 1];
@@ -176,12 +183,17 @@ public class AnalyticsFragment extends Fragment {
             data.previousLend = steps > 1 ? data.trendLend[steps - 2] : 0d;
             data.debt = data.trendDebt[steps - 1];
             data.previousDebt = steps > 1 ? data.trendDebt[steps - 2] : 0d;
-            data.debtOpen = zero(dao.getOpenTotal(Stats.DEBT));
+            // Ban va 03/08: so du cong no lay tu truy van gop, da tru phan da tra
+            data.receivable = dao.totalReceivable();
+            data.payable = dao.totalPayable();
+            data.netProfit = dao.netProfitInRange(current[0], current[1]);
+            List<com.example.bmmoney.data.PartnerBalance> partners = dao.partnerBalances();
+            if (partners != null) data.partners = partners;
 
-            // Bao cao no: gop hai loai roi xep theo han gan nhat truoc
+            // Bao cao no: gop khoan vay goc con treo cua hai chieu, han gan nhat truoc
             List<TransactionEntity> open = new ArrayList<>();
-            List<TransactionEntity> openLend = dao.getOpenByType(Stats.LEND);
-            List<TransactionEntity> openDebt = dao.getOpenByType(Stats.DEBT);
+            List<TransactionEntity> openLend = dao.getOpenLoans(Stats.LEND);
+            List<TransactionEntity> openDebt = dao.getOpenLoans(Stats.BORROW);
             if (openLend != null) open.addAll(openLend);
             if (openDebt != null) open.addAll(openDebt);
             java.util.Collections.sort(open, (a, b) -> {
@@ -301,13 +313,21 @@ public class AnalyticsFragment extends Fragment {
                 "K\u1ef3 n\u00e0y \u0111\u00e3 thu " + Money.vnd(data.income)
                         + " \u00b7 " + Stats.changePhrase(data.income, data.previousIncome));
 
-        line(R.id.tv_eval_lend, data.lend > 0,
-                "K\u1ef3 n\u00e0y \u0111\u00e3 cho vay " + Money.vnd(data.lend)
-                        + " \u00b7 " + Stats.changePhrase(data.lend, data.previousLend));
+        // Ban va 03/08: lai lo chi tinh thu nhap - chi tieu, vay/tra khong dinh vao
+        line(R.id.tv_eval_profit, data.income > 0 || data.total > 0,
+                (data.netProfit >= 0
+                        ? "K\u1ef3 n\u00e0y l\u00e3i " : "K\u1ef3 n\u00e0y l\u1ed7 ")
+                        + Money.vnd(Math.abs(data.netProfit))
+                        + " \u00b7 thu " + Money.vnd(data.income)
+                        + " tr\u1eeb chi " + Money.vnd(data.total));
 
-        line(R.id.tv_eval_debt, data.debt > 0 || data.debtOpen > 0,
-                "K\u1ef3 n\u00e0y \u0111\u00e3 tr\u1ea3 n\u1ee3 " + Money.vnd(data.debt)
-                        + " \u00b7 hi\u1ec7n c\u00f2n n\u1ee3 " + Money.vnd(data.debtOpen));
+        line(R.id.tv_eval_lend, data.lend > 0 || data.receivable > 0,
+                "K\u1ef3 n\u00e0y cho vay " + Money.vnd(data.lend)
+                        + " \u00b7 c\u00f2n ph\u1ea3i thu " + Money.vnd(data.receivable));
+
+        line(R.id.tv_eval_debt, data.debt > 0 || data.payable > 0,
+                "K\u1ef3 n\u00e0y \u0111i vay " + Money.vnd(data.debt)
+                        + " \u00b7 c\u00f2n ph\u1ea3i tr\u1ea3 " + Money.vnd(data.payable));
     }
 
     /**
@@ -334,14 +354,15 @@ public class AnalyticsFragment extends Fragment {
 
         for (final TransactionEntity t : data.debts) {
             View row = inflater.inflate(R.layout.item_debt_row, container, false);
-            boolean lend = Stats.LEND.equals(t.getType());
+            String rowType = Stats.normalize(t.getType());
+            boolean lend = Stats.isReceivable(rowType);
 
             TextView icon = row.findViewById(R.id.tv_debt_icon);
-            icon.setText(Stats.typeGlyph(t.getType()));
-            icon.setBackgroundResource(lend ? R.drawable.bg_lend : R.drawable.bg_debt);
+            icon.setText(Stats.typeGlyph(rowType));
+            icon.setBackgroundResource(com.example.bmmoney.util.TypeStyle.bg(rowType));
 
             ((TextView) row.findViewById(R.id.tv_debt_person)).setText(
-                    t.personOrEmpty().isEmpty() ? Stats.typeName(t.getType()) : t.personOrEmpty());
+                    t.personOrEmpty().isEmpty() ? Stats.typeName(rowType) : t.personOrEmpty());
 
             String due = t.dueMillis() > 0
                     ? (lend ? "H\u1ea1n \u0111\u00f2i " : "H\u1ea1n tr\u1ea3 ")
@@ -352,7 +373,7 @@ public class AnalyticsFragment extends Fragment {
             TextView amount = row.findViewById(R.id.tv_debt_amount);
             amount.setText(Money.vnd(t.getAmount()));
             amount.setTextColor(ContextCompat.getColor(container.getContext(),
-                    lend ? R.color.sandy : R.color.dark_green));
+                    com.example.bmmoney.util.TypeStyle.color(rowType)));
 
             row.setOnClickListener(v -> TxDialog.show(v.getContext(), t, false, this::reload));
             container.addView(row);

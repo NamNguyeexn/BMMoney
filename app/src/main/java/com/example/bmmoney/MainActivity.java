@@ -104,8 +104,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /** Nap lai man dang mo (dung sau khi doi thiet lap o popup Xin chao). */
-    private void refreshCurrentTab() {
+    /**
+     * Nap lai man dang mo.
+     *
+     * <p>Ban va 03/08: mo public va bo sung Phan tich / Tim kiem de sau khi dong bo
+     * hay khoi phuc du lieu thi man hinh dang xem cap nhat ngay, khong phai mo lai app.</p>
+     */
+    public void refreshCurrentTab() {
         Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
         if (f instanceof DashboardFragment) {
             ((DashboardFragment) f).reload();
@@ -113,6 +118,10 @@ public class MainActivity extends AppCompatActivity {
             ((SettingsFragment) f).reload();
         } else if (f instanceof CalendarFragment) {
             ((CalendarFragment) f).reload();
+        } else if (f instanceof AnalyticsFragment) {
+            ((AnalyticsFragment) f).reload();
+        } else if (f instanceof SearchFragment) {
+            ((SearchFragment) f).reload();
         }
     }
 

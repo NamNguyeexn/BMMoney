@@ -69,12 +69,16 @@ public class DashboardFragment extends Fragment {
         List<CategoryTotal> categories = new ArrayList<>();
         List<TransactionEntity> recent = new ArrayList<>();
 
-        // Ban va 02/08: hai o thong ke moi o trang chu.
-        // lend/debt = phat sinh trong ky, lendOpen/debtOpen = tong con chua tat toan.
-        double lend;
-        double debt;
-        double lendOpen;
-        double debtOpen;
+        // Ban va 03/08: so lieu ke toan.
+        // wallet   = so du vi thuc te (co tinh ca vay muon)
+        // receivable / payable = con phai thu / con phai tra
+        // netWorth = wallet + receivable - payable
+        // netProfit = thu nhap - chi tieu cua ky (khong tinh vay muon)
+        double wallet;
+        double receivable;
+        double payable;
+        double netWorth;
+        double netProfit;
     }
 
     @Nullable
@@ -168,11 +172,13 @@ public class DashboardFragment extends Fragment {
             List<TransactionEntity> recent = dao.getRecent(5);
             if (recent != null) data.recent = recent;
 
-            // Hai loai nay khong dung chung truy van voi thu chi vi khong doi so du vi
-            data.lend = value(dao.getSumInRange(Stats.LEND, current[0], current[1]));
-            data.debt = value(dao.getSumInRange(Stats.DEBT, current[0], current[1]));
-            data.lendOpen = value(dao.getOpenTotal(Stats.LEND));
-            data.debtOpen = value(dao.getOpenTotal(Stats.DEBT));
+            // Ban va 03/08: bon loai cong no CO lam doi so du vi nhung KHONG
+            // tinh vao thu chi, nen phai hoi database bang truy van rieng.
+            data.wallet = dao.walletBalance();
+            data.receivable = dao.totalReceivable();
+            data.payable = dao.totalPayable();
+            data.netWorth = data.wallet + data.receivable - data.payable;
+            data.netProfit = dao.netProfitInRange(current[0], current[1]);
             return data;
         }, data -> {
             if (refresh != null) refresh.setRefreshing(false);
@@ -235,12 +241,27 @@ public class DashboardFragment extends Fragment {
                 arrow + " " + String.format(Locale.US, "%.1f", Math.abs(change)) + "% so v\u1edbi k\u1ef3 tr\u01b0\u1edbc");
         if (animate) donut.animateSweep(DELAY_DONUT, DUR_DONUT);
 
-        // Ban va 02/08: hai o cho vay / no phai tra.
-        // Chung khong tham gia vao ngan sach hay % da dung ben tren.
-        text(R.id.tv_lend_total, Money.vnd(data.lend));
-        text(R.id.tv_debt_total, Money.vnd(data.debt));
-        text(R.id.tv_lend_open, "C\u00f2n ph\u1ea3i \u0111\u00f2i " + Money.vnd(data.lendOpen));
-        text(R.id.tv_debt_open, "C\u00f2n ph\u1ea3i tr\u1ea3 " + Money.vnd(data.debtOpen));
+        // Ban va 03/08: the tai san rong + hai o cong no.
+        // Cac so nay KHONG tham gia vao ngan sach hay % da dung ben tren.
+        text(R.id.tv_net_worth, Money.vnd(data.netWorth));
+        text(R.id.tv_wallet_balance, Money.vnd(data.wallet));
+        text(R.id.tv_net_worth_formula,
+                "V\u00ed " + Money.shortVnd(data.wallet)
+                        + " + Ph\u1ea3i thu " + Money.shortVnd(data.receivable)
+                        + " \u2212 Ph\u1ea3i tr\u1ea3 " + Money.shortVnd(data.payable));
+        text(R.id.tv_net_profit, (data.netProfit >= 0 ? "+" : "\u2212")
+                + Money.vnd(Math.abs(data.netProfit)));
+
+        TextView netView = root.findViewById(R.id.tv_net_worth);
+        if (netView != null) {
+            netView.setTextColor(androidx.core.content.ContextCompat.getColor(netView.getContext(),
+                    data.netWorth >= 0 ? R.color.net_positive : R.color.net_negative));
+        }
+
+        text(R.id.tv_lend_total, Money.vnd(data.receivable));
+        text(R.id.tv_debt_total, Money.vnd(data.payable));
+        text(R.id.tv_lend_open, "C\u00f2n ph\u1ea3i thu");
+        text(R.id.tv_debt_open, "C\u00f2n ph\u1ea3i tr\u1ea3");
 
         adapter.setTransactions(data.recent);
         root.findViewById(R.id.tv_empty_recent).setVisibility(data.recent.isEmpty() ? View.VISIBLE : View.GONE);

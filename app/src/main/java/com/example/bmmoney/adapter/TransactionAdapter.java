@@ -9,11 +9,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import androidx.core.content.ContextCompat;
+
 import com.example.bmmoney.R;
 import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.ui.TxDialog;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Stats;
+import com.example.bmmoney.util.TypeStyle;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -76,10 +79,8 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
     @Override
     public void onBindViewHolder(@NonNull TransactionViewHolder h, int position) {
         final TransactionEntity t = transactions.get(position);
-        final String type = t.getType();
-        final boolean income = Stats.INCOME.equals(type);
-        final boolean lend = Stats.LEND.equals(type);
-        final boolean debt = Stats.DEBT.equals(type);
+        // Ban va 03/08: chuan hoa loai truoc khi ve, ban ghi cu con luu "DEBT"
+        final String type = Stats.normalize(t.getType());
 
         h.tvTitle.setText(title(t));
         h.tvCategory.setText(badge(t));
@@ -87,14 +88,13 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
                 ? tf.format(new Date(t.getDate()))
                 : df.format(new Date(t.getDate())));
 
+        // Dau + / - lay theo huong tien ra vao vi, khong con theo thu chi
         h.tvAmount.setText(Stats.typeSign(type) + Money.vnd(t.getAmount()));
-        h.tvAmount.setTextColor(Color.parseColor(
-                lend ? "#DDA15E" : debt ? "#283618" : income ? "#606C38" : "#BC6C25"));
+        h.tvAmount.setTextColor(ContextCompat.getColor(
+                h.itemView.getContext(), TypeStyle.color(type)));
 
         h.tvIcon.setText(Stats.typeGlyph(type));
-        h.tvIcon.setBackgroundResource(lend ? R.drawable.bg_lend
-                : debt ? R.drawable.bg_debt
-                : income ? R.drawable.bg_income : R.drawable.bg_expense);
+        h.tvIcon.setBackgroundResource(TypeStyle.bg(type));
 
         h.itemView.setOnClickListener(v -> TxDialog.show(v.getContext(), t,
                 onDelete != null,
@@ -124,13 +124,20 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
 
     /** The nho ben duoi tieu de: danh muc, hoac han doi / han tra voi khoan vay no. */
     private String badge(TransactionEntity t) {
-        if (Stats.isDebtKind(t.getType())) {
+        String kind = Stats.normalize(t.getType());
+        if (Stats.isDebtKind(kind)) {
+            // Tra no goc / Thu hoi no goc chi can noi ro dang xu ly cho ai
+            if (Stats.isSettlement(kind)) {
+                String who = t.personOrEmpty();
+                return who.isEmpty() ? Stats.typeName(kind) : Stats.typeName(kind) + " \u00b7 " + who;
+            }
+            if (t.isWrittenOff()) return "\u0110\u00e3 x\u00f3a s\u1ed5";
             if (t.isSettled()) return "\u0110\u00e3 t\u1ea5t to\u00e1n";
             if (t.dueMillis() > 0) {
-                return (Stats.LEND.equals(t.getType()) ? "H\u1ea1n \u0111\u00f2i " : "H\u1ea1n tr\u1ea3 ")
+                return (Stats.isReceivable(kind) ? "H\u1ea1n \u0111\u00f2i " : "H\u1ea1n tr\u1ea3 ")
                         + df.format(new Date(t.dueMillis()));
             }
-            return Stats.typeName(t.getType());
+            return Stats.typeName(kind);
         }
         String category = t.getCategory();
         return category == null || category.isEmpty() ? "Kh\u00e1c" : category;

@@ -517,7 +517,10 @@ public class SettingsFragment extends Fragment {
             }
             GoogleSignInClient client = googleClient();
             if (client == null) return;
-            startActivityForResult(client.getSignInIntent(), REQ_GOOGLE);
+            // Ban va 03/08: dang xuat phien Google cu truoc khi mo bang chon tai khoan.
+            // Truoc day Google tu chon lai dung tai khoan cu nen nguoi dung bam nut ma
+            // "khong thay gi xay ra", tuong la nut hong.
+            client.signOut().addOnCompleteListener(task -> googleLauncher.launch(client.getSignInIntent()));
         }
     }
 
@@ -540,11 +543,23 @@ public class SettingsFragment extends Fragment {
                 .show();
     }
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != REQ_GOOGLE) return;
+    /**
+     * Ban va 03/08. Ket qua dang nhap Google.
+     *
+     * <p>{@code startActivityForResult} da bi danh dau lac hau va tren mot so may
+     * Android moi khong con tra ket qua ve Fragment, day la ly do bam "Dang nhap
+     * bang Google" xong thi khong co gi xay ra. Nay dung Activity Result API.</p>
+     */
+    private final androidx.activity.result.ActivityResultLauncher<Intent> googleLauncher =
+            registerForActivityResult(
+                    new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+                    result -> handleGoogleResult(result.getData()));
 
+    private void handleGoogleResult(@Nullable Intent data) {
+        if (data == null) {
+            // Nguoi dung tu dong bang chon tai khoan
+            return;
+        }
         try {
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             GoogleSignInAccount account = task.getResult(com.google.android.gms.common.api.ApiException.class);
@@ -560,6 +575,10 @@ public class SettingsFragment extends Fragment {
                         syncAfterSignIn();
                     })
                     .addOnFailureListener(e -> toast("\u0110\u0103ng nh\u1eadp th\u1ea5t b\u1ea1i"));
+        } catch (com.google.android.gms.common.api.ApiException e) {
+            // Bao ro ma loi: 10 la SHA-1 chua khai bao, 12501 la nguoi dung tu huy
+            if (e.getStatusCode() == 12501) return;
+            toast("\u0110\u0103ng nh\u1eadp th\u1ea5t b\u1ea1i (m\u00e3 " + e.getStatusCode() + ")");
         } catch (Throwable e) {
             toast("\u0110\u0103ng nh\u1eadp th\u1ea5t b\u1ea1i");
         }
@@ -674,13 +693,36 @@ public class SettingsFragment extends Fragment {
         }
         final FirebaseSyncManager manager =
                 new FirebaseSyncManager(getContext().getApplicationContext());
-        new androidx.appcompat.app.AlertDialog.Builder(getContext(), R.style.Theme_Bmm_Dialog)
-                .setTitle("L\u1ea5y d\u1eef li\u1ec7u t\u1eeb b\u1ea3n sao l\u01b0u")
-                .setMessage("To\u00e0n b\u1ed9 d\u1eef li\u1ec7u \u0111ang c\u00f3 tr\u00ean m\u00e1y s\u1ebd b\u1ecb xo\u00e1 v\u00e0 thay b\u1eb1ng "
-                        + "b\u1ea3n sao l\u01b0u g\u1ea7n nh\u1ea5t. Ti\u1ebfp t\u1ee5c?")
-                .setPositiveButton("L\u1ea5y v\u1ec1", (d, w) -> runRestore(manager))
-                .setNegativeButton("Hu\u1ef7", null)
-                .show();
+        final Notice.Handle notice = Notice.loading(root, "\u0110ang \u0111\u1ed3ng b\u1ed9\u2026");
+        final long localBefore = Prefs.localChangedAt(getContext());
+
+        manager.syncNow((ok, count, error) -> {
+            if (!isAdded() || root == null) {
+                notice.dismiss();
+                return;
+            }
+            if (ok) {
+                Prefs.setAutoBackupDay(getContext(), AutoBackup.todayKey());
+                notice.success("\u0110\u00e3 \u0111\u1ed3ng b\u1ed9 " + count + " giao d\u1ecbch");
+                Prefs.setLocalChangedAt(getContext(), System.currentTimeMillis());
+                reload();
+                refreshOtherScreens();
+            } else {
+                notice.error("\u0110\u1ed3ng b\u1ed9 th\u1ea5t b\u1ea1i", error);
+            }
+        });
+    }
+
+    /**
+     * Ban va 03/08. Bat cac man hinh khac nap lai sau khi du lieu doi.
+     *
+     * <p>Truoc day khoi phuc xong chi co man Cai dat cap nhat, Trang chu va Phan tich
+     * van hien so cu cho den khi mo lai app - nhin nhu nut dong bo khong an thua gi.</p>
+     */
+    private void refreshOtherScreens() {
+        if (getActivity() instanceof com.example.bmmoney.MainActivity) {
+            ((com.example.bmmoney.MainActivity) getActivity()).refreshCurrentTab();
+        }
     }
 
     private void runRestore(FirebaseSyncManager manager) {
@@ -694,7 +736,9 @@ public class SettingsFragment extends Fragment {
                 notice.success(count > 0
                         ? "\u0110\u00e3 kh\u00f4i ph\u1ee5c " + count + " giao d\u1ecbch"
                         : "B\u1ea3n sao l\u01b0u cu\u1ed1i c\u00f9ng kh\u00f4ng c\u00f3 giao d\u1ecbch n\u00e0o");
+                Prefs.setLocalChangedAt(getContext(), System.currentTimeMillis());
                 reload();
+                refreshOtherScreens();
             } else {
                 notice.error("Kh\u00f4ng l\u1ea5y \u0111\u01b0\u1ee3c d\u1eef li\u1ec7u", error);
             }

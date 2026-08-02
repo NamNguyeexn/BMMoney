@@ -79,6 +79,10 @@
                     android:orientation="vertical"
                     android:padding="12dp">
 
+                    <!-- Ban va 03/08: sau loai theo nghiep vu ke toan.
+                         Hang 1: dong tien thuc (thu / chi)
+                         Hang 2: phat sinh cong no (di vay / cho vay)
+                         Hang 3: tat toan cong no (tra no goc / thu no goc) -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -88,71 +92,116 @@
                             android:id="@+id/btn_mode_expense"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginRight="6dp"
+                            android:layout_marginLeft="3dp"
+                            android:layout_marginRight="3dp"
                             android:layout_weight="1"
                             android:background="@drawable/bg_pill_olive"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
-                            android:padding="12dp"
+                            android:padding="10dp"
                             android:text="💸 Chi tiêu"
                             android:textColor="@color/cream"
-                            android:textSize="13sp"
+                            android:textSize="12sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/btn_mode_income"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginLeft="6dp"
+                            android:layout_marginLeft="3dp"
+                            android:layout_marginRight="3dp"
                             android:layout_weight="1"
                             android:background="@drawable/bg_pill_cream"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
-                            android:padding="12dp"
+                            android:padding="10dp"
                             android:text="💰 Thu nhập"
                             android:textColor="@color/olive"
-                            android:textSize="13sp"
+                            android:textSize="12sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
+                        android:layout_marginTop="8dp"
                         android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btn_mode_borrow"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="3dp"
+                            android:layout_marginRight="3dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_cream"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:padding="10dp"
+                            android:text="↩ Đi vay"
+                            android:textColor="@color/olive"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/btn_mode_lend"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginRight="6dp"
+                            android:layout_marginLeft="3dp"
+                            android:layout_marginRight="3dp"
                             android:layout_weight="1"
                             android:background="@drawable/bg_pill_cream"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
-                            android:padding="12dp"
-                            android:text="🤝 Vay nợ"
+                            android:padding="10dp"
+                            android:text="↗ Cho vay"
                             android:textColor="@color/olive"
-                            android:textSize="13sp"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btn_mode_repay"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="3dp"
+                            android:layout_marginRight="3dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_pill_cream"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:padding="10dp"
+                            android:text="↪ Trả nợ gốc"
+                            android:textColor="@color/olive"
+                            android:textSize="12sp"
                             android:textStyle="bold" />
 
                         <TextView
-                            android:id="@+id/btn_mode_debt"
+                            android:id="@+id/btn_mode_collect"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginLeft="6dp"
+                            android:layout_marginLeft="3dp"
+                            android:layout_marginRight="3dp"
                             android:layout_weight="1"
                             android:background="@drawable/bg_pill_cream"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
-                            android:padding="12dp"
-                            android:text="🧾 Trả nợ"
+                            android:padding="10dp"
+                            android:text="↙ Thu nợ gốc"
                             android:textColor="@color/olive"
-                            android:textSize="13sp"
+                            android:textSize="12sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
@@ -362,6 +411,39 @@
                         android:text="01/01/2025 08:00"
                         android:textColor="@color/dark_green"
                         android:textSize="15sp" />
+
+                    <!-- Ban va 03/08: chon khoan vay goc can tru bot.
+                         Chi hien khi ghi Tra no goc hoac Thu hoi no goc. -->
+                    <LinearLayout
+                        android:id="@+id/box_loan"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tv_loan_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Trả cho khoản vay nào"
+                            android:textColor="@color/subtle_text"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_loan"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:background="@drawable/bg_field"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="14dp"
+                            android:text="Chưa chọn khoản gốc"
+                            android:textColor="@color/dark_green"
+                            android:textSize="15sp" />
+                    </LinearLayout>
 
                     <!-- Han doi / han phai tra -->
                     <LinearLayout

@@ -123,10 +123,13 @@ public class SearchFragment extends Fragment {
             reload();
         });
 
+        // Ban va 03/08: sau the loai, dung dung sau loai cua nghiep vu ke toan
         root.findViewById(R.id.chip_kind_expense).setOnClickListener(v -> setKind(Stats.EXPENSE));
         root.findViewById(R.id.chip_kind_income).setOnClickListener(v -> setKind(Stats.INCOME));
+        root.findViewById(R.id.chip_kind_borrow).setOnClickListener(v -> setKind(Stats.BORROW));
+        root.findViewById(R.id.chip_kind_repay).setOnClickListener(v -> setKind(Stats.REPAY));
         root.findViewById(R.id.chip_kind_lend).setOnClickListener(v -> setKind(Stats.LEND));
-        root.findViewById(R.id.chip_kind_debt).setOnClickListener(v -> setKind(Stats.DEBT));
+        root.findViewById(R.id.chip_kind_collect).setOnClickListener(v -> setKind(Stats.COLLECT));
 
         buildCategoryChips();
         styleTimeChips();
@@ -177,7 +180,7 @@ public class SearchFragment extends Fragment {
                 reload();
             });
             styleChip(chip, pickedCategories.contains(name));
-            // Cho vay / dang no khong thuoc danh muc chi tieu nao nen khoa lai
+            // Bon loai cong no khong thuoc danh muc chi tieu nao nen khoa lai
             boolean usable = !isDebtKind();
             chip.setEnabled(usable);
             chip.setClickable(usable);
@@ -191,7 +194,7 @@ public class SearchFragment extends Fragment {
     private void setKind(String next) {
         kind = next.equals(kind) ? null : next;
         if (isDebtKind()) {
-            // Danh muc khong con y nghia voi khoan cho vay / no phai tra
+            // Danh muc khong con y nghia voi bon loai cong no
             pickedCategories.clear();
         }
         styleKindChips();
@@ -200,18 +203,28 @@ public class SearchFragment extends Fragment {
     }
 
     private boolean isDebtKind() {
-        return Stats.LEND.equals(kind) || Stats.DEBT.equals(kind);
+        return Stats.isDebtKind(kind);
+    }
+
+    /**
+     * Chi hai loai khoan vay GOC moi xem theo "so du con treo";
+     * tra no goc / thu hoi no goc la dong tien nen van xem theo khoang thoi gian.
+     */
+    private boolean isLoanKind() {
+        return Stats.BORROW.equals(kind) || Stats.LEND.equals(kind);
     }
 
     private void styleKindChips() {
         if (root == null) return;
         styleChip(root.findViewById(R.id.chip_kind_expense), Stats.EXPENSE.equals(kind));
         styleChip(root.findViewById(R.id.chip_kind_income), Stats.INCOME.equals(kind));
+        styleChip(root.findViewById(R.id.chip_kind_borrow), Stats.BORROW.equals(kind));
+        styleChip(root.findViewById(R.id.chip_kind_repay), Stats.REPAY.equals(kind));
         styleChip(root.findViewById(R.id.chip_kind_lend), Stats.LEND.equals(kind));
-        styleChip(root.findViewById(R.id.chip_kind_debt), Stats.DEBT.equals(kind));
+        styleChip(root.findViewById(R.id.chip_kind_collect), Stats.COLLECT.equals(kind));
 
         // Khoa nhom the thoi gian khi dang xem so du con treo
-        boolean timeUsable = !isDebtKind();
+        boolean timeUsable = !isLoanKind();
         dim(R.id.chip_week, timeUsable);
         dim(R.id.chip_month, timeUsable);
         dim(R.id.chip_year, timeUsable);
@@ -275,6 +288,7 @@ public class SearchFragment extends Fragment {
         final boolean big = onlyBig;
         final String kindFilter = kind;
         final boolean debtMode = isDebtKind();
+        final boolean loanMode = isLoanKind();
         final Set<String> cats = new HashSet<>(pickedCategories);
 
         final long from;
@@ -298,8 +312,8 @@ public class SearchFragment extends Fragment {
 
             // Nguon du lieu: khoan cho vay / no phai tra lay theo so du con treo,
             // hai loai con lai van lay theo khoang thoi gian nhu truoc.
-            List<TransactionEntity> all = debtMode
-                    ? dao.getOpenByType(kindFilter)
+            List<TransactionEntity> all = loanMode
+                    ? dao.getOpenLoans(kindFilter)
                     : dao.getTransactionsByDateRange(from, to);
             if (all == null) return data;
 
@@ -307,9 +321,10 @@ public class SearchFragment extends Fragment {
             // nho vay nut nay dung duoc cho ca bon loai ma logic khong doi.
             double periodTotal = 0;
             for (TransactionEntity t : all) {
+                String rowType = Stats.normalize(t.getType());
                 if (kindFilter == null) {
-                    if (Stats.EXPENSE.equals(t.getType())) periodTotal += t.getAmount();
-                } else if (kindFilter.equals(t.getType())) {
+                    if (Stats.EXPENSE.equals(rowType)) periodTotal += t.getAmount();
+                } else if (kindFilter.equals(rowType)) {
                     periodTotal += t.getAmount();
                 }
             }
@@ -317,7 +332,8 @@ public class SearchFragment extends Fragment {
             double threshold = periodTotal * bigPercent / 100d;
 
             for (TransactionEntity t : all) {
-                if (kindFilter != null && !kindFilter.equals(t.getType())) continue;
+                String rowType = Stats.normalize(t.getType());
+                if (kindFilter != null && !kindFilter.equals(rowType)) continue;
                 if (!key.isEmpty()) {
                     String title = t.getTitle() == null ? "" : t.getTitle().toLowerCase(Locale.getDefault());
                     String note = t.getNote() == null ? "" : t.getNote().toLowerCase(Locale.getDefault());
@@ -332,7 +348,7 @@ public class SearchFragment extends Fragment {
 
                 data.items.add(t);
                 if (kindFilter == null) {
-                    if (Stats.EXPENSE.equals(t.getType())) data.total += t.getAmount();
+                    if (Stats.EXPENSE.equals(rowType)) data.total += t.getAmount();
                 } else {
                     data.total += t.getAmount();
                 }
@@ -348,9 +364,9 @@ public class SearchFragment extends Fragment {
             text(R.id.tv_search_total, Money.vnd(data.total));
             text(R.id.tv_search_sub, big
                     ? "Kho\u1ea3n t\u1eeb " + bigPercent + "% t\u1ed5ng c\u1ee7a nh\u00f3m n\u00e0y tr\u1edf l\u00ean"
-                    : debtMode
+                    : loanMode
                     ? (Stats.LEND.equals(kindFilter)
-                            ? "C\u00f2n ph\u1ea3i \u0111\u00f2i \u00b7 h\u1ea1n g\u1ea7n nh\u1ea5t tr\u01b0\u1edbc"
+                            ? "C\u00f2n ph\u1ea3i thu \u00b7 h\u1ea1n g\u1ea7n nh\u1ea5t tr\u01b0\u1edbc"
                             : "C\u00f2n ph\u1ea3i tr\u1ea3 \u00b7 h\u1ea1n g\u1ea7n nh\u1ea5t tr\u01b0\u1edbc")
                     : subtitle(filter));
 
@@ -363,8 +379,10 @@ public class SearchFragment extends Fragment {
 
     /** Nhan cua o tong tien doi theo loai dang xem. */
     private String totalLabel(String kindFilter) {
-        if (Stats.LEND.equals(kindFilter)) return "T\u1ed5ng s\u1ed1 ti\u1ec1n c\u1ea7n \u0111\u00f2i";
-        if (Stats.DEBT.equals(kindFilter)) return "T\u1ed5ng s\u1ed1 ti\u1ec1n \u0111ang n\u1ee3";
+        if (Stats.LEND.equals(kindFilter)) return "T\u1ed5ng c\u00f2n ph\u1ea3i thu";
+        if (Stats.BORROW.equals(kindFilter)) return "T\u1ed5ng c\u00f2n ph\u1ea3i tr\u1ea3";
+        if (Stats.REPAY.equals(kindFilter)) return "T\u1ed5ng \u0111\u00e3 tr\u1ea3 n\u1ee3 g\u1ed1c";
+        if (Stats.COLLECT.equals(kindFilter)) return "T\u1ed5ng \u0111\u00e3 thu n\u1ee3 g\u1ed1c";
         if (Stats.INCOME.equals(kindFilter)) return "T\u1ed5ng thu nh\u1eadp";
         return "T\u1ed5ng chi c\u1ee7a k\u1ebft qu\u1ea3";
     }

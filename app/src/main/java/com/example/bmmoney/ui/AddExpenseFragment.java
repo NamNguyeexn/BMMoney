@@ -20,6 +20,7 @@ import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Categories;
+import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Notice;
 import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Stats;
@@ -32,30 +33,43 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Man "Them ghi chu" (truoc day ten la Them chi tieu).
+ * Man "Them ghi chu".
  *
- * <p><b>Ban va 02/08.</b> Man nay gio phuc vu BON loai ghi chu:</p>
- * <ul>
- *   <li>Chi tieu: so tien, mo ta, danh muc, thoi gian, thanh toan, ghi chu</li>
- *   <li>Thu nhap: so tien, thoi gian, nguon thu</li>
- *   <li>Vay no (cho vay): ai vay, vay khi nao, vay bao nhieu, thoi han nguoi do vay, thanh toan</li>
- *   <li>Tra no: tra ai, tra khi nao, tra bao nhieu, thoi han can phai tra, thanh toan</li>
- * </ul>
+ * <p><b>Ban va 03/08 - chuyen sang nghiep vu ke toan day du.</b> Man nay gio
+ * phuc vu SAU loai ghi chu:</p>
  *
- * <p><b>Quan trong ve ke toan:</b> hai loai vay no va tra no KHONG lam thay doi
- * so du vi. Chung duoc luu voi type rieng ({@link Stats#LEND} va
- * {@link Stats#DEBT}) nen moi truy van tong thu / tong chi / ngan sach cu van
- * chay dung ma khong can sua gi them.</p>
+ * <table>
+ *   <tr><td>Chi tieu</td><td>EXPENSE</td><td>tien ra vi</td><td>tinh vao lai lo</td></tr>
+ *   <tr><td>Thu nhap</td><td>INCOME</td><td>tien vao vi</td><td>tinh vao lai lo</td></tr>
+ *   <tr><td>Di vay</td><td>BORROW</td><td>tien vao vi</td><td>tang no phai tra</td></tr>
+ *   <tr><td>Tra no goc</td><td>REPAY</td><td>tien ra vi</td><td>giam no phai tra</td></tr>
+ *   <tr><td>Cho vay</td><td>LEND</td><td>tien ra vi</td><td>tang no phai thu</td></tr>
+ *   <tr><td>Thu hoi no goc</td><td>COLLECT</td><td>tien vao vi</td><td>giam no phai thu</td></tr>
+ * </table>
+ *
+ * <p><b>Khac biet quan trong so voi ban cu:</b> bon loai cong no BAY GIO CO lam
+ * doi so du vi (di vay thi tien vao tui that, cho vay thi tien ra tui that),
+ * nhung van KHONG tinh vao thu nhap / chi tieu / ngan sach. Cach tach nay dung
+ * theo nguyen tac ke toan: vay muon la bien dong tai san va cong no, khong phai
+ * lai lo.</p>
+ *
+ * <p><b>Chua tinh lai.</b> Ban nay chi ghi nhan phan GOC. Khi nao lam ban co lai
+ * thi them mot loai INTEREST rieng, khong sua sau loai hien co.</p>
+ *
+ * <p>Khi ghi Tra no goc / Thu hoi no goc, nguoi dung chon dung khoan vay goc con
+ * treo trong danh sach; app luu {@code loanId} de bao cao biet tru vao khoan nao.</p>
  */
 public class AddExpenseFragment extends Fragment {
 
-    /** Bon che do cua man hinh. */
+    /** Sau che do cua man hinh. */
     private static final int MODE_EXPENSE = 0;
     private static final int MODE_INCOME = 1;
-    private static final int MODE_LEND = 2;
-    private static final int MODE_DEBT = 3;
+    private static final int MODE_BORROW = 2;
+    private static final int MODE_REPAY = 3;
+    private static final int MODE_LEND = 4;
+    private static final int MODE_COLLECT = 5;
 
-    /** Phuong thuc thanh toan, dung cho ca chi tieu lan vay no / tra no. */
+    /** Phuong thuc thanh toan, dung cho chi tieu va ca bon loai cong no. */
     private static final List<String> PAYMENTS = Arrays.asList(
             "\ud83c\udfe6 Chuy\u1ec3n kho\u1ea3n",
             "\ud83d\udcb5 Ti\u1ec1n m\u1eb7t",
@@ -80,6 +94,11 @@ public class AddExpenseFragment extends Fragment {
     private String payment = PAYMENTS.get(0);
     private String category = "";
     private String method = METHODS.get(0)[1];
+
+    /** Khoan vay goc dang duoc tra bot / thu bot, null la chua chon. */
+    @Nullable private TransactionEntity pickedLoan;
+    /** So con lai cua khoan vay goc dang chon, dung de canh bao tra qua tay. */
+    private double pickedLoanRemaining = 0d;
 
     private final List<View> cells = new ArrayList<>();
     private final List<Categories.Item> items = new ArrayList<>();
@@ -126,10 +145,15 @@ public class AddExpenseFragment extends Fragment {
                             text(R.id.tv_payment, payment);
                         }));
 
+        View loanRow = root.findViewById(R.id.tv_loan);
+        if (loanRow != null) loanRow.setOnClickListener(v -> pickLoan());
+
         root.findViewById(R.id.btn_mode_expense).setOnClickListener(v -> setMode(MODE_EXPENSE));
         root.findViewById(R.id.btn_mode_income).setOnClickListener(v -> setMode(MODE_INCOME));
+        root.findViewById(R.id.btn_mode_borrow).setOnClickListener(v -> setMode(MODE_BORROW));
+        root.findViewById(R.id.btn_mode_repay).setOnClickListener(v -> setMode(MODE_REPAY));
         root.findViewById(R.id.btn_mode_lend).setOnClickListener(v -> setMode(MODE_LEND));
-        root.findViewById(R.id.btn_mode_debt).setOnClickListener(v -> setMode(MODE_DEBT));
+        root.findViewById(R.id.btn_mode_collect).setOnClickListener(v -> setMode(MODE_COLLECT));
         root.findViewById(R.id.btn_submit).setOnClickListener(v -> save());
 
         buildCategories();
@@ -149,6 +173,7 @@ public class AddExpenseFragment extends Fragment {
         cells.clear();
         items.clear();
         methodCells.clear();
+        pickedLoan = null;
         root = null;
         super.onDestroyView();
     }
@@ -157,26 +182,43 @@ public class AddExpenseFragment extends Fragment {
     private void setMode(int next) {
         if (mode == next) return;
         mode = next;
+        // Doi che do thi bo khoan vay dang chon de tranh gan nham loanId
+        pickedLoan = null;
+        pickedLoanRemaining = 0d;
         applyMode();
     }
 
-    private boolean isLend() {
-        return mode == MODE_LEND;
+    /** Loai luu vao database ung voi che do dang chon. */
+    private String currentType() {
+        switch (mode) {
+            case MODE_INCOME: return Stats.INCOME;
+            case MODE_BORROW: return Stats.BORROW;
+            case MODE_REPAY: return Stats.REPAY;
+            case MODE_LEND: return Stats.LEND;
+            case MODE_COLLECT: return Stats.COLLECT;
+            default: return Stats.EXPENSE;
+        }
     }
 
-    private boolean isDebt() {
-        return mode == MODE_DEBT;
-    }
-
+    /** Bon loai cong no. */
     private boolean isDebtKind() {
-        return isLend() || isDebt();
+        return Stats.isDebtKind(currentType());
+    }
+
+    /** Hai loai tao ra khoan vay goc moi. */
+    private boolean isNewLoan() {
+        return mode == MODE_BORROW || mode == MODE_LEND;
+    }
+
+    /** Hai loai tat toan bot mot khoan vay goc da co. */
+    private boolean isSettlement() {
+        return mode == MODE_REPAY || mode == MODE_COLLECT;
     }
 
     /** Bat/tat va doi nhan cho tung o nhap theo che do dang chon. */
     private void applyMode() {
         if (root == null) return;
 
-        // Tieu de man giu nguyen la "Them ghi chu" cho ca bon che do
         text(R.id.tv_add_title, "Th\u00eam ghi ch\u00fa");
 
         switch (mode) {
@@ -185,34 +227,54 @@ public class AddExpenseFragment extends Fragment {
                 text(R.id.tv_amount_label, "S\u1ed1 ti\u1ec1n nh\u1eadn");
                 text(R.id.tv_date_label, "Nh\u1eadn khi n\u00e0o");
                 text(R.id.tv_mode_hint,
-                        "Kho\u1ea3n n\u00e0y c\u1ed9ng v\u00e0o t\u1ed5ng thu nh\u1eadp c\u1ee7a k\u1ef3.");
+                        "Ti\u1ec1n v\u00e0o v\u00ed \u00b7 c\u1ed9ng v\u00e0o thu nh\u1eadp c\u1ee7a k\u1ef3.");
+                break;
+            case MODE_BORROW:
+                text(R.id.btn_submit, "L\u01b0u kho\u1ea3n \u0111i vay");
+                text(R.id.tv_amount_label, "Vay bao nhi\u00eau");
+                text(R.id.tv_person_label, "Vay c\u1ee7a ai");
+                text(R.id.tv_date_label, "Vay khi n\u00e0o");
+                text(R.id.tv_due_label, "H\u1ea1n ph\u1ea3i tr\u1ea3");
+                text(R.id.tv_mode_hint,
+                        "Ti\u1ec1n v\u00e0o v\u00ed \u00b7 t\u0103ng n\u1ee3 ph\u1ea3i tr\u1ea3. "
+                                + "Kh\u00f4ng t\u00ednh v\u00e0o thu nh\u1eadp.");
+                break;
+            case MODE_REPAY:
+                text(R.id.btn_submit, "L\u01b0u kho\u1ea3n tr\u1ea3 n\u1ee3");
+                text(R.id.tv_amount_label, "Tr\u1ea3 bao nhi\u00eau");
+                text(R.id.tv_person_label, "Tr\u1ea3 cho ai");
+                text(R.id.tv_date_label, "Tr\u1ea3 khi n\u00e0o");
+                text(R.id.tv_loan_label, "Tr\u1ea3 cho kho\u1ea3n vay n\u00e0o");
+                text(R.id.tv_mode_hint,
+                        "Ti\u1ec1n ra v\u00ed \u00b7 gi\u1ea3m n\u1ee3 ph\u1ea3i tr\u1ea3. "
+                                + "Kh\u00f4ng t\u00ednh v\u00e0o chi ti\u00eau.");
                 break;
             case MODE_LEND:
                 text(R.id.btn_submit, "L\u01b0u kho\u1ea3n cho vay");
-                text(R.id.tv_amount_label, "Vay bao nhi\u00eau");
+                text(R.id.tv_amount_label, "Cho vay bao nhi\u00eau");
                 text(R.id.tv_person_label, "Ai vay");
-                text(R.id.tv_date_label, "Vay khi n\u00e0o");
-                text(R.id.tv_due_label, "Th\u1eddi h\u1ea1n ng\u01b0\u1eddi \u0111\u00f3 vay");
+                text(R.id.tv_date_label, "Cho vay khi n\u00e0o");
+                text(R.id.tv_due_label, "H\u1ea1n \u0111\u00f2i");
                 text(R.id.tv_mode_hint,
-                        "Cho vay \u2014 ng\u01b0\u1eddi kh\u00e1c n\u1ee3 b\u1ea1n. "
-                                + "Kho\u1ea3n n\u00e0y KH\u00d4NG t\u00ednh v\u00e0o thu chi hay ng\u00e2n s\u00e1ch.");
+                        "Ti\u1ec1n ra v\u00ed \u00b7 t\u0103ng n\u1ee3 ph\u1ea3i thu. "
+                                + "Kh\u00f4ng t\u00ednh v\u00e0o chi ti\u00eau.");
                 break;
-            case MODE_DEBT:
-                text(R.id.btn_submit, "L\u01b0u kho\u1ea3n n\u1ee3");
-                text(R.id.tv_amount_label, "Tr\u1ea3 bao nhi\u00eau");
-                text(R.id.tv_person_label, "Tr\u1ea3 ai");
-                text(R.id.tv_date_label, "Tr\u1ea3 khi n\u00e0o");
-                text(R.id.tv_due_label, "Th\u1eddi h\u1ea1n c\u1ea7n ph\u1ea3i tr\u1ea3");
+            case MODE_COLLECT:
+                text(R.id.btn_submit, "L\u01b0u kho\u1ea3n thu n\u1ee3");
+                text(R.id.tv_amount_label, "Thu bao nhi\u00eau");
+                text(R.id.tv_person_label, "Thu c\u1ee7a ai");
+                text(R.id.tv_date_label, "Thu khi n\u00e0o");
+                text(R.id.tv_loan_label, "Thu cho kho\u1ea3n cho vay n\u00e0o");
                 text(R.id.tv_mode_hint,
-                        "N\u1ee3 ph\u1ea3i tr\u1ea3 \u2014 b\u1ea1n n\u1ee3 ng\u01b0\u1eddi kh\u00e1c. "
-                                + "Kho\u1ea3n n\u00e0y KH\u00d4NG t\u00ednh v\u00e0o thu chi hay ng\u00e2n s\u00e1ch.");
+                        "Ti\u1ec1n v\u00e0o v\u00ed \u00b7 gi\u1ea3m n\u1ee3 ph\u1ea3i thu. "
+                                + "Kh\u00f4ng t\u00ednh v\u00e0o thu nh\u1eadp.");
                 break;
             default:
                 text(R.id.btn_submit, "L\u01b0u kho\u1ea3n chi");
                 text(R.id.tv_amount_label, "S\u1ed1 ti\u1ec1n");
                 text(R.id.tv_date_label, "Th\u1eddi gian");
                 text(R.id.tv_mode_hint,
-                        "Kho\u1ea3n n\u00e0y tr\u1eeb v\u00e0o ng\u00e2n s\u00e1ch chi ti\u00eau c\u1ee7a k\u1ef3.");
+                        "Ti\u1ec1n ra v\u00ed \u00b7 tr\u1eeb v\u00e0o ng\u00e2n s\u00e1ch chi ti\u00eau c\u1ee7a k\u1ef3.");
                 break;
         }
 
@@ -220,22 +282,26 @@ public class AddExpenseFragment extends Fragment {
         boolean income = mode == MODE_INCOME;
 
         show(R.id.box_person, isDebtKind());
-        show(R.id.box_due, isDebtKind());
+        // Chi khoan vay goc moi can dat han; tra bot / thu bot thi khong
+        show(R.id.box_due, isNewLoan());
+        show(R.id.box_loan, isSettlement());
         show(R.id.box_description, expense);
         show(R.id.box_category, expense);
         show(R.id.box_income_method, income);
-        // Nguoi dung yeu cau co phan "thanh toan" o ca hai giao dien vay no va tra no
         show(R.id.box_payment, expense || isDebtKind());
         show(R.id.box_note, !income);
 
         text(R.id.tv_due, dueTime > 0
                 ? dayFormat.format(new Date(dueTime))
                 : "Ch\u01b0a \u0111\u1eb7t th\u1eddi h\u1ea1n");
+        showPickedLoan();
 
         tab(R.id.btn_mode_expense, expense);
         tab(R.id.btn_mode_income, income);
-        tab(R.id.btn_mode_lend, isLend());
-        tab(R.id.btn_mode_debt, isDebt());
+        tab(R.id.btn_mode_borrow, mode == MODE_BORROW);
+        tab(R.id.btn_mode_repay, mode == MODE_REPAY);
+        tab(R.id.btn_mode_lend, mode == MODE_LEND);
+        tab(R.id.btn_mode_collect, mode == MODE_COLLECT);
     }
 
     private void show(int id, boolean visible) {
@@ -249,9 +315,87 @@ public class AddExpenseFragment extends Fragment {
         if (view == null) return;
         view.setBackgroundResource(active ? R.drawable.bg_pill_olive : R.drawable.bg_pill_cream);
         if (view instanceof TextView) {
-            ((TextView) view).setTextColor(getResources().getColor(
-                    active ? R.color.cream : R.color.olive));
+            ((TextView) view).setTextColor(androidx.core.content.ContextCompat.getColor(
+                    view.getContext(), active ? R.color.cream : R.color.olive));
         }
+    }
+
+    // ------------------------------------------------------- chon khoan vay goc
+
+    /**
+     * Mo danh sach khoan vay goc con treo de tru bot.
+     *
+     * <p>Tra no goc thi chon trong cac khoan DI VAY, thu hoi no goc thi chon
+     * trong cac khoan CHO VAY. Danh sach da loc san khoan da tra du hoac da
+     * danh dau tat toan nen khong the chon nham.</p>
+     */
+    private void pickLoan() {
+        if (getContext() == null) return;
+        final Context app = getContext().getApplicationContext();
+        final String loanType = mode == MODE_REPAY ? Stats.BORROW : Stats.LEND;
+
+        Db.load(() -> AppDatabase.dao(app).getOpenLoans(loanType), list -> {
+            if (root == null || getContext() == null) return;
+            if (list == null || list.isEmpty()) {
+                Notice.error(root, loanType.equals(Stats.BORROW)
+                        ? "Ch\u01b0a c\u00f3 kho\u1ea3n \u0111i vay n\u00e0o \u0111ang treo"
+                        : "Ch\u01b0a c\u00f3 kho\u1ea3n cho vay n\u00e0o \u0111ang treo", null);
+                return;
+            }
+            final List<TransactionEntity> loans = new ArrayList<>(list);
+            List<String> labels = new ArrayList<>();
+            for (TransactionEntity loan : loans) {
+                labels.add(loanLabel(app, loan));
+            }
+            String current = pickedLoan == null ? "" : loanLabel(app, pickedLoan);
+            SelectDialog.show(getContext(), "Ch\u1ecdn kho\u1ea3n g\u1ed1c", labels, current,
+                    (index, value) -> {
+                        if (index < 0 || index >= loans.size()) return;
+                        pickedLoan = loans.get(index);
+                        // Tu dien ten doi tac cho nguoi dung do phai go lai
+                        EditText personField = root.findViewById(R.id.edt_person);
+                        if (personField != null && pickedLoan.personOrEmpty().length() > 0) {
+                            personField.setText(pickedLoan.personOrEmpty());
+                        }
+                        loadRemaining();
+                    });
+        });
+    }
+
+    /** Doc lai so con lai cua khoan dang chon de hien duoi o chon. */
+    private void loadRemaining() {
+        if (pickedLoan == null || getContext() == null) {
+            showPickedLoan();
+            return;
+        }
+        final Context app = getContext().getApplicationContext();
+        final TransactionEntity loan = pickedLoan;
+        final String loanId = loan.loanIdOrEmpty();
+        Db.load(() -> loanId.isEmpty() ? 0d : AppDatabase.dao(app).paidOfLoan(loanId), paid -> {
+            double left = loan.getAmount() - (paid == null ? 0d : paid);
+            pickedLoanRemaining = left < 0 ? 0d : left;
+            showPickedLoan();
+        });
+    }
+
+    private String loanLabel(Context context, TransactionEntity loan) {
+        String who = loan.personOrEmpty();
+        if (who.isEmpty()) who = "Ch\u01b0a ghi t\u00ean";
+        String due = loan.dueMillis() > 0
+                ? " \u00b7 h\u1ea1n " + dayFormat.format(new Date(loan.dueMillis()))
+                : "";
+        return who + " \u00b7 " + Money.vnd(loan.getAmount()) + due;
+    }
+
+    private void showPickedLoan() {
+        if (root == null) return;
+        if (pickedLoan == null) {
+            text(R.id.tv_loan, "Ch\u01b0a ch\u1ecdn kho\u1ea3n g\u1ed1c");
+            return;
+        }
+        String who = pickedLoan.personOrEmpty();
+        if (who.isEmpty()) who = "Ch\u01b0a ghi t\u00ean";
+        text(R.id.tv_loan, who + " \u00b7 c\u00f2n " + Money.vnd(pickedLoanRemaining));
     }
 
     // ------------------------------------------------------------- danh muc chi tieu
@@ -339,17 +483,24 @@ public class AddExpenseFragment extends Fragment {
         final TransactionEntity entity;
         switch (mode) {
             case MODE_INCOME: entity = buildIncome(amount); break;
-            case MODE_LEND: entity = buildDebtKind(amount, Stats.LEND); break;
-            case MODE_DEBT: entity = buildDebtKind(amount, Stats.DEBT); break;
+            case MODE_BORROW: entity = buildLoan(amount, Stats.BORROW); break;
+            case MODE_LEND: entity = buildLoan(amount, Stats.LEND); break;
+            case MODE_REPAY: entity = buildSettlement(amount, Stats.REPAY); break;
+            case MODE_COLLECT: entity = buildSettlement(amount, Stats.COLLECT); break;
             default: entity = buildExpense(amount); break;
         }
         if (entity == null) return;
 
         final Context app = getContext().getApplicationContext();
         final int savedMode = mode;
+        final boolean newLoan = isNewLoan();
 
         Db.io(() -> {
-            AppDatabase.dao(app).insert(entity);
+            long id = AppDatabase.dao(app).insert(entity);
+            if (newLoan) {
+                // Khoan vay goc tu sinh ma rieng de cac ban ghi tra / thu bam vao
+                AppDatabase.dao(app).setLoanId((int) id, "L" + id);
+            }
             // Khong day len cloud ngay: gom thay doi roi sao luu mot lan cho do ton bo nho
             AutoBackup.scheduleSoon(app);
             Db.ui(() -> {
@@ -363,8 +514,10 @@ public class AddExpenseFragment extends Fragment {
     private String doneMessage(int savedMode) {
         switch (savedMode) {
             case MODE_INCOME: return "\u0110\u00e3 l\u01b0u kho\u1ea3n thu";
+            case MODE_BORROW: return "\u0110\u00e3 l\u01b0u kho\u1ea3n \u0111i vay";
+            case MODE_REPAY: return "\u0110\u00e3 l\u01b0u kho\u1ea3n tr\u1ea3 n\u1ee3";
             case MODE_LEND: return "\u0110\u00e3 l\u01b0u kho\u1ea3n cho vay";
-            case MODE_DEBT: return "\u0110\u00e3 l\u01b0u kho\u1ea3n n\u1ee3";
+            case MODE_COLLECT: return "\u0110\u00e3 l\u01b0u kho\u1ea3n thu n\u1ee3";
             default: return "\u0110\u00e3 l\u01b0u giao d\u1ecbch";
         }
     }
@@ -393,19 +546,19 @@ public class AddExpenseFragment extends Fragment {
     }
 
     /**
-     * Khoan cho vay hoac khoan no phai tra.
+     * Khoan vay goc moi: DI VAY (BORROW) hoac CHO VAY (LEND).
      *
-     * <p>Cot category duoc dung de luu phuong thuc thanh toan, con person / dueDate
-     * la hai cot moi them o ban va nay. settled = 0 nghia la chua tat toan.</p>
+     * <p>Cot category luu phuong thuc thanh toan. Ma loanId duoc gan sau khi
+     * chen xong vi phai co id tu database moi sinh duoc ma duy nhat.</p>
      */
     @Nullable
-    private TransactionEntity buildDebtKind(double amount, String type) {
+    private TransactionEntity buildLoan(double amount, String type) {
         EditText personField = root.findViewById(R.id.edt_person);
         String person = personField.getText().toString().trim();
         if (person.isEmpty()) {
             Notice.error(root, Stats.LEND.equals(type)
                     ? "Ghi t\u00ean ng\u01b0\u1eddi vay nh\u00e9"
-                    : "Ghi t\u00ean ng\u01b0\u1eddi c\u1ea7n tr\u1ea3 nh\u00e9", null);
+                    : "Ghi t\u00ean ng\u01b0\u1eddi cho vay nh\u00e9", null);
             return null;
         }
 
@@ -417,6 +570,44 @@ public class AddExpenseFragment extends Fragment {
         entity.setPerson(person);
         entity.setDueDate(dueTime > 0 ? dueTime : null);
         entity.setSettled(0);
+        entity.setWrittenOff(0);
+        return entity;
+    }
+
+    /**
+     * Khoan tat toan bot: TRA NO GOC (REPAY) hoac THU HOI NO GOC (COLLECT).
+     *
+     * <p>Bat buoc phai gan vao mot khoan vay goc con treo, neu khong bao cao cong
+     * no se khong biet tru vao dau. So tien vuot qua so con lai bi chan ngay tai
+     * day de khong tao ra cong no am.</p>
+     */
+    @Nullable
+    private TransactionEntity buildSettlement(double amount, String type) {
+        if (pickedLoan == null) {
+            Notice.error(root, "Ch\u1ecdn kho\u1ea3n g\u1ed1c c\u1ea7n t\u1ea5t to\u00e1n nh\u00e9", null);
+            return null;
+        }
+        if (pickedLoanRemaining > 0 && amount > pickedLoanRemaining + 0.5d) {
+            Notice.error(root, "S\u1ed1 ti\u1ec1n l\u1edbn h\u01a1n s\u1ed1 c\u00f2n l\u1ea1i ("
+                    + Money.vnd(pickedLoanRemaining) + ")", null);
+            return null;
+        }
+
+        EditText personField = root.findViewById(R.id.edt_person);
+        String person = personField.getText().toString().trim();
+        if (person.isEmpty()) person = pickedLoan.personOrEmpty();
+
+        EditText noteField = root.findViewById(R.id.edt_note);
+        String note = noteField.getText().toString().trim();
+
+        TransactionEntity entity = new TransactionEntity(
+                person, amount, type, payment, note, pickedTime);
+        entity.setPerson(person);
+        entity.setLoanId(pickedLoan.loanIdOrEmpty().isEmpty()
+                ? "L" + pickedLoan.getId()
+                : pickedLoan.loanIdOrEmpty());
+        // Ban nay chua tinh lai nen moi dong tien tat toan deu la GOC
+        entity.setPrincipalOrInterest(null);
         return entity;
     }
 
@@ -428,8 +619,11 @@ public class AddExpenseFragment extends Fragment {
         ((EditText) root.findViewById(R.id.edt_note)).setText("");
         pickedTime = System.currentTimeMillis();
         dueTime = 0L;
+        pickedLoan = null;
+        pickedLoanRemaining = 0d;
         text(R.id.tv_date, format.format(new Date(pickedTime)));
         text(R.id.tv_due, "Ch\u01b0a \u0111\u1eb7t th\u1eddi h\u1ea1n");
+        showPickedLoan();
         buildCategories();
         androidx.swiperefreshlayout.widget.SwipeRefreshLayout refresh =
                 root.findViewById(R.id.refresh_add_expense);

@@ -21,6 +21,7 @@ import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Stats;
+import com.example.bmmoney.util.TypeStyle;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -70,40 +71,45 @@ public final class TxDialog {
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
-        final String type = t.getType();
-        final boolean income = Stats.INCOME.equals(type);
-        final boolean lend = Stats.LEND.equals(type);
-        final boolean debt = Stats.DEBT.equals(type);
+        // Ban va 03/08: chuan hoa loai, ban ghi cu con luu "DEBT"
+        final String type = Stats.normalize(t.getType());
+        final boolean debtKind = Stats.isDebtKind(type);
+        final boolean loan = Stats.BORROW.equals(type) || Stats.LEND.equals(type);
+        final boolean receivable = Stats.isReceivable(type) || Stats.COLLECT.equals(type);
 
         TextView icon = view.findViewById(R.id.tv_tx_icon);
         icon.setText(Stats.typeGlyph(type));
-        icon.setBackgroundResource(lend ? R.drawable.bg_lend
-                : debt ? R.drawable.bg_debt
-                : income ? R.drawable.bg_income : R.drawable.bg_expense);
+        icon.setBackgroundResource(TypeStyle.bg(type));
 
         text(view, R.id.tv_tx_title, title(t));
         text(view, R.id.tv_tx_kind, Stats.typeName(type));
 
         TextView amount = view.findViewById(R.id.tv_tx_amount);
         amount.setText(Stats.typeSign(type) + Money.vnd(t.getAmount()));
-        amount.setTextColor(ContextCompat.getColor(context,
-                lend ? R.color.line_lend : debt ? R.color.line_debt
-                        : income ? R.color.olive : R.color.burnt));
+        amount.setTextColor(ContextCompat.getColor(context, TypeStyle.color(type)));
 
         LinearLayout rows = view.findViewById(R.id.container_tx_rows);
         rows.removeAllViews();
 
-        if (lend || debt) {
-            row(rows, lend ? "Ng\u01b0\u1eddi vay" : "Tr\u1ea3 cho",
+        if (debtKind) {
+            // Bon loai cong no deu can biet doi tac va huong tien
+            row(rows, receivable ? "Ng\u01b0\u1eddi vay" : "\u0110\u1ed1i t\u00e1c",
                     empty(t.personOrEmpty()) ? "Ch\u01b0a ghi" : t.personOrEmpty());
-            row(rows, lend ? "Cho vay l\u00fac" : "Tr\u1ea3 l\u00fac", DATE_TIME.format(new Date(t.getDate())));
-            if (t.dueMillis() > 0) {
-                row(rows, lend ? "H\u1ea1n \u0111\u00f2i" : "H\u1ea1n ph\u1ea3i tr\u1ea3",
+            row(rows, "Th\u1eddi gian", DATE_TIME.format(new Date(t.getDate())));
+            if (loan && t.dueMillis() > 0) {
+                row(rows, receivable ? "H\u1ea1n \u0111\u00f2i" : "H\u1ea1n ph\u1ea3i tr\u1ea3",
                         DATE_ONLY.format(new Date(t.dueMillis())) + " \u00b7 " + remain(t.dueMillis()));
             }
-            row(rows, "Tr\u1ea1ng th\u00e1i", t.isSettled()
-                    ? "\u0110\u00e3 t\u1ea5t to\u00e1n"
-                    : lend ? "C\u00f2n ph\u1ea3i \u0111\u00f2i" : "C\u00f2n ph\u1ea3i tr\u1ea3");
+            if (loan) {
+                row(rows, "Tr\u1ea1ng th\u00e1i", t.isWrittenOff()
+                        ? "\u0110\u00e3 x\u00f3a s\u1ed5"
+                        : t.isSettled()
+                        ? "\u0110\u00e3 t\u1ea5t to\u00e1n"
+                        : receivable ? "C\u00f2n ph\u1ea3i thu" : "C\u00f2n ph\u1ea3i tr\u1ea3");
+            }
+            if (!empty(t.loanIdOrEmpty())) {
+                row(rows, "Kho\u1ea3n g\u1ed1c", t.loanIdOrEmpty());
+            }
             row(rows, "Thanh to\u00e1n", empty(t.getCategory()) ? "Kh\u00f4ng c\u00f3" : t.getCategory());
         } else {
             row(rows, "Danh m\u1ee5c", empty(t.getCategory()) ? "Kh\u00f4ng c\u00f3" : t.getCategory());
@@ -111,17 +117,20 @@ public final class TxDialog {
         }
         row(rows, "Ghi ch\u00fa", empty(t.getNote()) ? "Kh\u00f4ng c\u00f3" : t.getNote());
 
-        if (lend || debt) {
-            row(rows, "\u1ea2nh h\u01b0\u1edfng v\u00ed",
-                    "Kh\u00f4ng \u2014 kho\u1ea3n n\u00e0y kh\u00f4ng t\u00ednh v\u00e0o thu chi");
+        if (debtKind) {
+            // Nghiep vu moi: cong no CO lam doi so du vi, chi khong tinh vao lai lo
+            row(rows, "\u1ea2nh h\u01b0\u1edfng",
+                    (Stats.walletSign(type) > 0 ? "Ti\u1ec1n v\u00e0o v\u00ed" : "Ti\u1ec1n ra v\u00ed")
+                            + " \u00b7 kh\u00f4ng t\u00ednh v\u00e0o l\u00e3i l\u1ed7");
         }
 
         final TextView settle = view.findViewById(R.id.btn_tx_settle);
-        if (lend || debt) {
+        if (loan) {
+            // Chi khoan vay GOC moi tat toan duoc; ban ghi tra no / thu no thi khong
             settle.setVisibility(View.VISIBLE);
             settle.setText(t.isSettled()
                     ? "B\u1ecf \u0111\u00e1nh d\u1ea5u t\u1ea5t to\u00e1n"
-                    : lend ? "\u0110\u00e3 \u0111\u00f2i \u0111\u01b0\u1ee3c kho\u1ea3n n\u00e0y"
+                    : receivable ? "\u0110\u00e3 thu \u0111\u1ee7 kho\u1ea3n n\u00e0y"
                     : "\u0110\u00e3 tr\u1ea3 xong kho\u1ea3n n\u00e0y");
             settle.setOnClickListener(v -> {
                 final int next = t.isSettled() ? 0 : 1;
@@ -170,7 +179,7 @@ public final class TxDialog {
     private static String title(TransactionEntity t) {
         if (!empty(t.getTitle())) return t.getTitle();
         if (!empty(t.personOrEmpty())) return t.personOrEmpty();
-        return Stats.typeName(t.getType());
+        return Stats.typeName(Stats.normalize(t.getType()));
     }
 
     /** Con bao nhieu ngay toi han, hoac da qua han bao nhieu ngay. */
