@@ -109,7 +109,7 @@
                         android:layout_marginTop="4dp"
                         android:padding="8dp"
                         android:background="@drawable/bg_field_small"
-                        android:hint="Nhập họ tên"
+                        android:hint="Họ tên"
                         android:textColorHint="@color/subtle_text"
                         android:textSize="14sp"
                         android:textColor="@color/dark_green" />
@@ -129,7 +129,7 @@
                         android:layout_marginTop="4dp"
                         android:padding="8dp"
                         android:background="@drawable/bg_field_small"
-                        android:hint="80.500.000"
+                        android:hint="2.000.000"
                         android:inputType="number"
                         android:textColorHint="@color/subtle_text"
                         android:textSize="14sp"
@@ -336,7 +336,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginLeft="8dp"
-                    android:text="Danh mục tùy chỉnh"
+                    android:text="Danh mục"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/dark_green" />

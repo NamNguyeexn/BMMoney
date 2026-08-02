@@ -23,7 +23,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Thiết lập nhanh vài thông tin để app tính chi tiêu đúng theo thói quen của bạn."
+            android:text="Thiết lập nhanh vài thông tin nhỏ nhé."
             android:textSize="13sp"
             android:lineSpacingExtra="2dp"
             android:textColor="@color/olive" />
@@ -45,7 +45,7 @@
             android:paddingLeft="12dp"
             android:paddingRight="12dp"
             android:background="@drawable/bg_field"
-            android:hint="Ví dụ: Nam Nguyễn"
+            android:hint="Tên của bạn"
             android:inputType="textCapSentences|textPersonName"
             android:maxLength="40"
             android:textSize="15sp"
@@ -69,7 +69,7 @@
             android:paddingLeft="12dp"
             android:paddingRight="12dp"
             android:background="@drawable/bg_field"
-            android:hint="Ví dụ: 8000000"
+            android:hint="Ví dụ: 2.000.000"
             android:inputType="number"
             android:maxLength="12"
             android:textSize="15sp"
@@ -133,7 +133,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:text="Vượt mức này, Trang chủ sẽ hiện cảnh báo. Thường dùng 90%."
+            android:text="Vượt mức này, Trang chủ sẽ hiện cảnh báo."
             android:textSize="11sp"
             android:textColor="@color/subtle_text" />
 
@@ -165,7 +165,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:text="Giao dịch chiếm từ mức này sẽ được đánh dấu là khoản chi đáng chú ý. Thường dùng 15%."
+            android:text="Giao dịch chiếm từ mức này sẽ được đánh dấu là khoản chi đáng chú ý."
             android:textSize="11sp"
             android:textColor="@color/subtle_text" />
 
@@ -190,7 +190,7 @@
             android:layout_marginTop="18dp"
             android:padding="12dp"
             android:background="@drawable/bg_badge_cream"
-            android:text="Lưu ý: tất cả thông tin này đều có thể chỉnh sửa lại bất cứ lúc nào trong màn Cài đặt."
+            android:text="Lưu ý: tất cả thông tin này đều có thể chỉnh sửa lại bất cứ lúc nào trong phần Cài đặt."
             android:textSize="12sp"
             android:lineSpacingExtra="2dp"
             android:textColor="@color/olive" />
@@ -215,7 +215,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:gravity="center"
-            android:text="Để sau, dùng giá trị mặc định"
+            android:text="Để sau"
             android:textSize="13sp"
             android:textColor="@color/olive"
             android:clickable="true"

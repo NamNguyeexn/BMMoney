@@ -8,7 +8,9 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
     android:background="@drawable/bg_field"
+    android:baselineAligned="false"
     android:gravity="center_vertical"
+    android:minHeight="60dp"
     android:orientation="horizontal"
     android:padding="12dp">
 
@@ -46,6 +48,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:singleLine="true"
             android:text="Ph\u1ea3i thu 0 \u20ab"
             android:textColor="@color/olive"
             android:textSize="12sp" />
@@ -56,6 +60,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
+        android:singleLine="true"
         android:text="0 \u20ab"
         android:textColor="@color/net_positive"
         android:textSize="14sp"

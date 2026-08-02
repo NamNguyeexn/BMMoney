@@ -10,7 +10,9 @@
     android:background="@drawable/bg_field"
     android:clickable="true"
     android:focusable="true"
+    android:baselineAligned="false"
     android:gravity="center_vertical"
+    android:minHeight="60dp"
     android:orientation="horizontal"
     android:padding="12dp">
 
@@ -48,6 +50,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:singleLine="true"
             android:text="Hạn đòi 01/01/2026"
             android:textColor="@color/olive"
             android:textSize="12sp" />
@@ -58,6 +62,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
+        android:singleLine="true"
         android:text="0 ₫"
         android:textColor="@color/burnt"
         android:textSize="14sp"

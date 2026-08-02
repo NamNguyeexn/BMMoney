@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ban va 03/08. Mot dong giao dich.
+
+  Khoan vay / no co the nho rat dai ("Han doi 01/01/2026", "Tra no goc - Nguyen Van A")
+  nen truoc day the bi xuong dong, day cot ngay ra ngoai va lam ca o cao vot len so voi
+  dong Thu / Chi. Nay: the co gian theo cho trong, cat bot bang dau ba cham, moi dong
+  mot hang; them minHeight de moi o cao bang nhau.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
     android:background="@drawable/bg_card_chip"
+    android:baselineAligned="false"
     android:gravity="center_vertical"
+    android:minHeight="64dp"
     android:orientation="horizontal"
     android:padding="12dp">
 
@@ -24,6 +34,7 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="12dp"
         android:layout_weight="1"
+        android:minWidth="0dp"
         android:orientation="vertical">
 
         <TextView
@@ -46,9 +57,12 @@
 
             <TextView
                 android:id="@+id/tvCategory"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:background="@drawable/bg_badge_cream"
+                android:ellipsize="end"
+                android:singleLine="true"
                 android:paddingLeft="8dp"
                 android:paddingTop="2dp"
                 android:paddingRight="8dp"
@@ -62,6 +76,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="8dp"
+                android:singleLine="true"
                 android:text="01/01/2025"
                 android:textColor="@color/grey_gold"
                 android:textSize="11sp" />
@@ -79,6 +94,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
+        android:singleLine="true"
         android:text="0 ₫"
         android:textColor="@color/burnt"
         android:textSize="14sp"

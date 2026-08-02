@@ -89,7 +89,6 @@ public class DashboardFragment extends Fragment {
 
         RecyclerView recycler = root.findViewById(R.id.recycler_recent);
         adapter = new TransactionAdapter();
-        // Cho phep xoa ngay tren trang chu; popup chi tiet do TransactionAdapter mo
         adapter.setOnDelete(t -> reloadQuiet());
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
         recycler.setHasFixedSize(true);

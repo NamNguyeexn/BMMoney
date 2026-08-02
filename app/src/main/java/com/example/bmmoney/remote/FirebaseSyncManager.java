@@ -7,6 +7,7 @@ import android.net.NetworkCapabilities;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -76,6 +77,9 @@ public class FirebaseSyncManager {
 
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
+    /** Soi tung buoc dong bo bang: adb logcat -s BmmSync */
+    private static final String TAG = "BmmSync";
+
     /** Ket qua cua mot lan sao luu hoac khoi phuc. */
     public interface Result {
         void onDone(boolean ok, int count, @Nullable String error);
@@ -98,6 +102,18 @@ public class FirebaseSyncManager {
 
     public interface InfoResult {
         void onDone(Info info);
+    }
+
+    /**
+     * Ban va 03/08. Ket qua cua nut "Dong bo", co kem HUONG da chay.
+     *
+     * <p>Truoc day man hinh chi biet "thanh cong N giao dich" nen khi app day du lieu
+     * len cloud, nguoi dung thay so lieu duoi may khong doi va tuong nut bi hong.</p>
+     *
+     * gia tri pushed true la da DAY LEN cloud, false la da TAI VE may
+     */
+    public interface SyncResult {
+        void onDone(boolean ok, int count, boolean pushed, @Nullable String error);
     }
 
     private final Context context;
@@ -371,12 +387,19 @@ public class FirebaseSyncManager {
             batch.delete(backup.document("part_" + i));
         }
 
+        Log.i(TAG, "backupNow: dang ghi " + count + " giao dich, " + parts.size() + " manh");
         batch.commit()
                 .addOnSuccessListener(new com.google.android.gms.tasks.OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void unused) {
                         // Chi khi may chu da nhan that su moi ghi nhan moc thoi gian
                         Prefs.setLastBackup(context, now);
+                        // Ban va 03/08. LOI GOC cua canh "dong bo xong mat du lieu":
+                        // day len xong ma khong danh dau moc thay doi duoi may, nen lan
+                        // Dong bo ke tiep thay may "cu hon" cloud va keo cloud ve de len
+                        // dung nhung gi vua nhap.
+                        Prefs.setLocalChangedAt(context, now);
+                        Log.i(TAG, "backupNow: da ghi " + count + " giao dich len cloud");
                         saveAccountProfile();
                         cleanupLegacy();
                         once.finish(true, count, null);
@@ -385,6 +408,7 @@ public class FirebaseSyncManager {
                 .addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
                     @Override
                     public void onFailure(Exception e) {
+                        Log.w(TAG, "backupNow: ghi that bai", e);
                         once.finish(false, 0, friendly(e));
                     }
                 });
@@ -491,30 +515,94 @@ public class FirebaseSyncManager {
      *   <li>Duoi may moi hon cloud, hoac cloud chua co gi: DAY LEN (backupNow).</li>
      *   <li>Cloud moi hon: KEO VE (restoreLatest).</li>
      *   <li>Hai ben bang nhau: day len cho chac, khong xoa gi duoi may.</li>
+     *   <li>Cloud dang RONG: luon day len, khong bao gio de ban rong ve may.</li>
      * </ul>
      *
      * @param result bao ket qua; count la so ban ghi da day len hoac tai ve
      */
-    public void syncNow(@Nullable final Result result) {
+    public void syncNow(@Nullable final SyncResult result) {
         if (!isSignedIn()) {
-            new Once(result).finish(false, 0, "ch\u01b0a \u0111\u0103ng nh\u1eadp");
+            report(result, false, 0, true, "ch\u01b0a \u0111\u0103ng nh\u1eadp");
             return;
         }
         if (!hasNetwork()) {
-            new Once(result).finish(false, 0, "m\u00e1y \u0111ang kh\u00f4ng c\u00f3 m\u1ea1ng");
+            report(result, false, 0, true, "m\u00e1y \u0111ang kh\u00f4ng c\u00f3 m\u1ea1ng");
             return;
         }
+        Log.i(TAG, "syncNow: bat dau, uid=" + uid());
         loadInfo(new InfoResult() {
             @Override
             public void onDone(Info info) {
-                long local = Prefs.localChangedAt(context);
-                if (!info.exists || info.updatedAt <= 0 || local >= info.updatedAt) {
-                    backupNow(result);
+                final long local = Prefs.localChangedAt(context);
+                Log.i(TAG, "syncNow: cloud exists=" + info.exists
+                        + " count=" + info.count + " updatedAt=" + info.updatedAt
+                        + " | local=" + local);
+                if (!info.exists || info.updatedAt <= 0 || info.count <= 0) {
+                    // An toan: ban cloud rong thi khong bao gio duoc phep de len may
+                    Log.i(TAG, "syncNow: chon DAY LEN (cloud chua co gi)");
+                    pushUp(result);
+                } else if (local > 0 && local >= info.updatedAt) {
+                    Log.i(TAG, "syncNow: chon DAY LEN (may moi hon cloud)");
+                    pushUp(result);
                 } else {
-                    restoreLatest(result);
+                    Log.i(TAG, "syncNow: chon TAI VE (cloud moi hon may)");
+                    restoreLatest(new Result() {
+                        @Override
+                        public void onDone(boolean ok, int count, @Nullable String error) {
+                            report(result, ok, count, false, error);
+                        }
+                    });
                 }
             }
         });
+    }
+
+    /** Day du lieu duoi may len cloud roi bao lai la da DAY LEN. */
+    private void pushUp(@Nullable final SyncResult result) {
+        backupNow(new Result() {
+            @Override
+            public void onDone(boolean ok, int count, @Nullable String error) {
+                report(result, ok, count, true, error);
+            }
+        });
+    }
+
+    private void report(@Nullable final SyncResult result, final boolean ok, final int count,
+                        final boolean pushed, @Nullable final String error) {
+        if (result == null) return;
+        Db.ui(new Runnable() {
+            @Override
+            public void run() {
+                result.onDone(ok, count, pushed, error);
+            }
+        });
+    }
+
+    /**
+     * Ban va 03/08. Ban tom tat trang thai de con biet duong ma sua khi dong bo hong.
+     * Man Tuy chon goi ham nay khi nguoi dung NHAN GIU nut Dong bo.
+     */
+    public String describeStatus() {
+        StringBuilder sb = new StringBuilder();
+        if (isSignedIn()) {
+            sb.append("\u0110\u00e3 \u0111\u0103ng nh\u1eadp: ").append(email());
+        } else {
+            sb.append("Ch\u01b0a \u0111\u0103ng nh\u1eadp Google");
+        }
+        sb.append("\nUID: ").append(uid() == null ? "\u2014" : uid());
+        sb.append("\nM\u1ea1ng: ").append(hasNetwork()
+                ? "\u0111ang c\u00f3" : "kh\u00f4ng c\u00f3");
+        sb.append("\nM\u00e1y \u0111\u1ed5i l\u1ea7n cu\u1ed1i: ")
+                .append(stampText(Prefs.localChangedAt(context)));
+        sb.append("\nSao l\u01b0u l\u1ea7n cu\u1ed1i: ")
+                .append(stampText(Prefs.lastBackup(context)));
+        return sb.toString();
+    }
+
+    private static String stampText(long value) {
+        if (value <= 0) return "ch\u01b0a c\u00f3";
+        return new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+                .format(new java.util.Date(value));
     }
 
     /**
@@ -562,9 +650,11 @@ public class FirebaseSyncManager {
                            final Once once) {
         Long parts = meta.getLong("parts");
         final int total = parts == null ? 0 : parts.intValue();
+        Long updatedAt = meta.getLong("updatedAt");
+        final long stamp = updatedAt == null ? 0L : updatedAt;
         if (total <= 0) {
             applyRemoteSettings(meta);
-            replaceLocal("[]", once);
+            replaceLocal("[]", once, stamp);
             return;
         }
 
@@ -593,7 +683,7 @@ public class FirebaseSyncManager {
                         }
                         // Doc du manh roi moi ap cai dat, tranh doi cai dat nua chung
                         applyRemoteSettings(meta);
-                        replaceLocal(sb.toString(), once);
+                        replaceLocal(sb.toString(), once, stamp);
                     }
                 })
                 .addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
@@ -622,15 +712,38 @@ public class FirebaseSyncManager {
                 });
     }
 
-    /** Thay toan bo bang giao dich duoi may bang du lieu vua tai ve. */
-    private void replaceLocal(final String payload, final Once once) {
+    /**
+     * Thay toan bo bang giao dich duoi may bang du lieu vua tai ve.
+     *
+     * <p><b>Ban va 03/08.</b> Hai chot an toan moi:</p>
+     * <ul>
+     *   <li>Ban tren cloud rong ma duoi may dang co giao dich thi DUNG LAI, khong xoa.</li>
+     *   <li>Sau khi nap ve, moc thay doi duoi may lay bang moc cua cloud nen lan dong bo
+     *       ke tiep khong hieu nham la may vua doi va day nguoc ban cu len.</li>
+     * </ul>
+     */
+    private void replaceLocal(final String payload, final Once once, final long stamp) {
         Db.io(new Runnable() {
             @Override
             public void run() {
                 try {
                     List<TransactionEntity> list = fromJson(payload);
+                    if (list.isEmpty()) {
+                        List<TransactionEntity> current = db.transactionDao().getAllTransactions();
+                        final int existing = current == null ? 0 : current.size();
+                        if (existing > 0) {
+                            Log.w(TAG, "restore: cloud rong nhung may co " + existing
+                                    + " giao dich -> khong xoa");
+                            once.finish(false, 0,
+                                    "b\u1ea3n tr\u00ean cloud \u0111ang r\u1ed7ng n\u00ean kh\u00f4ng ghi \u0111\u00e8 "
+                                            + existing + " giao d\u1ecbch \u0111ang c\u00f3 tr\u00ean m\u00e1y");
+                            return;
+                        }
+                    }
                     db.transactionDao().deleteAll();
                     if (!list.isEmpty()) db.transactionDao().insertAll(list);
+                    Prefs.setLocalChangedAt(context, stamp > 0 ? stamp : System.currentTimeMillis());
+                    Log.i(TAG, "restore: da nap " + list.size() + " giao dich tu cloud");
                     once.finish(true, list.size(), null);
                 } catch (Throwable t) {
                     once.finish(false, 0, "d\u1eef li\u1ec7u sao l\u01b0u kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c");

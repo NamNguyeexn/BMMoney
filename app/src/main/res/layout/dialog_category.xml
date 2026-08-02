@@ -42,7 +42,7 @@
             android:paddingLeft="12dp"
             android:background="@drawable/bg_field"
             android:hint="Tên danh mục"
-            android:inputType="text"
+            android:inputType="textCapSentences|textPersonName"
             android:maxLength="40"
             android:textSize="15sp"
             android:textColor="@color/dark_green"

@@ -129,6 +129,11 @@ public class SettingsFragment extends Fragment {
         root.findViewById(R.id.btn_google_auth).setOnClickListener(v -> toggleGoogleAccount());
         root.findViewById(R.id.btn_backup_now).setOnClickListener(v -> backup());
         root.findViewById(R.id.btn_sync_now).setOnClickListener(v -> sync());
+        // Ban va 03/08: nhan giu nut Dong bo de xem chi tiet trang thai khi nghi no hong
+        root.findViewById(R.id.btn_sync_now).setOnLongClickListener(v -> {
+            showSyncStatus();
+            return true;
+        });
 
         reload();
         return root;
@@ -662,11 +667,32 @@ public class SettingsFragment extends Fragment {
         runBackup(new FirebaseSyncManager(getContext().getApplicationContext()));
     }
 
+    /**
+     * Ban va 03/08. Them dong ho canh ngay tai man hinh.
+     *
+     * <p>Tang duoi da co watchdog 20 giay, nhung neu callback khong ve toi day
+     * (fragment bi tao lai, the thong bao bi thay) thi vong quay treo mai. Nay qua
+     * 25 giay la tu doi sang bao loi kem cach xem chi tiet.</p>
+     */
     private void runBackup(FirebaseSyncManager manager) {
         // The thong bao giu nguyen tren man hinh cho den khi co ket qua that su,
         // nho vay khong con canh bam Sao luu roi khong biet no xong hay chua.
         final Notice.Handle notice = Notice.loading(root, "\u0110ang sao l\u01b0u l\u00ean Google\u2026");
+        final boolean[] done = new boolean[1];
+        final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
+        final Runnable giveUp = () -> {
+            if (done[0]) return;
+            done[0] = true;
+            if (!isAdded() || root == null) return;
+            notice.error("Sao l\u01b0u qu\u00e1 l\u00e2u",
+                    "Nh\u1ea5n gi\u1eef n\u00fat \u0110\u1ed3ng b\u1ed9 \u0111\u1ec3 xem chi ti\u1ebft tr\u1ea1ng th\u00e1i");
+        };
+        ui.postDelayed(giveUp, 25000L);
+
         manager.backupNow((ok, count, error) -> {
+            ui.removeCallbacks(giveUp);
+            if (done[0]) return;
+            done[0] = true;
             if (!isAdded() || root == null) {
                 notice.dismiss();
                 return;
@@ -694,22 +720,64 @@ public class SettingsFragment extends Fragment {
         final FirebaseSyncManager manager =
                 new FirebaseSyncManager(getContext().getApplicationContext());
         final Notice.Handle notice = Notice.loading(root, "\u0110ang \u0111\u1ed3ng b\u1ed9\u2026");
-        final long localBefore = Prefs.localChangedAt(getContext());
+        final boolean[] done = new boolean[1];
+        final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
+        final Runnable giveUp = () -> {
+            if (done[0]) return;
+            done[0] = true;
+            if (!isAdded() || root == null) return;
+            notice.error("\u0110\u1ed3ng b\u1ed9 qu\u00e1 l\u00e2u",
+                    "Nh\u1ea5n gi\u1eef n\u00fat \u0110\u1ed3ng b\u1ed9 \u0111\u1ec3 xem chi ti\u1ebft tr\u1ea1ng th\u00e1i");
+        };
+        ui.postDelayed(giveUp, 25000L);
 
-        manager.syncNow((ok, count, error) -> {
+        manager.syncNow((ok, count, pushed, error) -> {
+            ui.removeCallbacks(giveUp);
+            if (done[0]) return;
+            done[0] = true;
             if (!isAdded() || root == null) {
                 notice.dismiss();
                 return;
             }
             if (ok) {
                 Prefs.setAutoBackupDay(getContext(), AutoBackup.todayKey());
-                notice.success("\u0110\u00e3 \u0111\u1ed3ng b\u1ed9 " + count + " giao d\u1ecbch");
-                Prefs.setLocalChangedAt(getContext(), System.currentTimeMillis());
+                // Noi ro huong da chay: day len thi so lieu duoi may dung yen la binh thuong
+                notice.success(pushed
+                        ? "\u0110\u00e3 \u0111\u1ea9y " + count + " giao d\u1ecbch l\u00ean Google"
+                        : "\u0110\u00e3 t\u1ea3i " + count + " giao d\u1ecbch t\u1eeb Google v\u1ec1");
                 reload();
                 refreshOtherScreens();
             } else {
                 notice.error("\u0110\u1ed3ng b\u1ed9 th\u1ea5t b\u1ea1i", error);
             }
+        });
+    }
+
+    /**
+     * Ban va 03/08. Bang chan doan hien khi NHAN GIU nut Dong bo.
+     * Gop trang thai duoi may voi thong tin ban sao luu dang nam tren cloud.
+     */
+    private void showSyncStatus() {
+        if (getContext() == null) return;
+        final FirebaseSyncManager manager =
+                new FirebaseSyncManager(getContext().getApplicationContext());
+        final String local = manager.describeStatus();
+        manager.loadInfo(info -> {
+            if (!isAdded() || getContext() == null) return;
+            String cloud;
+            if (!info.exists) {
+                cloud = "Cloud: ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u n\u00e0o";
+            } else {
+                cloud = "Cloud: " + info.count + " giao d\u1ecbch, l\u01b0u l\u00fac "
+                        + new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm",
+                                java.util.Locale.getDefault()).format(new java.util.Date(info.updatedAt));
+                if (!info.device.isEmpty()) cloud = cloud + "\nM\u00e1y g\u1eedi l\u00ean: " + info.device;
+            }
+            new androidx.appcompat.app.AlertDialog.Builder(getContext(), R.style.Theme_Bmm_Dialog)
+                    .setTitle("Chi ti\u1ebft \u0111\u1ed3ng b\u1ed9")
+                    .setMessage(local + "\n" + cloud)
+                    .setPositiveButton("\u0110\u00f3ng", null)
+                    .show();
         });
     }
 
@@ -736,7 +804,6 @@ public class SettingsFragment extends Fragment {
                 notice.success(count > 0
                         ? "\u0110\u00e3 kh\u00f4i ph\u1ee5c " + count + " giao d\u1ecbch"
                         : "B\u1ea3n sao l\u01b0u cu\u1ed1i c\u00f9ng kh\u00f4ng c\u00f3 giao d\u1ecbch n\u00e0o");
-                Prefs.setLocalChangedAt(getContext(), System.currentTimeMillis());
                 reload();
                 refreshOtherScreens();
             } else {
