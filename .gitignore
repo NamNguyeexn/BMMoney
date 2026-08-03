@@ -36,3 +36,4 @@ keystore/debug.keystore
 .externalNativeBuild/
 .cxx/
 ​
+/BMMoney_log.txt

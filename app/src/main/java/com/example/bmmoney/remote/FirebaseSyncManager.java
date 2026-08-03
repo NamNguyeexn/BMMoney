@@ -125,6 +125,22 @@ public class FirebaseSyncManager {
             this.device = device == null ? "" : device;
             this.fromCache = fromCache;
         }
+
+        /**
+         * Loi 03/08: KHONG xac nhan duoc voi may chu (chua dang nhap, mat mang,
+         * het gio cho, Rules chan). Dong bo phai dung lai o truong hop nay.
+         */
+        static Info unreachable() {
+            return new Info(false, 0, 0, "", true);
+        }
+
+        /**
+         * May chu TRA LOI RO RANG la tai khoan nay chua co ban sao luu nao.
+         * Khac han unreachable(): day la ket qua dang tin, dong bo cu day len.
+         */
+        static Info emptyOnServer() {
+            return new Info(false, 0, 0, "", false);
+        }
     }
 
     public interface InfoResult {
@@ -472,7 +488,7 @@ public class FirebaseSyncManager {
             Db.ui(new Runnable() {
                 @Override
                 public void run() {
-                    result.onDone(new Info(false, 0, 0, ""));
+                    result.onDone(Info.unreachable());
                 }
             });
             return;
@@ -500,13 +516,13 @@ public class FirebaseSyncManager {
         watchdog[0] = new Runnable() {
             @Override
             public void run() {
-                once.onDone(new Info(false, 0, 0, ""));
+                once.onDone(Info.unreachable());
             }
         };
         MAIN.postDelayed(watchdog[0], TIMEOUT_MS);
 
         if (!hasNetwork()) {
-            once.onDone(new Info(false, 0, 0, ""));
+            once.onDone(Info.unreachable());
             return;
         }
         wakeNetwork();
@@ -514,8 +530,16 @@ public class FirebaseSyncManager {
             @Override
             public void onRead(@Nullable final DocumentSnapshot d, @Nullable Exception error) {
                 final Info info;
-                if (d == null || !d.exists()) {
-                    info = new Info(false, 0, 0, "");
+                if (d == null) {
+                    // Khong doc noi may chu (va cache cung khong co) -> trang thai mo ho
+                    info = Info.unreachable();
+                } else if (!d.exists()) {
+                    // Loi 03/08: truoc day nhanh nay tra ve Info voi fromCache = true (mac dinh
+                    // cua ham dung 4 tham so), nen syncNow luon tuong la "chua doc duoc may chu"
+                    // va dung lai. Tai khoan chua tung sao luu se KHONG BAO GIO dong bo duoc.
+                    // Doc thanh cong tu SERVER ma khong co document nghia la cloud dang rong.
+                    boolean cached = d.getMetadata() != null && d.getMetadata().isFromCache();
+                    info = cached ? Info.unreachable() : Info.emptyOnServer();
                 } else {
                     Long updatedAt = d.getLong("updatedAt");
                     Long count = d.getLong("count");

@@ -40,10 +40,14 @@ import java.util.Map;
  */
 public class AnalyticsFragment extends Fragment {
 
-    private static final int[] AN_NAME = {R.id.an_name_0, R.id.an_name_1, R.id.an_name_2, R.id.an_name_3};
-    private static final int[] AN_AMT = {R.id.an_amt_0, R.id.an_amt_1, R.id.an_amt_2, R.id.an_amt_3};
-    private static final int[] AN_THIS = {R.id.an_this_0, R.id.an_this_1, R.id.an_this_2, R.id.an_this_3};
-    private static final int[] AN_LAST = {R.id.an_last_0, R.id.an_last_1, R.id.an_last_2, R.id.an_last_3};
+    /**
+     * Ban va 03/08: so danh muc hien thi toi da.
+     *
+     * <p>Truoc day con so 4 bi chot cung o BA cho: bon mang id ben duoi, vong lap
+     * cat du lieu trong reload() va bon khoi XML trong fragment_analytics.xml. Nay
+     * chi con mot hang so duy nhat, cac dong duoc bom tu item_cat_compare.xml.</p>
+     */
+    private static final int MAX_CATEGORY_ROWS = 6;
 
     private View root;
     private SwipeRefreshLayout refresh;
@@ -210,7 +214,7 @@ public class AnalyticsFragment extends Fragment {
 
             int count = 0;
             for (Map.Entry<String, Double> entry : thisMap.entrySet()) {
-                if (count >= 4) break;
+                if (count >= MAX_CATEGORY_ROWS) break;
                 double thisValue = entry.getValue();
                 Double lastValue = lastMap.get(entry.getKey());
                 double last = lastValue == null ? 0d : lastValue;
@@ -262,26 +266,7 @@ public class AnalyticsFragment extends Fragment {
         bindEvaluation(data);
         bindDebtReport(data);
 
-        double max = 0;
-        for (int i = 0; i < data.thisAmounts.size(); i++) {
-            max = Math.max(max, Math.max(data.thisAmounts.get(i), data.lastAmounts.get(i)));
-        }
-
-        for (int i = 0; i < AN_NAME.length; i++) {
-            if (i < data.names.size()) {
-                double thisValue = data.thisAmounts.get(i);
-                double lastValue = data.lastAmounts.get(i);
-                text(AN_NAME[i], data.names.get(i));
-                text(AN_AMT[i], Money.vnd(thisValue));
-                bar(AN_THIS[i], max > 0 ? (float) (thisValue / max * 100d) : 0f, animate, 80L * i);
-                bar(AN_LAST[i], max > 0 ? (float) (lastValue / max * 100d) : 0f, animate, 80L * i + 40);
-            } else {
-                text(AN_NAME[i], "\u2014");
-                text(AN_AMT[i], Money.vnd(0));
-                bar(AN_THIS[i], 0f, false, 0);
-                bar(AN_LAST[i], 0f, false, 0);
-            }
-        }
+        bindCategories(data, animate);
 
         if (!data.hasPrevious) {
             // K\u1ef3 \u0111\u1ea7u ti\u00ean: ch\u01b0a c\u00f3 g\u00ec \u0111\u1ec3 so s\u00e1nh n\u00ean \u0111\u1ec3 tr\u1ed1ng
@@ -300,6 +285,90 @@ public class AnalyticsFragment extends Fragment {
         text(R.id.tv_worst_note, data.worstChange > 0
                 ? "T\u0103ng " + Money.percent(data.worstChange) + " so v\u1edbi k\u1ef3 tr\u01b0\u1edbc, c\u00e2n nh\u1eafc c\u1eaft b\u1edbt"
                 : "M\u1ecdi danh m\u1ee5c \u0111\u1ec1u trong t\u1ea7m ki\u1ec3m so\u00e1t");
+    }
+
+    /**
+     * The "Phan tich theo danh muc" - ve lai ngay 03/08.
+     *
+     * <p><b>Truoc:</b> bon o co dinh. Khong co danh muc thu tu thi van tro ra mot dong
+     * "— / 0 ₫" trong tron; ky dau tien chua ghi gi thi ca bon o deu trong nhu vay.
+     * Nguoi dung cung khong biet mot danh muc chiem bao nhieu phan tram, hay tang giam
+     * bao nhieu so voi ky truoc - phai tu nhin do dai hai thanh ma doan.</p>
+     *
+     * <p><b>Nay:</b> co bao nhieu danh muc thi ve bay nhieu dong (toi da
+     * {@link #MAX_CATEGORY_ROWS}), khong con o trong. Moi dong noi ro ba dieu: chiem bao
+     * nhieu phan tram tong chi, tang hay giam bao nhieu phan tram, va ky truoc la bao nhieu.
+     * Chua co so lieu thi hien mot dong nhac thay vi cac o rong.</p>
+     */
+    private void bindCategories(Data data, boolean animate) {
+        ViewGroup container = root.findViewById(R.id.container_categories_analytics);
+        View empty = root.findViewById(R.id.tv_no_category_data);
+        if (container == null) return;
+
+        container.removeAllViews();
+
+        final int rows = Math.min(data.names.size(), MAX_CATEGORY_ROWS);
+        if (rows == 0) {
+            if (empty != null) empty.setVisibility(View.VISIBLE);
+            text(R.id.tv_cat_total, "");
+            return;
+        }
+        if (empty != null) empty.setVisibility(View.GONE);
+        text(R.id.tv_cat_total, rows + " danh m\u1ee5c");
+
+        // Hai thanh dung chung mot moc de so sanh duoc ky nay voi ky truoc
+        double max = 0;
+        for (int i = 0; i < rows; i++) {
+            max = Math.max(max, Math.max(data.thisAmounts.get(i), data.lastAmounts.get(i)));
+        }
+
+        LayoutInflater inflater = LayoutInflater.from(container.getContext());
+        for (int i = 0; i < rows; i++) {
+            final double thisValue = data.thisAmounts.get(i);
+            final double lastValue = data.lastAmounts.get(i);
+
+            View row = inflater.inflate(R.layout.item_cat_compare, container, false);
+
+            rowText(row, R.id.tv_cc_rank, String.valueOf(i + 1));
+            rowText(row, R.id.tv_cc_name, data.names.get(i));
+            rowText(row, R.id.tv_cc_amount, Money.vnd(thisValue));
+
+            // Ti trong tren tong chi ca ky, giup biet danh muc nay co dang de y khong
+            String share = data.total > 0
+                    ? "  \u00b7  " + Money.percent(thisValue / data.total * 100d) + " t\u1ed5ng chi"
+                    : "";
+            rowText(row, R.id.tv_cc_last_amount,
+                    "K\u1ef3 tr\u01b0\u1edbc " + Money.vnd(lastValue) + share);
+
+            TextView delta = row.findViewById(R.id.tv_cc_delta);
+            if (delta != null) {
+                if (lastValue <= 0) {
+                    // Ky truoc khong ghi danh muc nay, tinh phan tram se ra vo cung
+                    delta.setText("M\u1edbi");
+                    delta.setTextColor(ContextCompat.getColor(delta.getContext(), R.color.olive));
+                } else {
+                    double change = Stats.changePercent(thisValue, lastValue);
+                    boolean up = change > 0;
+                    delta.setText((up ? "\u2191 " : change < 0 ? "\u2193 " : "= ")
+                            + Money.percent(Math.abs(change)));
+                    // Chi tieu tang la dieu can luu y nen to nau dat, giam thi to xanh
+                    delta.setTextColor(ContextCompat.getColor(delta.getContext(),
+                            up ? R.color.burnt : R.color.net_positive));
+                }
+            }
+
+            bar(row.findViewById(R.id.bar_cc_this),
+                    max > 0 ? (float) (thisValue / max * 100d) : 0f, animate, 80L * i);
+            bar(row.findViewById(R.id.bar_cc_last),
+                    max > 0 ? (float) (lastValue / max * 100d) : 0f, animate, 80L * i + 40);
+
+            container.addView(row);
+        }
+    }
+
+    private void rowText(View row, int id, String value) {
+        View view = row.findViewById(id);
+        if (view instanceof TextView) ((TextView) view).setText(value);
     }
 
     /**
@@ -392,9 +461,13 @@ public class AnalyticsFragment extends Fragment {
         return v == null ? 0d : v;
     }
 
-    /** an_this_* v\u00e0 an_last_* l\u00e0 th\u1ebb View, ch\u1ec9 \u0111\u1eb7t \u0111\u1ed9 r\u1ed9ng ch\u1ee9 kh\u00f4ng g\u00e1n ch\u1eef. */
+    /** Thanh do la the View, chi dat do rong chu khong gan chu. */
     private void bar(int id, float percent, boolean animate, long delay) {
-        View view = root.findViewById(id);
+        bar(root == null ? null : root.findViewById(id), percent, animate, delay);
+    }
+
+    /** Ban va 03/08: nhan thang View vi cac dong danh muc nay duoc bom dong. */
+    private void bar(View view, float percent, boolean animate, long delay) {
         if (view == null) return;
         if (animate) {
             ViewUtils.animateBar(view, percent, 650, delay);

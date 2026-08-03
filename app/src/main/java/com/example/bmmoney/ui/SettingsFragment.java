@@ -381,16 +381,16 @@ public class SettingsFragment extends Fragment {
                     + "C\u00e1c giao d\u1ecbch c\u0169 v\u1eabn \u0111\u01b0\u1ee3c gi\u1eef nguy\u00ean.";
         }
 
-        new androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.Theme_Bmm_Dialog)
-                .setTitle("X\u00f3a danh m\u1ee5c?")
-                .setMessage(message)
-                .setNegativeButton("Gi\u1eef l\u1ea1i", null)
-                .setPositiveButton("X\u00f3a", (d, w) -> {
+        ConfirmDialog.show(requireContext(),
+                "\u2715",
+                "X\u00f3a danh m\u1ee5c?",
+                message,
+                "X\u00f3a",
+                () -> {
                     list.remove(index);
                     Categories.save(requireContext(), list);
                     buildCategories();
-                })
-                .show();
+                });
     }
 
     /** index = -1 l\u00e0 th\u00eam m\u1edbi. */
@@ -531,12 +531,13 @@ public class SettingsFragment extends Fragment {
     }
 
     private void signOutGoogle() {
-        new androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.Theme_Bmm_Dialog)
-                .setTitle("\u0110\u0103ng xu\u1ea5t?")
-                .setMessage("D\u1eef li\u1ec7u \u0111\u00e3 sao l\u01b0u v\u1eabn \u1edf tr\u00ean cloud, "
-                        + "\u0111\u0103ng nh\u1eadp l\u1ea1i l\u00e0 kh\u00f4i ph\u1ee5c \u0111\u01b0\u1ee3c.")
-                .setNegativeButton("Hu\u1ef7", null)
-                .setPositiveButton("\u0110\u0103ng xu\u1ea5t", (d, w) -> {
+        ConfirmDialog.show(requireContext(),
+                "\u21aa",
+                "\u0110\u0103ng xu\u1ea5t?",
+                "B\u1ea3n sao l\u01b0u v\u1eabn n\u1eb1m tr\u00ean cloud, \u0111\u0103ng nh\u1eadp l\u1ea1i l\u00e0 l\u1ea5y v\u1ec1 \u0111\u01b0\u1ee3c.",
+                "\u0110\u0103ng xu\u1ea5t",
+                "Hu\u1ef7",
+                () -> {
                     try {
                         FirebaseAuth.getInstance().signOut();
                         GoogleSignInClient client = googleClient();
@@ -545,8 +546,7 @@ public class SettingsFragment extends Fragment {
                     }
                     toast("\u0110\u00e3 \u0111\u0103ng xu\u1ea5t");
                     bindAccount();
-                })
-                .show();
+                });
     }
 
     /**
@@ -633,27 +633,26 @@ public class SettingsFragment extends Fragment {
             reload();
 
             if (!info.exists || info.count <= 0) {
-                new androidx.appcompat.app.AlertDialog.Builder(getContext(), R.style.Theme_Bmm_Dialog)
-                        .setTitle("Sao l\u01b0u d\u1eef li\u1ec7u?")
-                        .setMessage("T\u00e0i kho\u1ea3n n\u00e0y ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u n\u00e0o. "
-                                + "B\u1ea1n c\u00f3 mu\u1ed1n sao l\u01b0u d\u1eef li\u1ec7u hi\u1ec7n t\u1ea1i l\u00ean Google kh\u00f4ng?")
-                        .setPositiveButton("Sao l\u01b0u ngay", (d, w) -> runBackup(manager))
-                        .setNegativeButton("\u0110\u1ec3 sau", null)
-                        .show();
+                ConfirmDialog.show(getContext(),
+                        "\u2601",
+                        "Sao l\u01b0u d\u1eef li\u1ec7u?",
+                        "T\u00e0i kho\u1ea3n n\u00e0y ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u n\u00e0o.",
+                        "Sao l\u01b0u ngay",
+                        "\u0110\u1ec3 sau",
+                        () -> runBackup(manager));
                 return;
             }
 
             String when = android.text.format.DateFormat
                     .format("dd/MM/yyyy HH:mm", info.updatedAt).toString();
-            new androidx.appcompat.app.AlertDialog.Builder(getContext(), R.style.Theme_Bmm_Dialog)
-                    .setTitle("T\u00e0i kho\u1ea3n \u0111\u00e3 c\u00f3 b\u1ea3n sao l\u01b0u")
-                    .setMessage("B\u1ea3n sao l\u01b0u l\u00fac " + when + " g\u1ed3m " + info.count
-                            + " giao d\u1ecbch.\n\nL\u1ea5y v\u1ec1: xo\u00e1 d\u1eef li\u1ec7u tr\u00ean m\u00e1y v\u00e0 d\u00f9ng b\u1ea3n n\u00e0y."
-                            + "\nSao l\u01b0u \u0111\u00e8: ghi d\u1eef li\u1ec7u tr\u00ean m\u00e1y l\u00ean cloud.")
-                    .setPositiveButton("L\u1ea5y b\u1ea3n cloud v\u1ec1", (d, w) -> runRestore(manager))
-                    .setNeutralButton("Sao l\u01b0u \u0111\u00e8", (d, w) -> runBackup(manager))
-                    .setNegativeButton("\u0110\u1ec3 sau", null)
-                    .show();
+            ConfirmDialog.choose(getContext(),
+                    "\u2601",
+                    "\u0110\u00e3 c\u00f3 b\u1ea3n sao l\u01b0u tr\u00ean cloud",
+                    when + " \u00b7 " + info.count + " giao d\u1ecbch"
+                            + "\n\nL\u1ea5y v\u1ec1: d\u00f9ng b\u1ea3n cloud, thay d\u1eef li\u1ec7u \u0111ang c\u00f3 tr\u00ean m\u00e1y."
+                            + "\nGhi \u0111\u00e8: \u0111\u01b0a d\u1eef li\u1ec7u tr\u00ean m\u00e1y l\u00ean cloud.",
+                    "L\u1ea5y b\u1ea3n cloud v\u1ec1", () -> runRestore(manager),
+                    "Ghi \u0111\u00e8 l\u00ean cloud", () -> runBackup(manager));
         });
     }
 
@@ -776,11 +775,14 @@ public class SettingsFragment extends Fragment {
                     ? android.text.format.DateFormat.format("dd/MM/yyyy HH:mm", info.updatedAt)
                     + " \u00b7 " + info.count + " giao d\u1ecbch"
                     : "ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u";
-            new androidx.appcompat.app.AlertDialog.Builder(getContext(), R.style.Theme_Bmm_Dialog)
-                    .setTitle("Chi ti\u1ebft \u0111\u1ed3ng b\u1ed9")
-                    .setMessage(local + "\nCloud: " + cloud)
-                    .setPositiveButton("\u0110\u00f3ng", null)
-                    .show();
+            // Chi la bang thong tin nen khong can nut hanh dong nao
+            ConfirmDialog.show(getContext(),
+                    "\u26ac",
+                    "Chi ti\u1ebft \u0111\u1ed3ng b\u1ed9",
+                    local + "\nCloud: " + cloud,
+                    "\u0110\u00f3ng",
+                    "",
+                    null);
         });
     }
 

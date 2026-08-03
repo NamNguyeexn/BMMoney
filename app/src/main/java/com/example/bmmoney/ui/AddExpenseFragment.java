@@ -399,21 +399,57 @@ public class AddExpenseFragment extends Fragment {
     }
 
     // ------------------------------------------------------------- danh muc chi tieu
+
+    /**
+     * Dung lai khoi chon danh muc.
+     *
+     * <p><b>Loi 03/08 (crash khi mo man Them):</b> layout moi da doi
+     * {@code container_cats} tu LinearLayout thanh mot TextView kieu o chon,
+     * nhung code cu van ep thang sang LinearLayout nen no ClassCastException:
+     * MaterialTextView cannot be cast to LinearLayout.</p>
+     *
+     * <p>Nay ho tro CA HAI kieu layout: neu la khung chua thi ve luoi o nhu cu,
+     * neu la o chon thi gan su kien bam de mo SelectDialog. Nho vay khong sap
+     * app ma nguoi dung van chon duoc danh muc.</p>
+     */
     private void buildCategories() {
         if (root == null || getContext() == null) return;
 
-        // Ban va 03/08. Truoc day ep thang sang LinearLayout nen chi can ban dung R cu
-        // (build tang dan cua Android Studio) la ca man Them do ngay khi mo:
-        // ClassCastException: MaterialTextView cannot be cast to LinearLayout.
-        // Nay chi nhan dung mot khung chua, sai kieu thi bo qua chu khong lam sap app.
-        View found = root.findViewById(R.id.container_cats);
-        if (!(found instanceof ViewGroup)) return;
-        ViewGroup container = (ViewGroup) found;
-
-        container.removeAllViews();
-        cells.clear();
         items.clear();
         items.addAll(Categories.all(getContext()));
+
+        // Danh muc dang chon co the vua bi xoa trong Cai dat
+        if (items.isEmpty()) {
+            category = "";
+        } else if (!hasCategory(category)) {
+            category = items.get(0).name;
+        }
+
+        View found = root.findViewById(R.id.container_cats);
+        if (found == null) return;
+
+        if (found instanceof ViewGroup) {
+            buildCategoryCells((ViewGroup) found);
+            return;
+        }
+
+        // Layout kieu o chon: mot dong text bam vao de mo danh sach
+        cells.clear();
+        found.setOnClickListener(v -> pickCategory());
+        showPickedCategory();
+    }
+
+    private boolean hasCategory(String name) {
+        for (Categories.Item item : items) {
+            if (item.name.equals(name)) return true;
+        }
+        return false;
+    }
+
+    /** Kieu layout cu: ve tung o danh muc vao khung chua. */
+    private void buildCategoryCells(ViewGroup container) {
+        container.removeAllViews();
+        cells.clear();
 
         LayoutInflater inflater = LayoutInflater.from(getContext());
         for (Categories.Item item : items) {
@@ -427,9 +463,47 @@ public class AddExpenseFragment extends Fragment {
             container.addView(cell);
             cells.add(cell);
         }
-
-        if (category.isEmpty() && !items.isEmpty()) category = items.get(0).name;
         highlightCategories();
+    }
+
+    private void pickCategory() {
+        if (root == null || getContext() == null) return;
+        if (items.isEmpty()) {
+            Notice.error(root,
+                    "Ch\u01b0a c\u00f3 danh m\u1ee5c n\u00e0o, th\u00eam trong C\u00e0i \u0111\u1eb7t nh\u00e9", null);
+            return;
+        }
+        List<String> labels = new ArrayList<>();
+        String current = "";
+        for (Categories.Item item : items) {
+            String label = categoryLabel(item);
+            labels.add(label);
+            if (item.name.equals(category)) current = label;
+        }
+        SelectDialog.show(getContext(), "Ch\u1ecdn danh m\u1ee5c", labels, current,
+                (index, value) -> {
+                    if (index < 0 || index >= items.size()) return;
+                    category = items.get(index).name;
+                    showPickedCategory();
+                    highlightCategories();
+                });
+    }
+
+    private String categoryLabel(Categories.Item item) {
+        String emoji = item.emoji == null ? "" : item.emoji.trim();
+        return emoji.isEmpty() ? item.name : emoji + " " + item.name;
+    }
+
+    /** Cap nhat chu tren o chon danh muc (chi dung o layout kieu o chon). */
+    private void showPickedCategory() {
+        if (root == null) return;
+        View found = root.findViewById(R.id.container_cats);
+        if (!(found instanceof TextView)) return;
+        String label = "Ch\u1ecdn danh m\u1ee5c";
+        for (Categories.Item item : items) {
+            if (item.name.equals(category)) label = categoryLabel(item);
+        }
+        ((TextView) found).setText(label);
     }
 
     private void highlightCategories() {
@@ -441,13 +515,25 @@ public class AddExpenseFragment extends Fragment {
     }
 
     // ------------------------------------------------------------- cach nhan tien
+
+    /** Giong buildCategories: ho tro ca khung chua lan o chon. */
     private void buildMethods() {
         if (root == null || getContext() == null) return;
 
-        View foundMethods = root.findViewById(R.id.container_methods);
-        if (!(foundMethods instanceof ViewGroup)) return;
-        ViewGroup container = (ViewGroup) foundMethods;
+        View found = root.findViewById(R.id.container_methods);
+        if (found == null) return;
 
+        if (found instanceof ViewGroup) {
+            buildMethodCells((ViewGroup) found);
+            return;
+        }
+
+        methodCells.clear();
+        found.setOnClickListener(v -> pickMethod());
+        showPickedMethod();
+    }
+
+    private void buildMethodCells(ViewGroup container) {
         container.removeAllViews();
         methodCells.clear();
 
@@ -464,6 +550,35 @@ public class AddExpenseFragment extends Fragment {
             methodCells.add(cell);
         }
         highlightMethods();
+    }
+
+    private void pickMethod() {
+        if (root == null || getContext() == null) return;
+        List<String> labels = new ArrayList<>();
+        String current = "";
+        for (String[] entry : METHODS) {
+            String label = entry[0] + " " + entry[1];
+            labels.add(label);
+            if (entry[1].equals(method)) current = label;
+        }
+        SelectDialog.show(getContext(), "Ch\u1ecdn ngu\u1ed3n thu", labels, current,
+                (index, value) -> {
+                    if (index < 0 || index >= METHODS.size()) return;
+                    method = METHODS.get(index)[1];
+                    showPickedMethod();
+                    highlightMethods();
+                });
+    }
+
+    private void showPickedMethod() {
+        if (root == null) return;
+        View found = root.findViewById(R.id.container_methods);
+        if (!(found instanceof TextView)) return;
+        String label = "Ch\u1ecdn ngu\u1ed3n thu";
+        for (String[] entry : METHODS) {
+            if (entry[1].equals(method)) label = entry[0] + " " + entry[1];
+        }
+        ((TextView) found).setText(label);
     }
 
     private void highlightMethods() {

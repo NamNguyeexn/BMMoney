@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat;
 
 import com.example.bmmoney.R;
 import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.ui.ConfirmDialog;
 import com.example.bmmoney.ui.TxDialog;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Stats;
@@ -143,18 +144,24 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         return category == null || category.isEmpty() ? "Kh\u00e1c" : category;
     }
 
-    /** Hoi lai truoc khi xoa de tranh mat du lieu ghi chep. */
+    /**
+     * Hoi lai truoc khi xoa.
+     *
+     * <p><b>Ban va 03/08:</b> truoc day dung AlertDialog he thong nen luon ra hop thoai
+     * trang goc vuong, nut chu IN HOA mau xanh duong - lac hoan toan voi tong kem cua app.
+     * Loi nhan cung dai dong, con them mot cau danh ngon tieng Anh khong lien quan.
+     * Nay dung {@link ConfirmDialog} va chi giu dung thong tin can de quyet dinh:
+     * ten khoan va so tien sap mat.</p>
+     */
     private void confirmDelete(View anchor, final TransactionEntity t) {
-        new androidx.appcompat.app.AlertDialog.Builder(anchor.getContext(), R.style.Theme_Bmm_Dialog)
-                .setTitle("B\u1ea1n th\u1ef1c s\u1ef1 mu\u1ed1n x\u00f3a b\u1ea3n ghi n\u00e0y ch\u1ee9?")
-                .setMessage(title(t) + " \u00b7 " + Money.vnd(t.getAmount())
-                        + "\n\n\u0110i\u1ec1u n\u00e0y c\u00f3 th\u1ec3 l\u00e0m gi\u1ea3m hi\u1ec7u qu\u1ea3 ghi ch\u00fa h\u00e0ng ng\u00e0y c\u1ee7a b\u1ea1n."
-                        + "\nWhat gets measured gets managed.")
-                .setNegativeButton("Gi\u1eef l\u1ea1i", null)
-                .setPositiveButton("X\u00f3a", (dialog, which) -> {
+        ConfirmDialog.show(anchor.getContext(),
+                "\u2715",
+                "X\u00f3a giao d\u1ecbch n\u00e0y?",
+                title(t) + " \u00b7 " + Money.vnd(t.getAmount()),
+                "X\u00f3a",
+                () -> {
                     if (onDelete != null) onDelete.onDelete(t);
-                })
-                .show();
+                });
     }
 
     @Override

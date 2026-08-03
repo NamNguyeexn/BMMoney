@@ -310,6 +310,18 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- ================================================================
+         Ban va 03/08: the "Phan tich theo danh muc" duoc ve lai.
+
+         Ban cu: bon danh muc viet cung trong file nay, moi khoi ~90 dong va
+         lap lai bon lan (dong 313-681). Moi khoi lai co rieng mot cap chu
+         "Ky nay / Ky truoc", nen cung mot chu thich bi in bon lan. Muon doi
+         mau thanh hay them danh muc thu nam deu phai sua bon cho.
+
+         Ban moi: mot khung rong, moi dong duoc bom vao tu item_cat_compare.xml.
+         Chu thich chi con MOT lan o dau the, moi dong co them thu hang, ti trong
+         va muc tang giam so voi ky truoc.
+         ================================================================ -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -324,359 +336,92 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Phân tích theo danh mục"
+                    android:textColor="@color/dark_green"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_cat_total"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_cream"
+                    android:paddingLeft="9dp"
+                    android:paddingTop="3dp"
+                    android:paddingRight="9dp"
+                    android:paddingBottom="3dp"
+                    android:text=""
+                    android:textColor="@color/olive"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Chu thich chi in MOT lan, thay vi lap lai o tung danh muc nhu ban cu -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="14dp"
+                    android:layout_height="4dp"
+                    android:background="@drawable/bar_burnt" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="6dp"
+                    android:text="Kỳ này"
+                    android:textColor="@color/olive"
+                    android:textSize="12sp" />
+
+                <View
+                    android:layout_width="14dp"
+                    android:layout_height="4dp"
+                    android:layout_marginLeft="16dp"
+                    android:background="@drawable/bar_old_gold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="6dp"
+                    android:text="Kỳ trước"
+                    android:textColor="@color/olive"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/container_categories_analytics"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Phân tích theo danh mục"
-                android:textSize="16sp"
-                android:textColor="@color/dark_green"
-                android:textStyle="bold"
-                />
-            <LinearLayout
+                android:id="@+id/tv_no_category_data"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                android:id="@+id/an_name_0"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Ăn uống"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                android:id="@+id/an_amt_0"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="26.450 ₫"
-                        android:textSize="14sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="8dp">
-
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="24dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_track_light">
-
-                        <View
-                            android:id="@+id/an_this_0"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bar_burnt" />
-                    </FrameLayout>
-
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="24dp"
-                        android:layout_weight="1"
-                        android:layout_marginLeft="8dp"
-                        android:background="@drawable/bg_track_light">
-
-                        <View
-                            android:id="@+id/an_last_0"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bar_old_gold" />
-                    </FrameLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="6dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Kỳ này"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Kỳ trước"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                android:id="@+id/an_name_1"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Di chuyển"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                android:id="@+id/an_amt_1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="15.640 ₫"
-                        android:textSize="14sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="8dp">
-
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="24dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_track_light">
-
-                        <View
-                            android:id="@+id/an_this_1"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bar_olive" />
-                    </FrameLayout>
-
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="24dp"
-                        android:layout_weight="1"
-                        android:layout_marginLeft="8dp"
-                        android:background="@drawable/bg_track_light">
-
-                        <View
-                            android:id="@+id/an_last_1"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bar_old_gold" />
-                    </FrameLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="6dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Kỳ này"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Kỳ trước"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                android:id="@+id/an_name_2"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Hóa đơn"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                android:id="@+id/an_amt_2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="11.960 ₫"
-                        android:textSize="14sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="8dp">
-
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="24dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_track_light">
-
-                        <View
-                            android:id="@+id/an_this_2"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bar_sandy" />
-                    </FrameLayout>
-
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="24dp"
-                        android:layout_weight="1"
-                        android:layout_marginLeft="8dp"
-                        android:background="@drawable/bg_track_light">
-
-                        <View
-                            android:id="@+id/an_last_2"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bar_old_gold" />
-                    </FrameLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="6dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Kỳ này"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Kỳ trước"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                android:id="@+id/an_name_3"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Mua sắm"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/dark_green" />
-
-                    <TextView
-                android:id="@+id/an_amt_3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="8.050 ₫"
-                        android:textSize="14sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="8dp">
-
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="24dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_track_light">
-
-                        <View
-                            android:id="@+id/an_this_3"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bar_dark_green" />
-                    </FrameLayout>
-
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="24dp"
-                        android:layout_weight="1"
-                        android:layout_marginLeft="8dp"
-                        android:background="@drawable/bg_track_light">
-
-                        <View
-                            android:id="@+id/an_last_3"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bar_old_gold" />
-                    </FrameLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="6dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Kỳ này"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Kỳ trước"
-                        android:textSize="12sp"
-                        android:textColor="@color/olive" />
-                </LinearLayout>
-            </LinearLayout>
-
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_field"
+                android:gravity="center"
+                android:padding="18dp"
+                android:text="Kỳ này chưa có khoản chi nào để so sánh"
+                android:textColor="@color/grey_gold"
+                android:textSize="13sp"
+                android:visibility="gone" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
