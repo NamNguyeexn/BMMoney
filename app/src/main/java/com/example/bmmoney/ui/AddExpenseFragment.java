@@ -402,8 +402,13 @@ public class AddExpenseFragment extends Fragment {
     private void buildCategories() {
         if (root == null || getContext() == null) return;
 
-        LinearLayout container = root.findViewById(R.id.container_cats);
-        if (container == null) return;
+        // Ban va 03/08. Truoc day ep thang sang LinearLayout nen chi can ban dung R cu
+        // (build tang dan cua Android Studio) la ca man Them do ngay khi mo:
+        // ClassCastException: MaterialTextView cannot be cast to LinearLayout.
+        // Nay chi nhan dung mot khung chua, sai kieu thi bo qua chu khong lam sap app.
+        View found = root.findViewById(R.id.container_cats);
+        if (!(found instanceof ViewGroup)) return;
+        ViewGroup container = (ViewGroup) found;
 
         container.removeAllViews();
         cells.clear();
@@ -439,8 +444,9 @@ public class AddExpenseFragment extends Fragment {
     private void buildMethods() {
         if (root == null || getContext() == null) return;
 
-        LinearLayout container = root.findViewById(R.id.container_methods);
-        if (container == null) return;
+        View foundMethods = root.findViewById(R.id.container_methods);
+        if (!(foundMethods instanceof ViewGroup)) return;
+        ViewGroup container = (ViewGroup) foundMethods;
 
         container.removeAllViews();
         methodCells.clear();

@@ -129,7 +129,8 @@ public class SettingsFragment extends Fragment {
         root.findViewById(R.id.btn_google_auth).setOnClickListener(v -> toggleGoogleAccount());
         root.findViewById(R.id.btn_backup_now).setOnClickListener(v -> backup());
         root.findViewById(R.id.btn_sync_now).setOnClickListener(v -> sync());
-        // Ban va 03/08: nhan giu nut Dong bo de xem chi tiet trang thai khi nghi no hong
+        // Ban va 03/08 (sua tiep): nhan giu nut Dong bo de xem chi tiet trang thai,
+        // biet ngay dang vuong o dang nhap, mang hay moc thoi gian.
         root.findViewById(R.id.btn_sync_now).setOnLongClickListener(v -> {
             showSyncStatus();
             return true;
@@ -667,23 +668,17 @@ public class SettingsFragment extends Fragment {
         runBackup(new FirebaseSyncManager(getContext().getApplicationContext()));
     }
 
-    /**
-     * Ban va 03/08. Them dong ho canh ngay tai man hinh.
-     *
-     * <p>Tang duoi da co watchdog 20 giay, nhung neu callback khong ve toi day
-     * (fragment bi tao lai, the thong bao bi thay) thi vong quay treo mai. Nay qua
-     * 25 giay la tu doi sang bao loi kem cach xem chi tiet.</p>
-     */
     private void runBackup(FirebaseSyncManager manager) {
         // The thong bao giu nguyen tren man hinh cho den khi co ket qua that su,
         // nho vay khong con canh bam Sao luu roi khong biet no xong hay chua.
         final Notice.Handle notice = Notice.loading(root, "\u0110ang sao l\u01b0u l\u00ean Google\u2026");
+
+        // Dong ho canh o tang giao dien: thong bao khong bao gio quay mai
         final boolean[] done = new boolean[1];
         final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
         final Runnable giveUp = () -> {
-            if (done[0]) return;
+            if (done[0] || !isAdded() || root == null) return;
             done[0] = true;
-            if (!isAdded() || root == null) return;
             notice.error("Sao l\u01b0u qu\u00e1 l\u00e2u",
                     "Nh\u1ea5n gi\u1eef n\u00fat \u0110\u1ed3ng b\u1ed9 \u0111\u1ec3 xem chi ti\u1ebft tr\u1ea1ng th\u00e1i");
         };
@@ -720,12 +715,15 @@ public class SettingsFragment extends Fragment {
         final FirebaseSyncManager manager =
                 new FirebaseSyncManager(getContext().getApplicationContext());
         final Notice.Handle notice = Notice.loading(root, "\u0110ang \u0111\u1ed3ng b\u1ed9\u2026");
+
+        // Ban va 03/08 (sua tiep): dong ho canh o TANG GIAO DIEN.
+        // Du tang duoi co treo vi bat ky ly do gi, thong bao cung khong quay mai:
+        // sau 25 giay no tu doi sang bao loi kem huong dan xem chi tiet.
         final boolean[] done = new boolean[1];
         final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
         final Runnable giveUp = () -> {
-            if (done[0]) return;
+            if (done[0] || !isAdded() || root == null) return;
             done[0] = true;
-            if (!isAdded() || root == null) return;
             notice.error("\u0110\u1ed3ng b\u1ed9 qu\u00e1 l\u00e2u",
                     "Nh\u1ea5n gi\u1eef n\u00fat \u0110\u1ed3ng b\u1ed9 \u0111\u1ec3 xem chi ti\u1ebft tr\u1ea1ng th\u00e1i");
         };
@@ -741,7 +739,8 @@ public class SettingsFragment extends Fragment {
             }
             if (ok) {
                 Prefs.setAutoBackupDay(getContext(), AutoBackup.todayKey());
-                // Noi ro huong da chay: day len thi so lieu duoi may dung yen la binh thuong
+                // Bao ro huong da chay. Truoc day chi bao "Da dong bo N giao dich"
+                // nen khi app day du lieu LEN, man hinh khong doi so va nhin nhu that bai.
                 notice.success(pushed
                         ? "\u0110\u00e3 \u0111\u1ea9y " + count + " giao d\u1ecbch l\u00ean Google"
                         : "\u0110\u00e3 t\u1ea3i " + count + " giao d\u1ecbch t\u1eeb Google v\u1ec1");
@@ -754,39 +753,37 @@ public class SettingsFragment extends Fragment {
     }
 
     /**
-     * Ban va 03/08. Bang chan doan hien khi NHAN GIU nut Dong bo.
-     * Gop trang thai duoi may voi thong tin ban sao luu dang nam tren cloud.
-     */
-    private void showSyncStatus() {
-        if (getContext() == null) return;
-        final FirebaseSyncManager manager =
-                new FirebaseSyncManager(getContext().getApplicationContext());
-        final String local = manager.describeStatus();
-        manager.loadInfo(info -> {
-            if (!isAdded() || getContext() == null) return;
-            String cloud;
-            if (!info.exists) {
-                cloud = "Cloud: ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u n\u00e0o";
-            } else {
-                cloud = "Cloud: " + info.count + " giao d\u1ecbch, l\u01b0u l\u00fac "
-                        + new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm",
-                                java.util.Locale.getDefault()).format(new java.util.Date(info.updatedAt));
-                if (!info.device.isEmpty()) cloud = cloud + "\nM\u00e1y g\u1eedi l\u00ean: " + info.device;
-            }
-            new androidx.appcompat.app.AlertDialog.Builder(getContext(), R.style.Theme_Bmm_Dialog)
-                    .setTitle("Chi ti\u1ebft \u0111\u1ed3ng b\u1ed9")
-                    .setMessage(local + "\n" + cloud)
-                    .setPositiveButton("\u0110\u00f3ng", null)
-                    .show();
-        });
-    }
-
-    /**
      * Ban va 03/08. Bat cac man hinh khac nap lai sau khi du lieu doi.
      *
      * <p>Truoc day khoi phuc xong chi co man Cai dat cap nhat, Trang chu va Phan tich
      * van hien so cu cho den khi mo lai app - nhin nhu nut dong bo khong an thua gi.</p>
      */
+    /** Hop thoai chan doan: dang nhap ai, co mang khong, moc thoi gian hai ben. */
+    private void showSyncStatus() {
+        if (getContext() == null) return;
+        final Context app = getContext().getApplicationContext();
+        final FirebaseSyncManager manager = new FirebaseSyncManager(app);
+        final String local = manager.describeStatus();
+
+        final Notice.Handle notice = Notice.loading(root, "\u0110ang ki\u1ec3m tra cloud\u2026");
+        manager.loadInfo(info -> {
+            if (!isAdded() || getContext() == null) {
+                notice.dismiss();
+                return;
+            }
+            notice.dismiss();
+            String cloud = info.exists
+                    ? android.text.format.DateFormat.format("dd/MM/yyyy HH:mm", info.updatedAt)
+                    + " \u00b7 " + info.count + " giao d\u1ecbch"
+                    : "ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u";
+            new androidx.appcompat.app.AlertDialog.Builder(getContext(), R.style.Theme_Bmm_Dialog)
+                    .setTitle("Chi ti\u1ebft \u0111\u1ed3ng b\u1ed9")
+                    .setMessage(local + "\nCloud: " + cloud)
+                    .setPositiveButton("\u0110\u00f3ng", null)
+                    .show();
+        });
+    }
+
     private void refreshOtherScreens() {
         if (getActivity() instanceof com.example.bmmoney.MainActivity) {
             ((com.example.bmmoney.MainActivity) getActivity()).refreshCurrentTab();
