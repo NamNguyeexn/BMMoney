@@ -21,6 +21,7 @@ public final class Prefs {
     private static final String KEY_ONBOARDED = "onboarded";
     private static final String KEY_AUTO_BACKUP_DAY = "auto_backup_day";
     private static final String KEY_LEGACY_CLEANED = "legacy_cleaned";
+    private static final String KEY_STRONG_ALARM = "strong_alarm";
     /** Ban va 03/08: moc thoi gian du lieu duoi may doi lan cuoi (de so voi cloud). */
     private static final String KEY_LOCAL_CHANGED = "local_changed";
 
@@ -153,6 +154,26 @@ public final class Prefs {
 
     public static void setLegacyCleaned(Context context, boolean value) {
         prefs(context).edit().putBoolean(KEY_LEGACY_CLEANED, value).apply();
+    }
+
+    /**
+     * Ban va 04/08: do uu tien bao thuc nhac nho.
+     *
+     * <p>true (mac dinh) = dat bang setAlarmClock, cung muc uu tien voi bao thuc cua
+     * dong ho he thong. He thong khong duoc phep hoan hay dong bang no. Doi lai, thanh
+     * trang thai hien mot bieu tuong dong ho nho.</p>
+     *
+     * <p>false = bao thuc thuong. Khong co bieu tuong, nhung trong che do Doze co the
+     * bi don sang cua so bao tri va tre hang gio.</p>
+     *
+     * <p>Ca hai che do deu KHONG ton pin khi cho: app khong he chay.</p>
+     */
+    public static boolean strongAlarm(Context context) {
+        return prefs(context).getBoolean(KEY_STRONG_ALARM, true);
+    }
+
+    public static void setStrongAlarm(Context context, boolean value) {
+        prefs(context).edit().putBoolean(KEY_STRONG_ALARM, value).apply();
     }
 
     private static int clamp(int value, int min, int max) {

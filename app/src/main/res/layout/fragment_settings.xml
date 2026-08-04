@@ -302,6 +302,27 @@
                     android:focusable="true" />
             </LinearLayout>
 
+            <!--
+              Ban va 03/08 (bo sung): xoa ban sao luu tren cloud.
+              Truoc day app chi biet ghi len chu khong co duong xoa, muon don
+              phai vao Firebase Console. Nut nay de mau nhat hon hai nut tren
+              vi day la viec khong the hoan tac.
+            -->
+            <TextView
+                android:id="@+id/btn_delete_cloud"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_pill_cream"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:padding="12dp"
+                android:text="Xóa bản sao lưu trên cloud"
+                android:textColor="@color/burnt"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -606,6 +627,36 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:text="Chưa có lời nhắc nào. Nhấn + để thêm giờ nhắc ghi chi tiêu."
+                android:textSize="12sp"
+                android:textColor="@color/olive" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Nhắc không hiện? Nhấn giữ nút + để kiểm tra quyền thông báo, báo thức và tối ưu pin."
+                android:textSize="11sp"
+                android:textColor="@color/grey_gold" />
+
+            <TextView
+                android:id="@+id/tv_alarm_mode"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:paddingLeft="12dp"
+                android:background="@drawable/bg_field"
+                android:text="--"
+                android:textSize="14sp"
+                android:textColor="@color/dark_green"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Mức đồng hồ hệ thống thì hệ thống không được hoãn lời nhắc. Cả hai chế độ đều không tốn pin khi chờ."
                 android:textSize="12sp"
                 android:textColor="@color/olive" />
         </LinearLayout>

@@ -171,10 +171,10 @@ public class AnalyticsFragment extends Fragment {
             for (int i = 0; i < steps; i++) {
                 int offset = -(steps - 1 - i);
                 long[] bounds = Cycle.bounds(cycleDay, now, offset);
-                Double sum = dao.getExpenseInRange(bounds[0], bounds[1]);
+                Double sum = dao.getExpenseInRangeSkip(bounds[0], bounds[1], Stats.CATEGORY_BALANCE);
                 data.trend[i] = sum == null ? 0d : sum;
                 // Ba duong con lai. Cho vay va tra no lay rieng vi khong nam trong thu chi.
-                data.trendIncome[i] = zero(dao.getIncomeInRange(bounds[0], bounds[1]));
+                data.trendIncome[i] = zero(dao.getIncomeInRangeSkip(bounds[0], bounds[1], Stats.CATEGORY_BALANCE));
                 data.trendLend[i] = zero(dao.getSumInRange(Stats.LEND, bounds[0], bounds[1]));
                 data.trendDebt[i] = zero(dao.getSumInRange(Stats.BORROW, bounds[0], bounds[1]));
                 data.labels[i] = Cycle.label(cycleDay, bounds[0] + 1000L);
@@ -190,7 +190,7 @@ public class AnalyticsFragment extends Fragment {
             // Ban va 03/08: so du cong no lay tu truy van gop, da tru phan da tra
             data.receivable = dao.totalReceivable();
             data.payable = dao.totalPayable();
-            data.netProfit = dao.netProfitInRange(current[0], current[1]);
+            data.netProfit = dao.netProfitInRangeSkip(current[0], current[1], Stats.CATEGORY_BALANCE);
             List<com.example.bmmoney.data.PartnerBalance> partners = dao.partnerBalances();
             if (partners != null) data.partners = partners;
 
@@ -209,8 +209,8 @@ public class AnalyticsFragment extends Fragment {
 
             long[] thisBounds = Cycle.bounds(cycleDay, now, 0);
             long[] lastBounds = Cycle.bounds(cycleDay, now, -1);
-            Map<String, Double> thisMap = toMap(dao.getExpenseByCategoryInRange(thisBounds[0], thisBounds[1]));
-            Map<String, Double> lastMap = toMap(dao.getExpenseByCategoryInRange(lastBounds[0], lastBounds[1]));
+            Map<String, Double> thisMap = toMap(dao.getExpenseByCategoryInRangeSkip(thisBounds[0], thisBounds[1], Stats.CATEGORY_BALANCE));
+            Map<String, Double> lastMap = toMap(dao.getExpenseByCategoryInRangeSkip(lastBounds[0], lastBounds[1], Stats.CATEGORY_BALANCE));
 
             int count = 0;
             for (Map.Entry<String, Double> entry : thisMap.entrySet()) {

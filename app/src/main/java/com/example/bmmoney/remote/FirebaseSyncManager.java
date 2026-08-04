@@ -858,6 +858,77 @@ public class FirebaseSyncManager {
         return value instanceof Number ? ((Number) value).doubleValue() : null;
     }
 
+    // ------------------------------------------------------------- xoa ban sao luu
+    /**
+     * Ban va 03/08 (bo sung). Xoa han ban sao luu tren Firestore.
+     *
+     * <p>Truoc day app chi biet GHI len cloud chu khong biet xoa: khi doi may, cho
+     * nguoi khac muon tai khoan, hay chi muon lam lai tu dau, du lieu cu van nam mai
+     * tren cloud va lan Dong bo ke tiep co the keo nguoc no ve.</p>
+     *
+     * <p>Ham nay xoa toan bo collection {@code users/{uid}/backup}, tuc ca document
+     * {@code latest} lan moi manh {@code part_N} - ke ca cac manh thua sot lai tu
+     * nhung lan sao luu truoc. Doc danh sach bang {@link Source#SERVER} de khong
+     * xoa nham theo ban cache cu duoi may.</p>
+     *
+     * <p>Chi dong den cloud. Du lieu trong may KHONG bi anh huong.</p>
+     *
+     * @param result so giao dich tra ve la SO DOCUMENT da xoa, khong phai so giao dich
+     */
+    public void deleteBackup(@Nullable Result result) {
+        final Once once = new Once(result);
+
+        if (!isSignedIn()) {
+            once.finish(false, 0, "ch\u01b0a \u0111\u0103ng nh\u1eadp");
+            return;
+        }
+        if (!hasNetwork()) {
+            once.finish(false, 0, "m\u00e1y \u0111ang kh\u00f4ng c\u00f3 m\u1ea1ng");
+            return;
+        }
+        final CollectionReference backup = backupRef();
+        if (backup == null) {
+            once.finish(false, 0, "kh\u00f4ng x\u00e1c \u0111\u1ecbnh \u0111\u01b0\u1ee3c t\u00e0i kho\u1ea3n");
+            return;
+        }
+
+        once.arm("m\u00e1y ch\u1ee7 kh\u00f4ng ph\u1ea3n h\u1ed3i n\u00ean ch\u01b0a x\u00f3a \u0111\u01b0\u1ee3c b\u1ea3n sao l\u01b0u");
+
+        backup.get(Source.SERVER)
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot == null || snapshot.isEmpty()) {
+                        // Cloud von da trong, coi nhu xong
+                        Prefs.setLastBackup(context, 0);
+                        Log.i(TAG, "deleteBackup: cloud khong co gi de xoa");
+                        once.finish(true, 0, null);
+                        return;
+                    }
+
+                    final int removed = snapshot.size();
+                    WriteBatch batch = firestore.batch();
+                    for (DocumentSnapshot d : snapshot.getDocuments()) {
+                        batch.delete(d.getReference());
+                    }
+                    batch.commit()
+                            .addOnSuccessListener(unused -> {
+                                // Xoa luon moc thoi gian duoi may, neu khong man Cai dat
+                                // van khoe "da sao luu luc ..." trong khi cloud da rong
+                                Prefs.setLastBackup(context, 0);
+                                Prefs.setAutoBackupDay(context, 0);
+                                Log.i(TAG, "deleteBackup: da xoa " + removed + " document tren cloud");
+                                once.finish(true, removed, null);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.w(TAG, "deleteBackup: xoa that bai", e);
+                                once.finish(false, 0, friendly(e));
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "deleteBackup: khong doc duoc danh sach", e);
+                    once.finish(false, 0, friendly(e));
+                });
+    }
+
     // ------------------------------------------------------------- don cloud kieu cu
     /**
      * Ban dau moi giao dich la mot document rieng trong users/{uid}/transactions.

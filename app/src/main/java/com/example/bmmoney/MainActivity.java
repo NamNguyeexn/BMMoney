@@ -85,13 +85,6 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Dat lai bao thuc nhac nho + lich sao luu buoi sang
-        try {
-            Reminders.rescheduleAll(getApplicationContext());
-            AutoBackup.scheduleDaily(getApplicationContext());
-        } catch (Throwable ignored) {
-        }
-
         // Neu hom nay chua sao luu duoc lan nao thi sao luu bu ngay bay gio.
         // Khong tu dong keo du lieu cloud ve: viec do se xoa du lieu duoi may
         // nen chi lam khi nguoi dung bam Dong bo hoac vua dang nhap.
@@ -101,6 +94,23 @@ public class MainActivity extends AppCompatActivity {
                 AutoBackup.runIfDue(getApplicationContext(), null);
             } catch (Throwable ignored) {
             }
+        }
+    }
+
+    /**
+     * Ban va 04/08: dat lai bao thuc moi lan quay lai app, khong chi luc onCreate.
+     *
+     * <p>onCreate chi chay mot lan cho moi lan mo nguoi (cold start). Neu app nam lai
+     * trong bo nho nhieu ngay, hoac bi cai de len khi cap nhat (moi lan cai lai la he
+     * thong xoa sach bao thuc cua app), thi bao thuc khong bao gio duoc dat lai.</p>
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        try {
+            Reminders.rescheduleAll(getApplicationContext());
+            AutoBackup.scheduleDaily(getApplicationContext());
+        } catch (Throwable ignored) {
         }
     }
 

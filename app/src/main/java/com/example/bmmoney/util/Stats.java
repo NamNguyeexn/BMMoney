@@ -55,6 +55,25 @@ public final class Stats {
      */
     public static final String LEGACY_DEBT = "DEBT";
 
+    /**
+     * Ban va 04/08 - DANH MUC RIENG CHO KHOAN THU / CHI CAN BANG.
+     *
+     * <p>Khoan can bang van la INCOME hoac EXPENSE de so du vi tu dong dung, nhung
+     * KHONG phai chi tieu hay thu nhap thuc. Vi vay no duoc gan danh muc rieng nay va
+     * moi truy van ngan sach / bieu do danh muc / lai lo deu loai danh muc nay ra
+     * (xem cac ham ...Skip trong TransactionDao). Nho vay mot lan can bang 3 trieu
+     * khong bop meo the "Phan tich theo danh muc".</p>
+     *
+     * <p>Chuoi nay duoc luu xuong SQLite va len cloud nen KHONG duoc doi. Doi la moi
+     * ban ghi can bang cu se bi tinh nham thanh chi tieu that.</p>
+     */
+    public static final String CATEGORY_BALANCE = "C\u00e2n b\u1eb1ng s\u1ed1 d\u01b0";
+
+    /** True neu ban ghi nay la khoan can bang, khong phai thu chi that. */
+    public static boolean isBalance(String category) {
+        return CATEGORY_BALANCE.equals(category);
+    }
+
     private Stats() {
     }
 

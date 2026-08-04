@@ -627,6 +627,23 @@
                 android:textColor="@color/olive"
                 android:textSize="11sp" />
 
+            <TextView
+                android:id="@+id/btn_balance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_pill_olive"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:text="⚖ Cân bằng số dư"
+                android:textColor="@color/cream"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"

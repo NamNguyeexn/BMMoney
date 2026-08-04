@@ -41,12 +41,14 @@ import com.example.bmmoney.data.CategoryTotal;
 import com.example.bmmoney.data.TransactionDao;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.remote.FirebaseSyncManager;
+import com.example.bmmoney.remote.ReminderReceiver;
 import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Notice;
 import com.example.bmmoney.util.Prefs;
+import com.example.bmmoney.util.Stats;
 import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Reminders;
 
@@ -123,6 +125,14 @@ public class SettingsFragment extends Fragment {
             });
         });
 
+        // Ban va 04/08: nhan giu nut + de xem vi sao loi nhac khong hien
+        root.findViewById(R.id.tv_alarm_mode).setOnClickListener(v -> pickAlarmMode());
+
+        root.findViewById(R.id.btn_add_reminder).setOnLongClickListener(v -> {
+            showReminderCheck();
+            return true;
+        });
+
         allowInnerScroll();
 
         root.findViewById(R.id.btn_add_category).setOnClickListener(v -> editCategory(-1));
@@ -135,6 +145,8 @@ public class SettingsFragment extends Fragment {
             showSyncStatus();
             return true;
         });
+        // Ban va 03/08 (bo sung): duong xoa han ban sao luu tren cloud
+        root.findViewById(R.id.btn_delete_cloud).setOnClickListener(v -> deleteCloudBackup());
 
         reload();
         return root;
@@ -215,6 +227,9 @@ public class SettingsFragment extends Fragment {
 
         text(R.id.tv_cycle_day, Cycle.cycleDayLabel(getContext()));
         text(R.id.tv_warn_percent, Prefs.warnPercent(getContext()) + "%");
+        text(R.id.tv_alarm_mode, Prefs.strongAlarm(getContext())
+                ? "M\u1ee9c \u0111\u1ed3ng h\u1ed3 h\u1ec7 th\u1ed1ng \u2014 ch\u1eafc ch\u1eafn nh\u1ea5t"
+                : "Ch\u1ebf \u0111\u1ed9 nh\u1eb9 \u2014 kh\u00f4ng c\u00f3 bi\u1ec3u t\u01b0\u1ee3ng \u0111\u1ed3ng h\u1ed3");
         text(R.id.tv_big_percent, Prefs.bigPercent(getContext()) + "%");
         text(R.id.tv_app_version, "Phi\u00ean b\u1ea3n 2.2");
 
@@ -281,6 +296,83 @@ public class SettingsFragment extends Fragment {
         reload();
     }
 
+    /**
+     * Ban va 04/08: bang chan doan loi nhac.
+     *
+     * <p>Bao thuc dat bang AlarmManager thi khong the kiem tra bang cach doc code:
+     * he thong co the ha cap bao thuc, khoa quyen thong bao, hoac dong lanh app
+     * duoi nen. Ba dieu do deu cho ra cung mot trieu chung "khong thay thong bao",
+     * nen can mot cho de xem thang tung dieu kien mot.</p>
+     */
+    /**
+     * Ban va 04/08: chon do uu tien bao thuc.
+     *
+     * <p>Ca hai che do deu khong ton pin trong luc cho - app khong chay. Khac nhau o
+     * cho he thong co duoc phep hoan bao thuc lai hay khong.</p>
+     */
+    private void pickAlarmMode() {
+        final Context ctx = getContext();
+        if (ctx == null) return;
+
+        ConfirmDialog.choose(ctx, "\u23f0", "\u0110\u1ed9 \u01b0u ti\u00ean b\u00e1o th\u1ee9c", "M\u1ee9c \u0111\u1ed3ng h\u1ed3 h\u1ec7 th\u1ed1ng: b\u00e1o th\u1ee9c \u0111\u01b0\u1ee3c \u0111\u1ed1i x\u1eed nh\u01b0 b\u00e1o th\u1ee9c b\u00e1o gi\u1edd. H\u1ec7 th\u1ed1ng kh\u00f4ng \u0111\u01b0\u1ee3c ho\u00e3n hay \u0111\u00f3ng b\u0103ng n\u00f3, k\u1ec3 c\u1ea3 khi m\u00e1y \u0111\u1ee7 s\u00e2u trong ch\u1ebf \u0111\u1ed9 ng\u1ee7. \u0110\u1ed5i l\u1ea1i, thanh tr\u1ea1ng th\u00e1i hi\u1ec7n m\u1ed9t bi\u1ec3u t\u01b0\u1ee3ng \u0111\u1ed3ng h\u1ed3 nh\u1ecf.\n\nCh\u1ebf \u0111\u1ed9 nh\u1eb9: kh\u00f4ng c\u00f3 bi\u1ec3u t\u01b0\u1ee3ng, nh\u01b0ng h\u1ec7 th\u1ed1ng \u0111\u01b0\u1ee3c ph\u00e9p d\u1ed3n b\u00e1o th\u1ee9c sang c\u1eeda s\u1ed5 b\u1ea3o tr\u00ec, c\u00f3 th\u1ec3 tr\u1ec5 h\u00e0ng gi\u1edd.\n\nC\u1ea3 hai \u0111\u1ec1u KH\u00d4NG t\u1ed1n pin trong l\u00fac ch\u1edd: app kh\u00f4ng h\u1ec1 ch\u1ea1y.",
+                "M\u1ee9c \u0111\u1ed3ng h\u1ed3 h\u1ec7 th\u1ed1ng",
+                () -> {
+                    Prefs.setStrongAlarm(ctx, true);
+                    Reminders.rescheduleAll(ctx);
+                    reload();
+                    Notice.success(getView(), "\u0110\u00e3 chuy\u1ec3n sang m\u1ee9c \u0111\u1ed3ng h\u1ed3 h\u1ec7 th\u1ed1ng");
+                },
+                "Ch\u1ebf \u0111\u1ed9 nh\u1eb9",
+                () -> {
+                    Prefs.setStrongAlarm(ctx, false);
+                    Reminders.rescheduleAll(ctx);
+                    reload();
+                    Notice.info(getView(), "\u0110\u00e3 chuy\u1ec3n sang ch\u1ebf \u0111\u1ed9 nh\u1eb9");
+                });
+    }
+
+    private void showReminderCheck() {
+        final Context ctx = getContext();
+        if (ctx == null) return;
+
+        boolean notif = Reminders.notificationsEnabled(ctx);
+        boolean exact = Reminders.canScheduleExact(ctx);
+        boolean battery = Reminders.ignoringBattery(ctx);
+        boolean clock = Reminders.usingAlarmClock(ctx);
+        int count = Reminders.all(ctx).size();
+        long next = Reminders.nextTrigger(ctx);
+
+        StringBuilder sb = new StringBuilder();
+        if (count == 0) {
+            sb.append("Ch\u01b0a \u0111\u1eb7t m\u1ed1c gi\u1edd nh\u1eafc n\u00e0o.");
+        } else {
+            sb.append(count).append(" m\u1ed1c gi\u1edd \u0111ang b\u1eadt.");
+            if (next > 0) {
+                sb.append(" L\u1ea7n nh\u1eafc k\u1ebf ti\u1ebfp: ")
+                        .append(new SimpleDateFormat("HH:mm dd/MM", new Locale("vi"))
+                                .format(new Date(next)));
+            }
+        }
+        sb.append("\n\n");
+        sb.append(notif ? "\u2713 Quy\u1ec1n th\u00f4ng b\u00e1o: \u0111ang b\u1eadt" : "\u2717 Quy\u1ec1n th\u00f4ng b\u00e1o: \u0110ANG T\u1eaeT").append("\n");
+        sb.append(exact ? "\u2713 B\u00e1o th\u1ee9c \u0111\u00fang gi\u1edd: \u0111\u01b0\u1ee3c ph\u00e9p" : "\u2717 B\u00e1o th\u1ee9c \u0111\u00fang gi\u1edd: B\u1eca CH\u1eb6N (l\u1eddi nh\u1eafc c\u00f3 th\u1ec3 tr\u1ec5 h\u00e0ng gi\u1edd)").append("\n");
+        sb.append(clock ? "\u2713 \u0110\u1ed9 \u01b0u ti\u00ean: m\u1ee9c \u0111\u1ed3ng h\u1ed3 h\u1ec7 th\u1ed1ng (h\u1ec7 th\u1ed1ng kh\u00f4ng \u0111\u01b0\u1ee3c ho\u00e3n)" : "\u25cb \u0110\u1ed9 \u01b0u ti\u00ean: ch\u1ebf \u0111\u1ed9 nh\u1eb9 (c\u00f3 th\u1ec3 b\u1ecb ho\u00e3n trong Doze)").append("\n");
+        sb.append(battery ? "\u2713 T\u1ed1i \u01b0u pin: \u0111\u00e3 mi\u1ec5n cho app" : "\u25cb T\u1ed1i \u01b0u pin: ch\u01b0a mi\u1ec5n (kh\u00f4ng c\u1ea7n thi\u1ebft \u1edf m\u1ee9c \u0111\u1ed3ng h\u1ed3)");
+        if (!battery && !clock) sb.append("\n\n" + "\u0110\u00e2y th\u01b0\u1eddng l\u00e0 nguy\u00ean nh\u00e2n khi \u1edf ch\u1ebf \u0111\u1ed9 nh\u1eb9.");
+
+        ConfirmDialog.choose(ctx, "\u23f0", "Ki\u1ec3m tra l\u1eddi nh\u1eafc", sb.toString(),
+                battery ? "M\u1edf c\u00e0i \u0111\u1eb7t app" : "M\u1edf c\u00e0i \u0111\u1eb7t pin",
+                () -> {
+                    if (battery) {
+                        Reminders.openAppSettings(ctx);
+                    } else {
+                        Reminders.openBatterySettings(ctx);
+                    }
+                },
+                "Th\u1eed th\u00f4ng b\u00e1o ngay",
+                () -> ReminderReceiver.push(ctx, 4321, "Th\u1eed th\u00f4ng b\u00e1o \u2014 l\u1eddi nh\u1eafc \u0111ang ho\u1ea1t \u0111\u1ed9ng b\u00ecnh th\u01b0\u1eddng."));
+    }
+
     private void askNotificationPermission() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || getContext() == null) return;
         if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS)
@@ -305,7 +397,7 @@ public class SettingsFragment extends Fragment {
         final long[] bounds = Cycle.bounds(Prefs.cycleDay(getContext()), System.currentTimeMillis(), 0);
         Db.load(() -> {
             Map<String, Double> map = new HashMap<>();
-            List<CategoryTotal> totals = dao.getExpenseByCategoryInRange(bounds[0], bounds[1]);
+            List<CategoryTotal> totals = dao.getExpenseByCategoryInRangeSkip(bounds[0], bounds[1], Stats.CATEGORY_BALANCE);
             if (totals != null) {
                 for (CategoryTotal c : totals) {
                     if (c.category != null) map.put(c.category, c.total);
@@ -747,6 +839,79 @@ public class SettingsFragment extends Fragment {
                 refreshOtherScreens();
             } else {
                 notice.error("\u0110\u1ed3ng b\u1ed9 th\u1ea5t b\u1ea1i", error);
+            }
+        });
+    }
+
+    /**
+     * Ban va 03/08 (bo sung). Xoa han ban sao luu tren cloud.
+     *
+     * <p>Doc truoc bang loadInfo de hop thoai noi ro sap mat cai gi - moc thoi gian
+     * va so giao dich - thay vi hoi chung chung. Day la viec khong hoan tac duoc nen
+     * phai xac nhan, va cau chu noi thang rang du lieu tren may van con nguyen.</p>
+     */
+    private void deleteCloudBackup() {
+        if (getContext() == null) return;
+        if (!FirebaseSyncManager.isSignedIn()) {
+            toast("\u0110\u0103ng nh\u1eadp Google tr\u01b0\u1edbc \u0111\u00e3 nh\u00e9");
+            return;
+        }
+        final Context app = getContext().getApplicationContext();
+        final FirebaseSyncManager manager = new FirebaseSyncManager(app);
+
+        final Notice.Handle checking = Notice.loading(root, "\u0110ang ki\u1ec3m tra cloud\u2026");
+        manager.loadInfo(info -> {
+            if (!isAdded() || getContext() == null) {
+                checking.dismiss();
+                return;
+            }
+            checking.dismiss();
+
+            if (!info.exists || info.count <= 0) {
+                Notice.info(root, "Cloud ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u n\u00e0o");
+                return;
+            }
+
+            String when = android.text.format.DateFormat
+                    .format("dd/MM/yyyy HH:mm", info.updatedAt).toString();
+            ConfirmDialog.show(getContext(),
+                    "\u2715",
+                    "X\u00f3a b\u1ea3n sao l\u01b0u tr\u00ean cloud?",
+                    when + " \u00b7 " + info.count + " giao d\u1ecbch"
+                            + "\n\nD\u1eef li\u1ec7u tr\u00ean m\u00e1y v\u1eabn \u0111\u01b0\u1ee3c gi\u1eef nguy\u00ean."
+                            + "\nX\u00f3a r\u1ed3i th\u00ec kh\u00f4ng l\u1ea5y l\u1ea1i \u0111\u01b0\u1ee3c.",
+                    "X\u00f3a tr\u00ean cloud",
+                    () -> runDeleteBackup(manager));
+        });
+    }
+
+    private void runDeleteBackup(FirebaseSyncManager manager) {
+        final Notice.Handle notice = Notice.loading(root, "\u0110ang x\u00f3a tr\u00ean cloud\u2026");
+
+        // Cung kieu dong ho canh nhu Sao luu / Dong bo: khong de thong bao quay mai
+        final boolean[] done = new boolean[1];
+        final android.os.Handler ui = new android.os.Handler(android.os.Looper.getMainLooper());
+        final Runnable giveUp = () -> {
+            if (done[0] || !isAdded() || root == null) return;
+            done[0] = true;
+            notice.error("X\u00f3a qu\u00e1 l\u00e2u",
+                    "Nh\u1ea5n gi\u1eef n\u00fat \u0110\u1ed3ng b\u1ed9 \u0111\u1ec3 xem chi ti\u1ebft tr\u1ea1ng th\u00e1i");
+        };
+        ui.postDelayed(giveUp, 25000L);
+
+        manager.deleteBackup((ok, count, error) -> {
+            ui.removeCallbacks(giveUp);
+            if (done[0]) return;
+            done[0] = true;
+            if (!isAdded() || root == null) {
+                notice.dismiss();
+                return;
+            }
+            if (ok) {
+                notice.success("\u0110\u00e3 x\u00f3a b\u1ea3n sao l\u01b0u tr\u00ean cloud");
+                reload();
+            } else {
+                notice.error("X\u00f3a th\u1ea5t b\u1ea1i", error);
             }
         });
     }

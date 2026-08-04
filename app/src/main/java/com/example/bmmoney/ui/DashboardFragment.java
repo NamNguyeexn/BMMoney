@@ -23,6 +23,7 @@ import com.example.bmmoney.data.TransactionDao;
 import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
+import com.example.bmmoney.util.Notice;
 import com.example.bmmoney.util.Prefs;
 import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Stats;
@@ -101,6 +102,12 @@ public class DashboardFragment extends Fragment {
         root.findViewById(R.id.btn_header_add).setOnClickListener(v -> open(MainActivity.TAB_ADD));
         root.findViewById(R.id.btn_view_all).setOnClickListener(v -> open(MainActivity.TAB_SEARCH));
 
+        // Ban va 04/08: mo hop thoai can bang so du
+        View balance = root.findViewById(R.id.btn_balance);
+        if (balance != null) {
+            balance.setOnClickListener(v -> BalanceDialog.show(getContext(), this::afterBalance));
+        }
+
         View daysLeft = root.findViewById(R.id.tv_days_left);
         if (daysLeft != null) {
             daysLeft.setOnClickListener(v -> CycleDialog.show(getContext(), this::reloadByUser));
@@ -128,6 +135,22 @@ public class DashboardFragment extends Fragment {
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).showTab(tab);
         }
+    }
+
+    /**
+     * Sau khi can bang: bao cho nguoi dung biet chinh xac app da lam gi, roi nap lai
+     * so lieu. Chenh lech 0 nghia la so trong app von da khop tien that.
+     */
+    private void afterBalance(double difference) {
+        if (root == null) return;
+        if (Math.abs(difference) < 1d) {
+            Notice.info(root, "S\u1ed1 d\u01b0 \u0111\u00e3 kh\u1edbp, kh\u00f4ng c\u1ea7n c\u00e2n b\u1eb1ng");
+        } else if (difference > 0) {
+            Notice.success(root, "\u0110\u00e3 th\u00eam kho\u1ea3n thu c\u00e2n b\u1eb1ng " + Money.vnd(difference));
+        } else {
+            Notice.success(root, "\u0110\u00e3 th\u00eam kho\u1ea3n chi c\u00e2n b\u1eb1ng " + Money.vnd(-difference));
+        }
+        reloadByUser();
     }
 
     /** K\u00e9o \u0111\u1ec3 t\u1ea3i l\u1ea1i: cho ph\u00e9p ch\u1ea1y l\u1ea1i hi\u1ec7u \u1ee9ng m\u1ed9t l\u1ea7n. */
@@ -163,10 +186,10 @@ public class DashboardFragment extends Fragment {
 
         Db.load(() -> {
             Data data = new Data();
-            data.expense = value(dao.getExpenseInRange(current[0], current[1]));
-            data.previous = value(dao.getExpenseInRange(previous[0], previous[1]));
+            data.expense = value(dao.getExpenseInRangeSkip(current[0], current[1], Stats.CATEGORY_BALANCE));
+            data.previous = value(dao.getExpenseInRangeSkip(previous[0], previous[1], Stats.CATEGORY_BALANCE));
 //            data.income = value(dao.getIncomeInRange(current[0], current[1]));
-            List<CategoryTotal> cats = dao.getExpenseByCategoryInRange(current[0], current[1]);
+            List<CategoryTotal> cats = dao.getExpenseByCategoryInRangeSkip(current[0], current[1], Stats.CATEGORY_BALANCE);
             if (cats != null) data.categories = cats;
             List<TransactionEntity> recent = dao.getRecent(5);
             if (recent != null) data.recent = recent;
@@ -177,7 +200,7 @@ public class DashboardFragment extends Fragment {
             data.receivable = dao.totalReceivable();
             data.payable = dao.totalPayable();
             data.netWorth = data.wallet + data.receivable - data.payable;
-            data.netProfit = dao.netProfitInRange(current[0], current[1]);
+            data.netProfit = dao.netProfitInRangeSkip(current[0], current[1], Stats.CATEGORY_BALANCE);
             return data;
         }, data -> {
             if (refresh != null) refresh.setRefreshing(false);

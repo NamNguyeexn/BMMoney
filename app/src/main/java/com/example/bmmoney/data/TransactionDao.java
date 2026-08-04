@@ -190,4 +190,49 @@ public interface TransactionDao {
     /** Ma khoan vay lon nhat dang co, dung de sinh ma tiep theo. */
     @Query("SELECT MAX(id) FROM transactions")
     Integer maxId();
+
+    // =====================================================================
+    // Ban va 04/08 - KHOAN THU / CHI CAN BANG
+    //
+    // Khoan can bang lam doi so du vi (walletBalance van tinh no, dung y muon)
+    // nhung khong phai chi tieu / thu nhap thuc. Nam truy van duoi day la ban
+    // "Skip" cua cac truy van bao cao: giong het ban goc, chi them dieu kien
+    // loai mot danh muc ra. Cac man Trang chu / Phan tich / Cai dat dung ban nay
+    // de ngan sach va bieu do danh muc khong bi khoan can bang lam meo.
+    // =====================================================================
+
+    /** Tong chi tieu cua ky, bo qua mot danh muc. */
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'EXPENSE' "
+            + "AND date BETWEEN :start AND :end AND IFNULL(category, '') != :skip")
+    Double getExpenseInRangeSkip(long start, long end, String skip);
+
+    /** Tong thu nhap cua ky, bo qua mot danh muc. */
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'INCOME' "
+            + "AND date BETWEEN :start AND :end AND IFNULL(category, '') != :skip")
+    Double getIncomeInRangeSkip(long start, long end, String skip);
+
+    /** Chi tieu gop theo danh muc trong ky, bo qua mot danh muc. */
+    @Query("SELECT category, SUM(amount) AS total FROM transactions "
+            + "WHERE type = 'EXPENSE' AND date BETWEEN :start AND :end "
+            + "AND IFNULL(category, '') != :skip GROUP BY category ORDER BY total DESC")
+    List<CategoryTotal> getExpenseByCategoryInRangeSkip(long start, long end, String skip);
+
+    /** Lai lo thuan cua ky, bo qua mot danh muc. */
+    @Query("SELECT IFNULL(SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END), 0) "
+            + "FROM transactions WHERE type IN ('INCOME', 'EXPENSE') "
+            + "AND date BETWEEN :start AND :end AND IFNULL(category, '') != :skip")
+    double netProfitInRangeSkip(long start, long end, String skip);
+
+    /**
+     * Tong so tien da can bang tu truoc den nay: thu tinh cong, chi tinh tru.
+     * Duong nghia la app hay ghi thieu tien vao, am nghia la hay ghi thieu tien ra.
+     */
+    @Query("SELECT IFNULL(SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END), 0) "
+            + "FROM transactions WHERE IFNULL(category, '') = :category")
+    double balanceAdjustTotal(String category);
+
+    /** Ban ghi moi nhat cua mot danh muc, dung de khoe lan can bang gan nhat. */
+    @Query("SELECT * FROM transactions WHERE IFNULL(category, '') = :category "
+            + "ORDER BY date DESC LIMIT 1")
+    TransactionEntity latestOfCategory(String category);
 }

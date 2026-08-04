@@ -38,6 +38,10 @@ public class BackupReceiver extends BroadcastReceiver {
                 return;
             }
             AutoBackup.scheduleDaily(app);
+            // Ban va 04/08: bao thuc sao luu 7h sang la dip tu chua loi nhac moi ngay.
+            // Neu vi ly do nao do chuoi bao thuc nhac nho bi dut, den sang hom sau no
+            // duoc dat lai, khong can nguoi dung mo app.
+            Reminders.rescheduleAll(app);
             result.finish();
         });
     }

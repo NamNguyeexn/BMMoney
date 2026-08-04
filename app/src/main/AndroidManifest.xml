@@ -8,6 +8,14 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Ban va 04/08: tu Android 14, SCHEDULE_EXACT_ALARM KHONG con duoc cap san.
+         Khong co quyen nay thi bao thuc bi ha xuong loai "khong chinh xac", va trong
+         che do Doze he thong don no vao cua so bao tri -> loi nhac tre hang gio hoac
+         mat han. USE_EXACT_ALARM duoc cap ngay khi cai, danh cho app co chuc nang
+         chinh la bao thuc / loi nhac. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- De mo duoc hop thoai xin bo toi uu pin cho app -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
@@ -39,6 +47,10 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- Ban va 04/08: nhieu ROM (Honor, Huawei, Xiaomi) khong gui
+                     BOOT_COMPLETED chuan ma gui QUICKBOOT_POWERON -->
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.huawei.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
         <receiver
@@ -47,6 +59,10 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- Ban va 04/08: nhieu ROM (Honor, Huawei, Xiaomi) khong gui
+                     BOOT_COMPLETED chuan ma gui QUICKBOOT_POWERON -->
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.huawei.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
 
