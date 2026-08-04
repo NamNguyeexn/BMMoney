@@ -70,12 +70,6 @@ public class SettingsFragment extends Fragment {
     private static final int REQ_NOTIFICATION = 7001;
     private static final int REQ_GOOGLE = 7002;
 
-    /** Bi\u1ec3u t\u01b0\u1ee3ng g\u1ee3i \u00fd cho danh m\u1ee5c. */
-    private static final String[] EMOJI_SUGGEST = {
-            "\ud83c\udf5c", "\u2615", "\ud83d\uded2", "\ud83d\ude97", "\u26fd", "\ud83e\uddfe",
-            "\ud83c\udfe0", "\ud83d\udca1", "\ud83d\udc8a", "\ud83c\udfac", "\ud83d\udcda",
-            "\u2708\ufe0f", "\ud83c\udf81", "\ud83d\udc36", "\ud83c\udfcb", "\ud83d\udcb0"};
-
     private GoogleSignInClient googleClient;
 
     private View root;
@@ -222,6 +216,24 @@ public class SettingsFragment extends Fragment {
     }
 
     // ------------------------------------------------------------- n\u1ea1p l\u1ea1i to\u00e0n m\u00e0n
+    /**
+     * Ban va 04/08: roi man Cai dat thi hen mot lan sao luu.
+     *
+     * <p>Dat o day thay vi rai vao muời cho luu rieng le: nguoi dung thuong sua
+     * lien tiep nhieu o (ten, ngan sach, nguong, danh muc, gio nhac) roi moi thoat,
+     * nen mot lan hen khi thoat la du va khong ghi cloud lien tuc.</p>
+     *
+     * <p>scheduleSoon tu bo qua neu chua dang nhap Google, va no goi touchLocal
+     * truoc khi kiem tra dieu do.</p>
+     */
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (getContext() != null) {
+            AutoBackup.scheduleSoon(getContext().getApplicationContext());
+        }
+    }
+
     public void reload() {
         if (root == null || getContext() == null) return;
 
@@ -506,8 +518,6 @@ public class SettingsFragment extends Fragment {
             delete.setVisibility(View.GONE);
         }
 
-        buildEmojiSuggestions(view, emoji);
-
         final AlertDialog dialog = new AlertDialog.Builder(context).setView(view).create();
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
@@ -546,25 +556,6 @@ public class SettingsFragment extends Fragment {
         });
 
         dialog.show();
-    }
-
-    /** D\u1ea3i bi\u1ec3u t\u01b0\u1ee3ng b\u1ea5m m\u1ed9t c\u00e1i l\u00e0 \u0111i\u1ec1n, \u0111\u1ee1 ph\u1ea3i m\u1edf b\u00e0n ph\u00edm emoji. */
-    private void buildEmojiSuggestions(View dialogView, final EditText target) {
-        LinearLayout box = dialogView.findViewById(R.id.container_emoji);
-        if (box == null || getContext() == null) return;
-        box.removeAllViews();
-
-        LayoutInflater inflater = LayoutInflater.from(getContext());
-        for (String value : EMOJI_SUGGEST) {
-            View chip = inflater.inflate(R.layout.item_chip, box, false);
-            TextView label = chip.findViewById(R.id.tv_chip);
-            label.setText(value);
-            chip.setOnClickListener(v -> {
-                target.setText(value);
-                target.setSelection(target.getText().length());
-            });
-            box.addView(chip);
-        }
     }
 
     // ------------------------------------------------------------- t\u00e0i kho\u1ea3n Google

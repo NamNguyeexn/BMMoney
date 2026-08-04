@@ -40,6 +40,7 @@ public final class Prefs {
 
     public static void setUserName(Context context, String name) {
         prefs(context).edit().putString(KEY_NAME, name).apply();
+        markChanged(context);
     }
 
     public static double budget(Context context) {
@@ -48,6 +49,7 @@ public final class Prefs {
 
     public static void setBudget(Context context, double budget) {
         prefs(context).edit().putFloat(KEY_BUDGET, (float) budget).apply();
+        markChanged(context);
     }
 
     /**
@@ -93,6 +95,7 @@ public final class Prefs {
                 .putInt(KEY_CYCLE_DAY, Math.max(1, Math.min(31, day)))
                 .putInt(KEY_CYCLE_MONTH, Math.max(1, Math.min(12, month)))
                 .apply();
+        markChanged(context);
     }
 
     public static String categoriesRaw(Context context) {
@@ -101,6 +104,7 @@ public final class Prefs {
 
     public static void setCategoriesRaw(Context context, String raw) {
         prefs(context).edit().putString(KEY_CATEGORIES, raw).apply();
+        markChanged(context);
     }
 
     /** Nguong canh bao chi tieu (% ngan sach), mac dinh 90%. */
@@ -110,6 +114,7 @@ public final class Prefs {
 
     public static void setWarnPercent(Context context, int percent) {
         prefs(context).edit().putInt(KEY_WARN_PERCENT, clamp(percent, 10, 200)).apply();
+        markChanged(context);
     }
 
     /** Moc "khoan chi dang chu y": giao dich chiem tu x% tong chi cua ky, mac dinh 15%. */
@@ -119,6 +124,7 @@ public final class Prefs {
 
     public static void setBigPercent(Context context, int percent) {
         prefs(context).edit().putInt(KEY_BIG_PERCENT, clamp(percent, 1, 99)).apply();
+        markChanged(context);
     }
 
     public static String remindersRaw(Context context) {
@@ -127,6 +133,7 @@ public final class Prefs {
 
     public static void setRemindersRaw(Context context, String raw) {
         prefs(context).edit().putString(KEY_REMINDERS, raw).apply();
+        markChanged(context);
     }
 
     /** Da qua popup Xin chao lan dau chua. */
@@ -174,6 +181,28 @@ public final class Prefs {
 
     public static void setStrongAlarm(Context context, boolean value) {
         prefs(context).edit().putBoolean(KEY_STRONG_ALARM, value).apply();
+        markChanged(context);
+    }
+
+    /**
+     * Ban va 04/08: moi thay doi CAI DAT cung phai danh dau la "du lieu duoi may vua
+     * doi", y nhu khi them mot giao dich.
+     *
+     * <p>Truoc day chi co giao dich moi goi touchLocal. Hai he qua:</p>
+     * <ul>
+     *   <li>Doi ten, ngan sach, danh muc, nguong hay gio nhac xong thi khong co gi
+     *       day len cloud - phai cho den khi tinh co them mot giao dich.</li>
+     *   <li>Nang hon: vi moc localChangedAt khong nhich, lan bam Dong bo ke tiep
+     *       thay cloud MOI HON may nen KEO CLOUD VE, ghi de dung nhung cai dat vua
+     *       nhap. Day la ly do co cam giac "cai dat khong luu duoc".</li>
+     * </ul>
+     *
+     * <p>Khi khoi phuc tu cloud, cac setter nay cung chay va cung goi markChanged,
+     * nhung restoreLatest ghi lai localChangedAt = moc cua ban cloud NGAY SAU DO,
+     * nen khong sinh ra vong day-keo lan nhau.</p>
+     */
+    private static void markChanged(Context context) {
+        touchLocal(context);
     }
 
     private static int clamp(int value, int min, int max) {

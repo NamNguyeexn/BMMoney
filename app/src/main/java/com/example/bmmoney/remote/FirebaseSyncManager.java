@@ -16,6 +16,7 @@ import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.util.Prefs;
+import com.example.bmmoney.util.Reminders;
 import com.example.bmmoney.util.Stats;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
@@ -477,6 +478,7 @@ public class FirebaseSyncManager {
         data.put("bigPercent", Prefs.bigPercent(context));
         data.put("categories", Prefs.categoriesRaw(context));
         data.put("reminders", Prefs.remindersRaw(context));
+        data.put("strongAlarm", Prefs.strongAlarm(context));
         return data;
     }
 
@@ -842,8 +844,17 @@ public class FirebaseSyncManager {
         String categories = string(data.get("categories"));
         if (categories != null && !categories.isEmpty()) Prefs.setCategoriesRaw(context, categories);
 
+        Object strong = data.get("strongAlarm");
+        if (strong instanceof Boolean) Prefs.setStrongAlarm(context, (Boolean) strong);
+
         String reminders = string(data.get("reminders"));
-        if (reminders != null) Prefs.setRemindersRaw(context, reminders);
+        if (reminders != null) {
+            Prefs.setRemindersRaw(context, reminders);
+            // Ban va 04/08: keo gio nhac ve thoi la CHUA du - phai dat lai bao thuc that.
+            // Truoc day sau khi khoi phuc, man Cai dat hien day cac moc gio nhung khong
+            // moc nao no, vi bao thuc cua he thong khong he duoc dat.
+            Reminders.rescheduleAll(context);
+        }
 
         Prefs.setOnboarded(context, true);
     }

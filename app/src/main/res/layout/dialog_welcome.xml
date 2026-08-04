@@ -23,25 +23,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Thiết lập nhanh vài thông tin nhỏ nhé."
+            android:text="Để trống dòng nào thì app dùng mặc định dòng đó. Sửa lại bất cứ lúc nào trong Cài đặt."
             android:textSize="13sp"
             android:lineSpacingExtra="2dp"
             android:textColor="@color/olive" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:text="Họ và tên"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="@color/dark_green" />
 
         <EditText
             android:id="@+id/edt_welcome_name"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="18dp"
             android:paddingLeft="12dp"
             android:paddingRight="12dp"
             android:background="@drawable/bg_field"
@@ -52,24 +43,15 @@
             android:textColor="@color/dark_green"
             android:textColorHint="@color/subtle_text" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:text="Ngân sách hàng tháng (đ)"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="@color/dark_green" />
-
         <EditText
             android:id="@+id/edt_welcome_budget"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="10dp"
             android:paddingLeft="12dp"
             android:paddingRight="12dp"
             android:background="@drawable/bg_field"
-            android:hint="Ví dụ: 2.000.000"
+            android:hint="Ngân sách tháng — mặc định 80.500.000"
             android:inputType="number"
             android:maxLength="12"
             android:textSize="15sp"
@@ -79,24 +61,16 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:text="Ngày chốt chu kỳ (dd/mm)"
+            android:layout_marginTop="16dp"
+            android:text="Ngày chốt chu kỳ"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="@color/dark_green" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Mọi số liệu được tính theo khoảng giữa hai lần chốt."
-            android:textSize="11sp"
-            android:textColor="@color/subtle_text" />
-
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
@@ -121,81 +95,6 @@
         </LinearLayout>
 
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:text="Ngưỡng chi tiêu (% ngân sách)"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="@color/dark_green" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Vượt mức này, Trang chủ sẽ hiện cảnh báo."
-            android:textSize="11sp"
-            android:textColor="@color/subtle_text" />
-
-        <EditText
-            android:id="@+id/edt_welcome_warn"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="6dp"
-            android:paddingLeft="12dp"
-            android:paddingRight="12dp"
-            android:background="@drawable/bg_field"
-            android:hint="90"
-            android:inputType="number"
-            android:maxLength="3"
-            android:textSize="15sp"
-            android:textColor="@color/dark_green"
-            android:textColorHint="@color/subtle_text" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:text="Mốc chi tiêu lớn (% tổng chi trong kỳ)"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="@color/dark_green" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Giao dịch chiếm từ mức này sẽ được đánh dấu là khoản chi đáng chú ý."
-            android:textSize="11sp"
-            android:textColor="@color/subtle_text" />
-
-        <EditText
-            android:id="@+id/edt_welcome_big"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="6dp"
-            android:paddingLeft="12dp"
-            android:paddingRight="12dp"
-            android:background="@drawable/bg_field"
-            android:hint="15"
-            android:inputType="number"
-            android:maxLength="2"
-            android:textSize="15sp"
-            android:textColor="@color/dark_green"
-            android:textColorHint="@color/subtle_text" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:padding="12dp"
-            android:background="@drawable/bg_badge_cream"
-            android:text="Lưu ý: tất cả thông tin này đều có thể chỉnh sửa lại bất cứ lúc nào trong phần Cài đặt."
-            android:textSize="12sp"
-            android:lineSpacingExtra="2dp"
-            android:textColor="@color/olive" />
-
-        <TextView
             android:id="@+id/btn_welcome_start"
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -206,18 +105,6 @@
             android:textSize="15sp"
             android:textStyle="bold"
             android:textColor="@color/cream"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <TextView
-            android:id="@+id/btn_welcome_skip"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center"
-            android:text="Để sau"
-            android:textSize="13sp"
-            android:textColor="@color/olive"
             android:clickable="true"
             android:focusable="true" />
     </LinearLayout>

@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.NumberPicker;
-import android.widget.Toast;
 
 import com.example.bmmoney.R;
 import com.example.bmmoney.util.Prefs;
@@ -17,15 +16,22 @@ import java.util.Calendar;
 
 /**
  * Popup Xin chao, chi hien mot lan khi mo app lan dau.
- * Cho nguoi dung dien ho ten, ngan sach thang, ngay chot chu ky,
- * nguong chi tieu va moc chi tieu lon.
+ *
+ * <p>Ban va 04/08: lam gon lai. Truoc day co nam o nhap, hai nut, va BAT BUOC
+ * phai dien ten va ngan sach moi cho di tiep - dien sai thi bi Toast chan lai.
+ * Nay khong o nao bat buoc: dien o nao thi luu o do, de trong thi lay mac dinh.
+ * Chi con MOT nut, nen khong con canh nguoi dung phai chon giua "Bat dau" va
+ * "De sau" ngay khi chua biet app lam gi.</p>
+ *
+ * <p>Nguong chi tieu va moc chi tieu lon da roi khoi man nay - chung co san mac
+ * dinh 90% va 15%, va co hang rieng trong man Cai dat.</p>
  */
 public final class WelcomeDialog {
 
     private WelcomeDialog() {
     }
 
-    /** @param onDone chay sau khi luu xong (hoac bo qua) de man hinh nap lai so lieu */
+    /** @param onDone chay sau khi luu xong de man hinh nap lai so lieu */
     public static void show(final Context context, final Runnable onDone) {
         if (context == null) return;
 
@@ -33,8 +39,6 @@ public final class WelcomeDialog {
 
         final EditText name = view.findViewById(R.id.edt_welcome_name);
         final EditText budget = view.findViewById(R.id.edt_welcome_budget);
-        final EditText warn = view.findViewById(R.id.edt_welcome_warn);
-        final EditText big = view.findViewById(R.id.edt_welcome_big);
         final NumberPicker day = view.findViewById(R.id.np_welcome_day);
         final NumberPicker month = view.findViewById(R.id.np_welcome_month);
 
@@ -57,51 +61,29 @@ public final class WelcomeDialog {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
-        view.findViewById(R.id.btn_welcome_skip).setOnClickListener(v -> {
-            Prefs.setOnboarded(context, true);
-            dialog.dismiss();
-            if (onDone != null) onDone.run();
-        });
-
         view.findViewById(R.id.btn_welcome_start).setOnClickListener(v -> {
+            // Dien o nao thi luu o do. Khong o nao bat buoc.
             String userName = name.getText().toString().trim();
-            if (userName.isEmpty()) {
-                Toast.makeText(context, "Nh\u1eadp t\u00ean \u0111\u1ec3 app ch\u00e0o b\u1ea1n nh\u00e9", Toast.LENGTH_SHORT).show();
-                name.requestFocus();
-                return;
-            }
+            Prefs.setUserName(context, userName.isEmpty() ? "b\u1ea1n" : userName);
 
-            String rawBudget = budget.getText().toString().replaceAll("[^0-9]", "");
-            if (rawBudget.isEmpty() || Double.parseDouble(rawBudget) <= 0d) {
-                Toast.makeText(context, "Nh\u1eadp ng\u00e2n s\u00e1ch h\u00e0ng th\u00e1ng nh\u00e9", Toast.LENGTH_SHORT).show();
-                budget.requestFocus();
-                return;
+            String digits = budget.getText().toString().replaceAll("[^0-9]", "");
+            double value = Prefs.DEFAULT_BUDGET;
+            if (!digits.isEmpty()) {
+                try {
+                    double typed = Double.parseDouble(digits);
+                    if (typed > 0d) value = typed;
+                } catch (NumberFormatException ignored) {
+                    // so qua dai hoac khong doc duoc -> giu mac dinh
+                }
             }
-
-            Prefs.setUserName(context, userName);
-            Prefs.setBudget(context, Double.parseDouble(rawBudget));
+            Prefs.setBudget(context, value);
             Prefs.setCycle(context, day.getValue(), month.getValue());
-            Prefs.setWarnPercent(context, number(warn, 90));
-            Prefs.setBigPercent(context, number(big, 15));
             Prefs.setOnboarded(context, true);
 
             dialog.dismiss();
-            Toast.makeText(context, "Xong r\u1ed3i, ch\u00fac b\u1ea1n gi\u1eef \u0111\u01b0\u1ee3c th\u00f3i quen n\u00e0y!",
-                    Toast.LENGTH_SHORT).show();
             if (onDone != null) onDone.run();
         });
 
         dialog.show();
-    }
-
-    /** Doc so tu o nhap, rong hoac sai thi dung gia tri mac dinh. */
-    private static int number(EditText input, int fallback) {
-        String raw = input.getText().toString().replaceAll("[^0-9]", "");
-        if (raw.isEmpty()) return fallback;
-        try {
-            return Integer.parseInt(raw);
-        } catch (NumberFormatException e) {
-            return fallback;
-        }
     }
 }
