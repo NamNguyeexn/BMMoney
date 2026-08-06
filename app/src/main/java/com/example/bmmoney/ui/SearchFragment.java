@@ -37,6 +37,7 @@ import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Stats;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -52,19 +53,21 @@ import java.util.Set;
  *       khien RecyclerView BO QUA requestLayout() khi adapter doi du lieu, nen no giu
  *       nguyen chieu cao do duoc o lan layout dau tien - luc adapter con rong, tuc la
  *       0px. O dem ket qua nam ngoai danh sach nen van hien dung so.</li>
- *   <li><b>Vao man khong loc thoi gian nua.</b> Mac dinh la {@link #TIME_ALL} thay vi
- *       thang nay. Bam lai dung the dang chon thi bo chon.</li>
+ *   <li><b>Vao man loc san hom nay.</b> Mac dinh la {@link #TIME_TODAY} thay vi
+ *       thang nay; lua chon "Tat ca" da bo.</li>
  *   <li><b>Truy van day het xuong SQLite va co phan trang.</b> Truoc day keo ca bang
  *       len roi loc bang Java; nay chi doc dung {@link #PAGE_SIZE} dong moi lan.</li>
  * </ol>
  */
 public class SearchFragment extends Fragment {
 
-    /** Ban va 06/08: khong loc thoi gian - trang thai mac dinh khi moi vao man. */
-    private static final int TIME_ALL = -1;
-    private static final int TIME_WEEK = 0;
-    private static final int TIME_MONTH = 1;
-    private static final int TIME_YEAR = 2;
+    /** Ban va 06/08 (b): vao man loc san HOM NAY, bo lua chon "Tat ca". */
+    private static final int TIME_TODAY = 0;
+    private static final int TIME_WEEK = 1;
+    private static final int TIME_MONTH = 2;
+    private static final int TIME_YEAR = 3;
+
+    private static final long DAY_MS = 24L * 60 * 60 * 1000;
 
     /** So dong nap them moi lan bam "Xem them". */
     private static final int PAGE_SIZE = 20;
@@ -87,7 +90,7 @@ public class SearchFragment extends Fragment {
     private SwipeRefreshLayout refresh;
     private TransactionAdapter adapter;
 
-    private int timeFilter = TIME_ALL;
+    private int timeFilter = TIME_TODAY;
     private boolean onlyOver100k = false;
     private boolean onlyBig = false;
     private final Set<String> pickedCategories = new HashSet<>();
@@ -144,7 +147,7 @@ public class SearchFragment extends Fragment {
             }
         });
 
-        root.findViewById(R.id.chip_time_all).setOnClickListener(v -> setTime(TIME_ALL));
+        root.findViewById(R.id.chip_today).setOnClickListener(v -> setTime(TIME_TODAY));
         root.findViewById(R.id.chip_week).setOnClickListener(v -> setTime(TIME_WEEK));
         root.findViewById(R.id.chip_month).setOnClickListener(v -> setTime(TIME_MONTH));
         root.findViewById(R.id.chip_year).setOnClickListener(v -> setTime(TIME_YEAR));
@@ -269,7 +272,7 @@ public class SearchFragment extends Fragment {
 
         // Khoa nhom the thoi gian khi dang xem so du con treo
         boolean timeUsable = !isLoanKind();
-        dim(R.id.chip_time_all, timeUsable);
+        dim(R.id.chip_today, timeUsable);
         dim(R.id.chip_week, timeUsable);
         dim(R.id.chip_month, timeUsable);
         dim(R.id.chip_year, timeUsable);
@@ -284,16 +287,20 @@ public class SearchFragment extends Fragment {
         view.setAlpha(usable ? 1f : 0.4f);
     }
 
-    /** Bam lai dung the thoi gian dang chon thi bo loc, quay ve "Tat ca". */
+    /**
+     * Doi khoang thoi gian. Luon co dung mot the sang: bo hoan toan bo loc thoi gian
+     * chinh la lua chon "Tat ca" ma minh vua go, nen bam lai the dang chon la khong doi.
+     */
     private void setTime(int filter) {
-        timeFilter = (timeFilter == filter && filter != TIME_ALL) ? TIME_ALL : filter;
+        if (timeFilter == filter) return;
+        timeFilter = filter;
         styleTimeChips();
         reload();
     }
 
     private void styleTimeChips() {
         if (root == null) return;
-        styleChip(root.findViewById(R.id.chip_time_all), timeFilter == TIME_ALL);
+        styleChip(root.findViewById(R.id.chip_today), timeFilter == TIME_TODAY);
         styleChip(root.findViewById(R.id.chip_week), timeFilter == TIME_WEEK);
         styleChip(root.findViewById(R.id.chip_month), timeFilter == TIME_MONTH);
         styleChip(root.findViewById(R.id.chip_year), timeFilter == TIME_YEAR);
@@ -352,13 +359,15 @@ public class SearchFragment extends Fragment {
         final boolean loanMode = isLoanKind();
         final int limit = shown;
 
-        // Khoan vay goc con treo khong xet thoi gian; the "Tat ca" cung vay
-        final int ignoreTime = (loanMode || filter == TIME_ALL) ? 1 : 0;
+        // Chi khoan vay goc con treo moi bo qua bo loc thoi gian
+        final int ignoreTime = loanMode ? 1 : 0;
         final long fromTime;
         final long toTime;
         if (filter == TIME_WEEK) {
             fromTime = Cycle.startOfWeek(now);
-            toTime = now;
+            // Truoc day moc cuoi la "now", nen ban ghi ghi hom nay nhung gio la buoi
+            // toi (vi du 21:00 trong khi bay gio moi 19:00) bi loai khoi ket qua.
+            toTime = endOfDay(now);
         } else if (filter == TIME_YEAR) {
             fromTime = Cycle.startOfYear(now);
             toTime = Cycle.endOfYear(now);
@@ -367,8 +376,9 @@ public class SearchFragment extends Fragment {
             fromTime = bounds[0];
             toTime = bounds[1];
         } else {
-            fromTime = 0L;
-            toTime = Long.MAX_VALUE;
+            // TIME_TODAY: Cycle khong co san moc theo ngay nen tinh tai cho
+            fromTime = startOfDay(now);
+            toTime = endOfDay(now);
         }
 
         final int openOnly = loanMode ? 1 : 0;
@@ -425,7 +435,11 @@ public class SearchFragment extends Fragment {
 
             adapter.setTransactions(data.items);
 
-            text(R.id.tv_result_count, data.count + " k\u1ebft qu\u1ea3");
+            // So tren dau phai khop voi so dong that su dang ve, neu khong nguoi dung
+            // se thay canh "12 ket qua" ma ben duoi chi co vai dong.
+            text(R.id.tv_result_count, data.items.size() < data.count
+                    ? data.items.size() + "/" + data.count + " k\u1ebft qu\u1ea3"
+                    : data.count + " k\u1ebft qu\u1ea3");
             text(R.id.tv_search_total_label, totalLabel(kindFilter));
             text(R.id.tv_search_total, Money.vnd(data.total));
             text(R.id.tv_search_sub, big
@@ -478,7 +492,23 @@ public class SearchFragment extends Fragment {
         if (filter == TIME_WEEK) return "Trong tu\u1ea7n n\u00e0y";
         if (filter == TIME_YEAR) return "Trong n\u0103m nay";
         if (filter == TIME_MONTH) return "Trong k\u1ef3 chi ti\u00eau hi\u1ec7n t\u1ea1i";
-        return "T\u1ea5t c\u1ea3 th\u1eddi gian";
+        return "Trong h\u00f4m nay";
+    }
+
+    /** 00:00:00.000 cua ngay chua thoi diem "time". */
+    private static long startOfDay(long time) {
+        Calendar c = Calendar.getInstance();
+        c.setTimeInMillis(time);
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        return c.getTimeInMillis();
+    }
+
+    /** 23:59:59.999 cua ngay chua thoi diem "time". */
+    private static long endOfDay(long time) {
+        return startOfDay(time) + DAY_MS - 1;
     }
 
     private void text(int id, String value) {

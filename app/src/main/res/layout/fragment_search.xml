@@ -7,12 +7,13 @@
     android:layout_height="match_parent"
     android:background="@color/cream">
 
-    <ScrollView 
+    <androidx.core.widget.NestedScrollView 
     
     android:id="@+id/screen_search"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/cream"
+    android:fillViewport="true"
     android:scrollbars="none">
 
     <LinearLayout
@@ -288,9 +289,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
-                <!-- Ban va 06/08: vao man khong loc thoi gian nua, mac dinh la the nay -->
+                <!-- Ban va 06/08 (b): the mac dinh khi moi vao man -->
                 <TextView
-                    android:id="@+id/chip_time_all"
+                    android:id="@+id/chip_today"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="0dp"
@@ -300,7 +301,7 @@
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:background="@drawable/bg_pill_cream"
-                    android:text="Tất cả"
+                    android:text="Hôm nay"
                     android:textSize="13sp"
                     android:textColor="@color/olive"
                     android:textStyle="bold"
@@ -568,6 +569,6 @@
     </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>
 
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
