@@ -1,7 +1,9 @@
 package com.example.bmmoney.ui;
 
+import android.content.Context;
 import android.os.Bundle;
-import android.widget.Toast;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -29,6 +31,7 @@ import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
+import com.example.bmmoney.util.Notice;
 import com.example.bmmoney.util.Prefs;
 import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Stats;
@@ -40,18 +43,41 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * M\u00e0n T\u00ecm ki\u1ebfm v\u1edbi ba nh\u00f3m b\u1ed9 l\u1ecdc: th\u1eddi gian, danh m\u1ee5c v\u00e0 gi\u00e1 tr\u1ecb.
- * Th\u1ebb "Kho\u1ea3n chi \u0111\u00e1ng ch\u00fa \u00fd" l\u1ecdc c\u00e1c giao d\u1ecbch chi\u1ebfm t\u1eeb x% t\u1ed5ng chi c\u1ee7a k\u1ef3 (\u0111\u1eb7t trong C\u00e0i \u0111\u1eb7t).
+ * M\u00e0n T\u00ecm ki\u1ebfm v\u1edbi b\u1ed1n nh\u00f3m b\u1ed9 l\u1ecdc: lo\u1ea1i ghi ch\u00fa, th\u1eddi gian, danh m\u1ee5c v\u00e0 gi\u00e1 tr\u1ecb.
+ *
+ * <p><b>Ban va 06/08 - ba thay doi:</b></p>
+ * <ol>
+ *   <li><b>Sua loi "N ket qua nhung khong thay dong nao".</b> RecyclerView nam trong
+ *       ScrollView voi wrap_content ma lai bi dat setHasFixedSize(true). Loi hua do
+ *       khien RecyclerView BO QUA requestLayout() khi adapter doi du lieu, nen no giu
+ *       nguyen chieu cao do duoc o lan layout dau tien - luc adapter con rong, tuc la
+ *       0px. O dem ket qua nam ngoai danh sach nen van hien dung so.</li>
+ *   <li><b>Vao man khong loc thoi gian nua.</b> Mac dinh la {@link #TIME_ALL} thay vi
+ *       thang nay. Bam lai dung the dang chon thi bo chon.</li>
+ *   <li><b>Truy van day het xuong SQLite va co phan trang.</b> Truoc day keo ca bang
+ *       len roi loc bang Java; nay chi doc dung {@link #PAGE_SIZE} dong moi lan.</li>
+ * </ol>
  */
 public class SearchFragment extends Fragment {
 
+    /** Ban va 06/08: khong loc thoi gian - trang thai mac dinh khi moi vao man. */
+    private static final int TIME_ALL = -1;
     private static final int TIME_WEEK = 0;
     private static final int TIME_MONTH = 1;
     private static final int TIME_YEAR = 2;
 
+    /** So dong nap them moi lan bam "Xem them". */
+    private static final int PAGE_SIZE = 20;
+
+    /** Cho go xong hang moi truy van, tranh chay 10 lan cho 10 chu vua go. */
+    private static final long TYPING_DELAY_MS = 300L;
+
+    /** Moc cua the loc "Tren 100k". */
+    private static final double BIG_AMOUNT = 100000d;
+
     /**
-     * Ban va 02/08: loc theo loai ghi chu. null nghia la xem tat ca.
-     * Voi LEND va DEBT, man hinh chuyen sang che do "so du con treo":
+     * Loc theo loai ghi chu. null nghia la xem tat ca.
+     * Voi LEND va BORROW, man hinh chuyen sang che do "so du con treo":
      * bo qua bo loc thoi gian, chi liet ke khoan chua tat toan va xep theo
      * han gan nhat truoc, dong thoi khoa cac the danh muc lai.
      */
@@ -61,17 +87,23 @@ public class SearchFragment extends Fragment {
     private SwipeRefreshLayout refresh;
     private TransactionAdapter adapter;
 
-    private int timeFilter = TIME_MONTH;
+    private int timeFilter = TIME_ALL;
     private boolean onlyOver100k = false;
     private boolean onlyBig = false;
     private final Set<String> pickedCategories = new HashSet<>();
     private final List<TextView> categoryChips = new ArrayList<>();
     private String keyword = "";
 
+    /** So ket qua dang ve tren man. Bam "Xem them" thi cong them PAGE_SIZE. */
+    private int shown = PAGE_SIZE;
+
+    private final Handler typing = new Handler(Looper.getMainLooper());
+    private final Runnable typingTask = this::reload;
+
     private static class Data {
         List<TransactionEntity> items = new ArrayList<>();
+        int count;
         double total;
-        double periodTotal;
     }
 
     @Nullable
@@ -83,7 +115,10 @@ public class SearchFragment extends Fragment {
         RecyclerView recycler = root.findViewById(R.id.recycler_results);
         adapter = new TransactionAdapter();
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
-        recycler.setHasFixedSize(true);
+        // KHONG dat setHasFixedSize(true): danh sach nam trong ScrollView voi
+        // wrap_content nen chieu cao PHU THUOC so dong. Dat true la RecyclerView
+        // bo qua requestLayout() khi du lieu ve, giu nguyen chieu cao 0px.
+        recycler.setHasFixedSize(false);
         recycler.setItemAnimator(null);
         recycler.setNestedScrollingEnabled(false);
         adapter.setOnDelete(this::deleteTransaction);
@@ -104,10 +139,12 @@ public class SearchFragment extends Fragment {
             @Override
             public void afterTextChanged(Editable s) {
                 keyword = s.toString().trim().toLowerCase(Locale.getDefault());
-                reload();
+                typing.removeCallbacks(typingTask);
+                typing.postDelayed(typingTask, TYPING_DELAY_MS);
             }
         });
 
+        root.findViewById(R.id.chip_time_all).setOnClickListener(v -> setTime(TIME_ALL));
         root.findViewById(R.id.chip_week).setOnClickListener(v -> setTime(TIME_WEEK));
         root.findViewById(R.id.chip_month).setOnClickListener(v -> setTime(TIME_MONTH));
         root.findViewById(R.id.chip_year).setOnClickListener(v -> setTime(TIME_YEAR));
@@ -123,13 +160,19 @@ public class SearchFragment extends Fragment {
             reload();
         });
 
-        // Ban va 03/08: sau the loai, dung dung sau loai cua nghiep vu ke toan
+        // Sau the loai, dung dung sau loai cua nghiep vu ke toan
         root.findViewById(R.id.chip_kind_expense).setOnClickListener(v -> setKind(Stats.EXPENSE));
         root.findViewById(R.id.chip_kind_income).setOnClickListener(v -> setKind(Stats.INCOME));
         root.findViewById(R.id.chip_kind_borrow).setOnClickListener(v -> setKind(Stats.BORROW));
         root.findViewById(R.id.chip_kind_repay).setOnClickListener(v -> setKind(Stats.REPAY));
         root.findViewById(R.id.chip_kind_lend).setOnClickListener(v -> setKind(Stats.LEND));
         root.findViewById(R.id.chip_kind_collect).setOnClickListener(v -> setKind(Stats.COLLECT));
+
+        // Phan trang: moi lan bam mo rong cua so them PAGE_SIZE dong
+        root.findViewById(R.id.btn_load_more).setOnClickListener(v -> {
+            shown += PAGE_SIZE;
+            query();
+        });
 
         buildCategoryChips();
         styleTimeChips();
@@ -146,6 +189,7 @@ public class SearchFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        typing.removeCallbacks(typingTask);
         RecyclerView recycler = root == null ? null : (RecyclerView) root.findViewById(R.id.recycler_results);
         if (recycler != null) recycler.setAdapter(null);
         categoryChips.clear();
@@ -225,6 +269,7 @@ public class SearchFragment extends Fragment {
 
         // Khoa nhom the thoi gian khi dang xem so du con treo
         boolean timeUsable = !isLoanKind();
+        dim(R.id.chip_time_all, timeUsable);
         dim(R.id.chip_week, timeUsable);
         dim(R.id.chip_month, timeUsable);
         dim(R.id.chip_year, timeUsable);
@@ -239,14 +284,16 @@ public class SearchFragment extends Fragment {
         view.setAlpha(usable ? 1f : 0.4f);
     }
 
+    /** Bam lai dung the thoi gian dang chon thi bo loc, quay ve "Tat ca". */
     private void setTime(int filter) {
-        timeFilter = filter;
+        timeFilter = (timeFilter == filter && filter != TIME_ALL) ? TIME_ALL : filter;
         styleTimeChips();
         reload();
     }
 
     private void styleTimeChips() {
         if (root == null) return;
+        styleChip(root.findViewById(R.id.chip_time_all), timeFilter == TIME_ALL);
         styleChip(root.findViewById(R.id.chip_week), timeFilter == TIME_WEEK);
         styleChip(root.findViewById(R.id.chip_month), timeFilter == TIME_MONTH);
         styleChip(root.findViewById(R.id.chip_year), timeFilter == TIME_YEAR);
@@ -262,7 +309,7 @@ public class SearchFragment extends Fragment {
     /** Xoa mot ban ghi (da hoi xac nhan o adapter) roi nap lai ket qua. */
     private void deleteTransaction(final TransactionEntity item) {
         if (getContext() == null || item == null) return;
-        final android.content.Context app = getContext().getApplicationContext();
+        final Context app = getContext().getApplicationContext();
         final TransactionDao dao = AppDatabase.dao(app);
         Db.io(() -> {
             dao.delete(item);
@@ -270,18 +317,32 @@ public class SearchFragment extends Fragment {
             AutoBackup.scheduleSoon(app);
             Db.ui(() -> {
                 if (getContext() == null) return;
-                com.example.bmmoney.util.Notice.success(root, "\u0110\u00e3 x\u00f3a b\u1ea3n ghi");
+                Notice.success(root, "\u0110\u00e3 x\u00f3a b\u1ea3n ghi");
                 reload();
             });
         });
     }
 
+    /** Nap lai tu dau. Moi lan doi bo loc deu quay ve trang dau. */
     public void reload() {
+        shown = PAGE_SIZE;
+        query();
+    }
+
+    /**
+     * Doc mot trang ket qua.
+     *
+     * <p>Moi dieu kien co the day xuong SQLite deu duoc day xuong. Rieng buoc so
+     * tu khoa van lam bang Java: SQLite LIKE khong phan biet hoa - thuong cho chu
+     * co dau tieng Viet nen go "an sang" se khong ra "An sang".</p>
+     */
+    private void query() {
         if (root == null || getContext() == null) return;
 
         final int cycleDay = Prefs.cycleDay(getContext());
         final long now = System.currentTimeMillis();
         final int bigPercent = Prefs.bigPercent(getContext());
+
         final String key = keyword;
         final int filter = timeFilter;
         final boolean over100k = onlyOver100k;
@@ -289,68 +350,72 @@ public class SearchFragment extends Fragment {
         final String kindFilter = kind;
         final boolean debtMode = isDebtKind();
         final boolean loanMode = isLoanKind();
-        final Set<String> cats = new HashSet<>(pickedCategories);
+        final int limit = shown;
 
-        final long from;
-        final long to;
+        // Khoan vay goc con treo khong xet thoi gian; the "Tat ca" cung vay
+        final int ignoreTime = (loanMode || filter == TIME_ALL) ? 1 : 0;
+        final long fromTime;
+        final long toTime;
         if (filter == TIME_WEEK) {
-            from = Cycle.startOfWeek(now);
-            to = now;
+            fromTime = Cycle.startOfWeek(now);
+            toTime = now;
         } else if (filter == TIME_YEAR) {
-            from = Cycle.startOfYear(now);
-            to = Cycle.endOfYear(now);
-        } else {
+            fromTime = Cycle.startOfYear(now);
+            toTime = Cycle.endOfYear(now);
+        } else if (filter == TIME_MONTH) {
             long[] bounds = Cycle.bounds(cycleDay, now, 0);
-            from = bounds[0];
-            to = bounds[1];
+            fromTime = bounds[0];
+            toTime = bounds[1];
+        } else {
+            fromTime = 0L;
+            toTime = Long.MAX_VALUE;
         }
 
-        final com.example.bmmoney.data.TransactionDao dao = AppDatabase.dao(getContext());
+        final int openOnly = loanMode ? 1 : 0;
+
+        // O tong tien: chua chon loai nao thi van chi cong CHI TIEU nhu truoc
+        final String totalType = kindFilter == null ? Stats.EXPENSE : kindFilter;
+
+        final List<String> cats = new ArrayList<>(pickedCategories);
+        final int allCats = (debtMode || cats.isEmpty()) ? 1 : 0;
+        // Tranh menh de IN () rong - mot so ban SQLite cu khong nhan
+        if (cats.isEmpty()) cats.add("");
+
+        final TransactionDao dao = AppDatabase.dao(getContext().getApplicationContext());
 
         Db.load(() -> {
             Data data = new Data();
 
-            // Nguon du lieu: khoan cho vay / no phai tra lay theo so du con treo,
-            // hai loai con lai van lay theo khoang thoi gian nhu truoc.
-            List<TransactionEntity> all = loanMode
-                    ? dao.getOpenLoans(kindFilter)
-                    : dao.getTransactionsByDateRange(from, to);
-            if (all == null) return data;
+            // Nguong "dang chu y" van tinh tren tong CA KY, khong phai trang dang xem
+            double scopeTotal = dao.searchScopeTotal(ignoreTime, fromTime, toTime, totalType, openOnly);
+            double threshold = scopeTotal * bigPercent / 100d;
 
-            // Nguong "dang chu y" tinh tren tong cua chinh loai dang xem,
-            // nho vay nut nay dung duoc cho ca bon loai ma logic khong doi.
-            double periodTotal = 0;
-            for (TransactionEntity t : all) {
-                String rowType = Stats.normalize(t.getType());
-                if (kindFilter == null) {
-                    if (Stats.EXPENSE.equals(rowType)) periodTotal += t.getAmount();
-                } else if (kindFilter.equals(rowType)) {
-                    periodTotal += t.getAmount();
-                }
+            double minAmount = over100k ? BIG_AMOUNT : 0d;
+            if (big) {
+                // Chua co so lieu de tinh nguong thi khong khoan nao goi la dang chu y
+                if (threshold <= 0) return data;
+                minAmount = Math.max(minAmount, threshold);
             }
-            data.periodTotal = periodTotal;
-            double threshold = periodTotal * bigPercent / 100d;
 
-            for (TransactionEntity t : all) {
-                String rowType = Stats.normalize(t.getType());
-                if (kindFilter != null && !kindFilter.equals(rowType)) continue;
-                if (!key.isEmpty()) {
-                    String title = t.getTitle() == null ? "" : t.getTitle().toLowerCase(Locale.getDefault());
-                    String note = t.getNote() == null ? "" : t.getNote().toLowerCase(Locale.getDefault());
-                    String category = t.getCategory() == null ? "" : t.getCategory().toLowerCase(Locale.getDefault());
-                    String person = t.personOrEmpty().toLowerCase(Locale.getDefault());
-                    if (!title.contains(key) && !note.contains(key)
-                            && !category.contains(key) && !person.contains(key)) continue;
-                }
-                if (!debtMode && !cats.isEmpty() && !cats.contains(t.getCategory())) continue;
-                if (over100k && t.getAmount() < 100000) continue;
-                if (big && (threshold <= 0 || t.getAmount() < threshold)) continue;
-
-                data.items.add(t);
-                if (kindFilter == null) {
-                    if (Stats.EXPENSE.equals(rowType)) data.total += t.getAmount();
-                } else {
-                    data.total += t.getAmount();
+            if (key.isEmpty()) {
+                // Duong nhanh: SQLite lo het, chi keo ve dung so dong dang ve
+                data.count = dao.searchCount(ignoreTime, fromTime, toTime, kindFilter, openOnly,
+                        allCats, cats, minAmount);
+                data.total = dao.searchTotal(ignoreTime, fromTime, toTime, totalType, openOnly,
+                        allCats, cats, minAmount);
+                List<TransactionEntity> page = dao.searchPage(ignoreTime, fromTime, toTime,
+                        kindFilter, openOnly, allCats, cats, minAmount, limit, 0);
+                if (page != null) data.items = page;
+            } else {
+                // Co tu khoa: SQLite van loc het phan con lai, Java chi con so tu khoa
+                List<TransactionEntity> pool = dao.searchAll(ignoreTime, fromTime, toTime,
+                        kindFilter, openOnly, allCats, cats, minAmount);
+                if (pool == null) return data;
+                for (TransactionEntity t : pool) {
+                    if (!matchKeyword(t, key)) continue;
+                    data.count++;
+                    if (totalType.equals(Stats.normalize(t.getType()))) data.total += t.getAmount();
+                    if (data.items.size() < limit) data.items.add(t);
                 }
             }
             return data;
@@ -359,7 +424,8 @@ public class SearchFragment extends Fragment {
             if (root == null || data == null) return;
 
             adapter.setTransactions(data.items);
-            text(R.id.tv_result_count, data.items.size() + " k\u1ebft qu\u1ea3");
+
+            text(R.id.tv_result_count, data.count + " k\u1ebft qu\u1ea3");
             text(R.id.tv_search_total_label, totalLabel(kindFilter));
             text(R.id.tv_search_total, Money.vnd(data.total));
             text(R.id.tv_search_sub, big
@@ -370,11 +436,32 @@ public class SearchFragment extends Fragment {
                             : "C\u00f2n ph\u1ea3i tr\u1ea3 \u00b7 h\u1ea1n g\u1ea7n nh\u1ea5t tr\u01b0\u1edbc")
                     : subtitle(filter));
 
-            root.findViewById(R.id.tv_empty_results)
-                    .setVisibility(data.items.isEmpty() ? View.VISIBLE : View.GONE);
-            root.findViewById(R.id.recycler_results)
-                    .setVisibility(data.items.isEmpty() ? View.GONE : View.VISIBLE);
+            boolean empty = data.items.isEmpty();
+            show(R.id.tv_empty_results, empty);
+            show(R.id.recycler_results, !empty);
+
+            // Phan trang: con bao nhieu ket qua chua ve
+            int remain = data.count - data.items.size();
+            show(R.id.btn_load_more, remain > 0);
+            text(R.id.btn_load_more, "Xem th\u00eam " + Math.min(remain, PAGE_SIZE) + " k\u1ebft qu\u1ea3");
+            show(R.id.tv_page_info, remain > 0);
+            text(R.id.tv_page_info, "\u0110ang xem " + data.items.size() + "/" + data.count);
         });
+    }
+
+    /** So khop tu khoa: tieu de, ghi chu, danh muc, ten doi tac va ca so tien. */
+    private static boolean matchKeyword(TransactionEntity t, String key) {
+        if (contains(t.getTitle(), key)) return true;
+        if (contains(t.getNote(), key)) return true;
+        if (contains(t.getCategory(), key)) return true;
+        if (contains(t.personOrEmpty(), key)) return true;
+        // O tim kiem co ghi "...so tien": go 250 thi ra ca khoan 250.000 d
+        String digits = key.replaceAll("[^0-9]", "");
+        return !digits.isEmpty() && String.valueOf((long) t.getAmount()).contains(digits);
+    }
+
+    private static boolean contains(String value, String key) {
+        return value != null && value.toLowerCase(Locale.getDefault()).contains(key);
     }
 
     /** Nhan cua o tong tien doi theo loai dang xem. */
@@ -390,12 +477,19 @@ public class SearchFragment extends Fragment {
     private String subtitle(int filter) {
         if (filter == TIME_WEEK) return "Trong tu\u1ea7n n\u00e0y";
         if (filter == TIME_YEAR) return "Trong n\u0103m nay";
-        return "Trong k\u1ef3 chi ti\u00eau hi\u1ec7n t\u1ea1i";
+        if (filter == TIME_MONTH) return "Trong k\u1ef3 chi ti\u00eau hi\u1ec7n t\u1ea1i";
+        return "T\u1ea5t c\u1ea3 th\u1eddi gian";
     }
 
     private void text(int id, String value) {
         if (root == null) return;
         View view = root.findViewById(id);
         if (view instanceof TextView) ((TextView) view).setText(value);
+    }
+
+    private void show(int id, boolean visible) {
+        if (root == null) return;
+        View view = root.findViewById(id);
+        if (view != null) view.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 }

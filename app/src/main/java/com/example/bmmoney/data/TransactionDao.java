@@ -235,4 +235,81 @@ public interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE IFNULL(category, '') = :category "
             + "ORDER BY date DESC LIMIT 1")
     TransactionEntity latestOfCategory(String category);
+
+    // =====================================================================
+    // Ban va 06/08 - TRUY VAN CHO MAN TIM KIEM
+    //
+    // Truoc day man Tim kiem keo TOAN BO ban ghi cua ky len roi loc bang Java.
+    // Nay moi dieu kien co the day xuong SQLite deu duoc day xuong, va man hinh
+    // chi doc dung so dong dang ve (LIMIT) thay vi ca bang.
+    //
+    // Quy uoc tham so "co - khong":
+    //   ignoreTime = 1   bo qua khoang thoi gian (xem tat ca)
+    //   type       = null xem moi loai; ban ghi cu 'DEBT' tu quy ve 'BORROW'
+    //   openOnly   = 1   chi khoan vay goc con treo (chua tat toan, chua tra du goc)
+    //   allCats    = 1   khong loc danh muc
+    //   minAmount <= 0   khong loc theo so tien
+    // =====================================================================
+
+    String SEARCH_WHERE =
+            "(:ignoreTime = 1 OR date BETWEEN :fromTime AND :toTime) "
+            + "AND (:type IS NULL OR (CASE WHEN type = 'DEBT' THEN 'BORROW' ELSE type END) = :type) "
+            + "AND (:openOnly = 0 OR (IFNULL(settled, 0) = 0 AND IFNULL(writtenOff, 0) = 0 "
+            + "AND amount > IFNULL((SELECT SUM(p.amount) FROM transactions p "
+            + "WHERE p.loanId = transactions.loanId AND p.type IN ('REPAY', 'COLLECT')), 0))) "
+            + "AND (:allCats = 1 OR IFNULL(category, '') IN (:cats)) "
+            + "AND (:minAmount <= 0 OR amount >= :minAmount)";
+
+    /**
+     * Thu tu on dinh - BAT BUOC cho phan trang. Thieu khoa phu id thi hai ban ghi
+     * cung moc thoi gian co the doi cho nhau giua hai lan doc, gay trung dong hoac
+     * sot dong khi mo rong cua so.
+     *
+     * <p>openOnly = 1 (khoan vay goc con treo): han gan nhat truoc, khoan chua dat
+     * han xuong cuoi. Cac truong hop con lai: moi nhat truoc.</p>
+     */
+    String SEARCH_ORDER =
+            "CASE WHEN :openOnly = 1 AND IFNULL(dueDate, 0) = 0 THEN 1 ELSE 0 END ASC, "
+            + "CASE WHEN :openOnly = 1 THEN IFNULL(dueDate, 0) ELSE 0 END ASC, "
+            + "CASE WHEN :openOnly = 1 THEN date ELSE 0 END ASC, "
+            + "CASE WHEN :openOnly = 1 THEN 0 ELSE date END DESC, id DESC";
+
+    /** Tong so ket qua khop bo loc - de o dem "N ket qua" hien dung. */
+    @Query("SELECT COUNT(*) FROM transactions WHERE " + SEARCH_WHERE)
+    int searchCount(int ignoreTime, long fromTime, long toTime, String type, int openOnly,
+                    int allCats, List<String> cats, double minAmount);
+
+    /** Tong tien cua TAT CA ket qua, khong phai chi trang dang xem. */
+    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE " + SEARCH_WHERE)
+    double searchTotal(int ignoreTime, long fromTime, long toTime, String type, int openOnly,
+                       int allCats, List<String> cats, double minAmount);
+
+    /** Mot trang ket qua. offset = 0, limit = so dong dang ve. */
+    @Query("SELECT * FROM transactions WHERE " + SEARCH_WHERE
+            + " ORDER BY " + SEARCH_ORDER + " LIMIT :limit OFFSET :offset")
+    List<TransactionEntity> searchPage(int ignoreTime, long fromTime, long toTime, String type,
+                                       int openOnly, int allCats, List<String> cats,
+                                       double minAmount, int limit, int offset);
+
+    /**
+     * Ban day du, chi dung khi CO tu khoa. SQLite LIKE khong phan biet hoa - thuong
+     * cho chu co dau tieng Viet ("An sang" khong khop "an sang") nen buoc so tu khoa
+     * van phai lam bang Java de khong bo sot. Cac dieu kien con lai da loc sach o day.
+     */
+    @Query("SELECT * FROM transactions WHERE " + SEARCH_WHERE + " ORDER BY " + SEARCH_ORDER)
+    List<TransactionEntity> searchAll(int ignoreTime, long fromTime, long toTime, String type,
+                                      int openOnly, int allCats, List<String> cats,
+                                      double minAmount);
+
+    /**
+     * Tong cua ca ky theo loai dang xem, KHONG tinh bo loc danh muc / so tien / tu khoa.
+     * Dung lam mau so cho nguong "Khoan dang chu y" (x% tong cua nhom).
+     */
+    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE "
+            + "(:ignoreTime = 1 OR date BETWEEN :fromTime AND :toTime) "
+            + "AND (CASE WHEN type = 'DEBT' THEN 'BORROW' ELSE type END) = :type "
+            + "AND (:openOnly = 0 OR (IFNULL(settled, 0) = 0 AND IFNULL(writtenOff, 0) = 0 "
+            + "AND amount > IFNULL((SELECT SUM(p.amount) FROM transactions p "
+            + "WHERE p.loanId = transactions.loanId AND p.type IN ('REPAY', 'COLLECT')), 0)))")
+    double searchScopeTotal(int ignoreTime, long fromTime, long toTime, String type, int openOnly);
 }
