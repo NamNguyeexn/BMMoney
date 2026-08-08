@@ -20,7 +20,7 @@ import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.CategoryTotal;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionDao;
-import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.data.TxRow;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Notice;
@@ -68,7 +68,7 @@ public class DashboardFragment extends Fragment {
         double previous;
 //        double income;
         List<CategoryTotal> categories = new ArrayList<>();
-        List<TransactionEntity> recent = new ArrayList<>();
+        List<TxRow> recent = new ArrayList<>();
 
         // Ban va 03/08: so lieu ke toan.
         // wallet   = so du vi thuc te (co tinh ca vay muon)
@@ -191,7 +191,7 @@ public class DashboardFragment extends Fragment {
 //            data.income = value(dao.getIncomeInRange(current[0], current[1]));
             List<CategoryTotal> cats = dao.getExpenseByCategoryInRangeSkip(current[0], current[1], Stats.CATEGORY_BALANCE);
             if (cats != null) data.categories = cats;
-            List<TransactionEntity> recent = dao.getRecent(5);
+            List<TxRow> recent = dao.getRecent(5);
             if (recent != null) data.recent = recent;
 
             // Ban va 03/08: bon loai cong no CO lam doi so du vi nhung KHONG

@@ -1,0 +1,66 @@
+{
+  "_comment": [
+    "Chi muc ghep cho Giai doan 2, khi moi giao dich la mot tai lieu rieng.",
+    "Firestore tu tao chi muc cho tung truong don le, nhung truy van loc nhieu",
+    "truong roi sap xep thi BAT BUOC phai khai bao o day, neu khong se bi nem",
+    "loi FAILED_PRECONDITION kem mot duong dan tao chi muc.",
+    "Trien khai bang: firebase deploy --only firestore:indexes"
+  ],
+  "indexes": [
+    {
+      "_comment": "Dong bo tang dan: chi keo phan doi sau lan dong bo truoc",
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "updatedAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "_comment": "Man Tim kiem: loc theo loai roi sap xep moi nhat truoc",
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "_comment": "Bao cao thang: loai + thang, sap theo ngay",
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "monthKey", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "_comment": "Bao cao theo danh muc trong mot thang",
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "categoryName", "order": "ASCENDING" },
+        { "fieldPath": "monthKey", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "_comment": "Man Cong no: cac dong thuoc mot khoan vay, theo thu tu thoi gian",
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "loanId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "_comment": "Khoan vay con treo, sap theo han tra gan nhat",
+      "collectionGroup": "loans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "settled", "order": "ASCENDING" },
+        { "fieldPath": "dueDate", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

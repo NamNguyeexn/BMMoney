@@ -16,8 +16,11 @@ import androidx.fragment.app.Fragment;
 import com.example.bmmoney.MainActivity;
 import com.example.bmmoney.R;
 import com.example.bmmoney.data.AppDatabase;
+import com.example.bmmoney.data.CategoryEntity;
 import com.example.bmmoney.data.Db;
+import com.example.bmmoney.data.LoanEntity;
 import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.data.TxRow;
 import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Money;
@@ -96,7 +99,7 @@ public class AddExpenseFragment extends Fragment {
     private String method = METHODS.get(0)[1];
 
     /** Khoan vay goc dang duoc tra bot / thu bot, null la chua chon. */
-    @Nullable private TransactionEntity pickedLoan;
+    @Nullable private TxRow pickedLoan;
     /** So con lai cua khoan vay goc dang chon, dung de canh bao tra qua tay. */
     private double pickedLoanRemaining = 0d;
 
@@ -342,9 +345,9 @@ public class AddExpenseFragment extends Fragment {
                         : "Ch\u01b0a c\u00f3 kho\u1ea3n cho vay n\u00e0o \u0111ang treo", null);
                 return;
             }
-            final List<TransactionEntity> loans = new ArrayList<>(list);
+            final List<TxRow> loans = new ArrayList<>(list);
             List<String> labels = new ArrayList<>();
-            for (TransactionEntity loan : loans) {
+            for (TxRow loan : loans) {
                 labels.add(loanLabel(app, loan));
             }
             String current = pickedLoan == null ? "" : loanLabel(app, pickedLoan);
@@ -369,7 +372,7 @@ public class AddExpenseFragment extends Fragment {
             return;
         }
         final Context app = getContext().getApplicationContext();
-        final TransactionEntity loan = pickedLoan;
+        final TxRow loan = pickedLoan;
         final String loanId = loan.loanIdOrEmpty();
         Db.load(() -> loanId.isEmpty() ? 0d : AppDatabase.dao(app).paidOfLoan(loanId), paid -> {
             double left = loan.getAmount() - (paid == null ? 0d : paid);
@@ -378,7 +381,7 @@ public class AddExpenseFragment extends Fragment {
         });
     }
 
-    private String loanLabel(Context context, TransactionEntity loan) {
+    private String loanLabel(Context context, TxRow loan) {
         String who = loan.personOrEmpty();
         if (who.isEmpty()) who = "Ch\u01b0a ghi t\u00ean";
         String due = loan.dueMillis() > 0
@@ -590,6 +593,31 @@ public class AddExpenseFragment extends Fragment {
     }
 
     // ------------------------------------------------------------- luu
+
+    /**
+     * Ban nhap da san sang ghi xuong.
+     *
+     * <p><b>Vi sao phai co lop nay:</b> danh muc va doi tac gio la KHOA SO, ma tra ra
+     * khoa thi phai doc co so du lieu - viec do khong duoc lam tren luong giao dien.
+     * Nen phan doc form chi tra ve TEN, con phan ghi o luong nen moi doi ten thanh
+     * khoa. Tach nhu vay thi khong con cach nao lo tay truy van tren luong chinh.</p>
+     */
+    private static class Draft {
+        TransactionEntity tx;
+
+        /** Ten danh muc can tra thanh khoa. null la khong gan danh muc. */
+        String categoryName;
+
+        /** Ten doi tac can tra thanh khoa. null la khong gan doi tac. */
+        String partnerName;
+
+        /** Khac null thi phai MO MOT KHOAN GOC moi truoc khi ghi dong nay. */
+        String loanDirection;
+
+        /** Han tra / han doi cua khoan goc moi. 0 la khong dat han. */
+        long dueDate;
+    }
+
     private void save() {
         if (root == null || getContext() == null) return;
 
@@ -599,29 +627,70 @@ public class AddExpenseFragment extends Fragment {
             Notice.error(root, "Nh\u1eadp s\u1ed1 ti\u1ec1n tr\u01b0\u1edbc \u0111\u00e3 nh\u00e9", null);
             return;
         }
-        double amount = Double.parseDouble(rawAmount);
-
-        final TransactionEntity entity;
-        switch (mode) {
-            case MODE_INCOME: entity = buildIncome(amount); break;
-            case MODE_BORROW: entity = buildLoan(amount, Stats.BORROW); break;
-            case MODE_LEND: entity = buildLoan(amount, Stats.LEND); break;
-            case MODE_REPAY: entity = buildSettlement(amount, Stats.REPAY); break;
-            case MODE_COLLECT: entity = buildSettlement(amount, Stats.COLLECT); break;
-            default: entity = buildExpense(amount); break;
+        // So tien la so nguyen DONG. Tien Viet khong co phan le nen khong co ly do gi
+        // de mang kieu thap phan qua cac phep cong tru.
+        final long amount;
+        try {
+            amount = Long.parseLong(rawAmount);
+        } catch (NumberFormatException e) {
+            Notice.error(root, "S\u1ed1 ti\u1ec1n qu\u00e1 l\u1ed7n", null);
+            return;
         }
-        if (entity == null) return;
+
+        final Draft draft;
+        switch (mode) {
+            case MODE_INCOME: draft = buildIncome(amount); break;
+            case MODE_BORROW: draft = buildLoan(amount, Stats.BORROW); break;
+            case MODE_LEND: draft = buildLoan(amount, Stats.LEND); break;
+            case MODE_REPAY: draft = buildSettlement(amount, Stats.REPAY); break;
+            case MODE_COLLECT: draft = buildSettlement(amount, Stats.COLLECT); break;
+            default: draft = buildExpense(amount); break;
+        }
+        if (draft == null || draft.tx == null) return;
 
         final Context app = getContext().getApplicationContext();
         final int savedMode = mode;
-        final boolean newLoan = isNewLoan();
 
         Db.io(() -> {
-            long id = AppDatabase.dao(app).insert(entity);
-            if (newLoan) {
-                // Khoan vay goc tu sinh ma rieng de cac ban ghi tra / thu bam vao
-                AppDatabase.dao(app).setLoanId((int) id, "L" + id);
+            long now = System.currentTimeMillis();
+            TransactionEntity tx = draft.tx;
+
+            // Doi TEN thanh KHOA. Cac ham ensure(...) tu tao dong moi neu chua co, nen
+            // go ten mot doi tac moi la no duoc them vao bang doi tac ngay tai day.
+            if (draft.categoryName != null && !draft.categoryName.isEmpty()) {
+                tx.setCategoryId(AppDatabase.categories(app)
+                        .ensure(draft.categoryName, CategoryEntity.FALLBACK_EMOJI));
             }
+
+            Integer partnerId = null;
+            if (draft.partnerName != null && !draft.partnerName.isEmpty()) {
+                partnerId = AppDatabase.partners(app).ensure(draft.partnerName);
+                tx.setPartnerId(partnerId);
+            }
+
+            if (draft.loanDirection != null) {
+                // KHOAN GOC PHAI DUOC MO TRUOC.
+                // Cot loanId cua giao dich la khoa ngoai tro sang bang khoan vay. Ghi
+                // dong tien truoc khi dau khoan ton tai la vi pham rang buoc va SQLite
+                // se tu choi thang - khong phai lo im lang.
+                String loanId = AppDatabase.loans(app).newLoanId();
+
+                LoanEntity header = new LoanEntity();
+                header.setLoanId(loanId);
+                header.setDirection(draft.loanDirection);
+                header.setPrincipal(tx.getAmount());
+                header.setPartnerId(partnerId);
+                header.setOpenedDate(tx.getDate());
+                header.setDueDate(draft.dueDate);
+                header.setSettled(0);
+                header.setWrittenOff(0);
+                header.setUpdatedAt(now);
+                AppDatabase.loans(app).insert(header);
+
+                tx.setLoanId(loanId);
+            }
+
+            AppDatabase.dao(app).insert(tx);
             // Khong day len cloud ngay: gom thay doi roi sao luu mot lan cho do ton bo nho
             AutoBackup.scheduleSoon(app);
             Db.ui(() -> {
@@ -644,7 +713,7 @@ public class AddExpenseFragment extends Fragment {
     }
 
     @Nullable
-    private TransactionEntity buildExpense(double amount) {
+    private Draft buildExpense(long amount) {
         if (category.isEmpty()) {
             Notice.error(root, "Ch\u1ecdn m\u1ed9t danh m\u1ee5c nh\u00e9", null);
             return null;
@@ -658,12 +727,24 @@ public class AddExpenseFragment extends Fragment {
         String note = noteField.getText().toString().trim();
         String fullNote = note.isEmpty() ? payment : note + " \u00b7 " + payment;
 
-        return new TransactionEntity(title, amount, Stats.EXPENSE, category, fullNote, pickedTime);
+        Draft draft = new Draft();
+        draft.tx = new TransactionEntity(title, amount, Stats.EXPENSE, null, fullNote, pickedTime);
+        draft.categoryName = category;
+        return draft;
     }
 
-    /** Khoan thu chi can: so tien, ngay gio, cach nhan. */
-    private TransactionEntity buildIncome(double amount) {
-        return new TransactionEntity(method, amount, Stats.INCOME, method, "", pickedTime);
+    /**
+     * Khoan thu chi can: so tien, ngay gio, cach nhan.
+     *
+     * <p>Cach nhan tien da nam trong tieu de nen KHONG tao mot danh muc rieng cho no.
+     * Danh muc la de phan loai CHI TIEU; nhoi "L\u01b0\u01a1ng" hay "Chuy\u1ec3n
+     * kho\u1ea3n" vao day se lam danh sach danh muc phinh ra bang nhung muc khong ai
+     * chon khi ghi mot khoan chi.</p>
+     */
+    private Draft buildIncome(long amount) {
+        Draft draft = new Draft();
+        draft.tx = new TransactionEntity(method, amount, Stats.INCOME, null, "", pickedTime);
+        return draft;
     }
 
     /**
@@ -673,7 +754,7 @@ public class AddExpenseFragment extends Fragment {
      * chen xong vi phai co id tu database moi sinh duoc ma duy nhat.</p>
      */
     @Nullable
-    private TransactionEntity buildLoan(double amount, String type) {
+    private Draft buildLoan(long amount, String type) {
         EditText personField = root.findViewById(R.id.edt_person);
         String person = personField.getText().toString().trim();
         if (person.isEmpty()) {
@@ -686,13 +767,24 @@ public class AddExpenseFragment extends Fragment {
         EditText noteField = root.findViewById(R.id.edt_note);
         String note = noteField.getText().toString().trim();
 
-        TransactionEntity entity = new TransactionEntity(
-                person, amount, type, payment, note, pickedTime);
-        entity.setPerson(person);
-        entity.setDueDate(dueTime > 0 ? dueTime : null);
-        entity.setSettled(0);
-        entity.setWrittenOff(0);
-        return entity;
+        // Phuong thuc thanh toan di vao ghi chu chu khong vao danh muc, cung ly do
+        // nhu khoan thu o tren.
+        String fullNote = note.isEmpty() ? payment : payment + " \u00b7 " + note;
+
+        TransactionEntity tx = new TransactionEntity(
+                person, amount, type, null, fullNote, pickedTime);
+        // 0 nghia la khong dat han. Cot nay la kieu nguyen thuy NOT NULL nen khong
+        // nhan null nua - va nho vay moi truy van ve han khong phai boc IFNULL.
+        tx.setDueDate(dueTime);
+        tx.setSettled(0);
+        tx.setWrittenOff(0);
+
+        Draft draft = new Draft();
+        draft.tx = tx;
+        draft.partnerName = person;
+        draft.loanDirection = type;
+        draft.dueDate = dueTime;
+        return draft;
     }
 
     /**
@@ -703,7 +795,7 @@ public class AddExpenseFragment extends Fragment {
      * day de khong tao ra cong no am.</p>
      */
     @Nullable
-    private TransactionEntity buildSettlement(double amount, String type) {
+    private Draft buildSettlement(long amount, String type) {
         if (pickedLoan == null) {
             Notice.error(root, "Ch\u1ecdn kho\u1ea3n g\u1ed1c c\u1ea7n t\u1ea5t to\u00e1n nh\u00e9", null);
             return null;
@@ -714,22 +806,32 @@ public class AddExpenseFragment extends Fragment {
             return null;
         }
 
+        // Ban cu tu bay ra ma "L" + id khi khoan goc khong co ma. Nay moi khoan goc
+        // deu duoc cap ma ngay luc mo, nen thieu ma la du lieu that su sai - bay ra
+        // mot ma moi chi lam dong tien tat toan tru vao mot khoan khong ton tai.
+        String loanId = pickedLoan.loanIdOrEmpty();
+        if (loanId.isEmpty()) {
+            Notice.error(root,
+                    "Kho\u1ea3n g\u1ed1c n\u00e0y thi\u1ebfu m\u00e3, ch\u1ecdn l\u1ea1i nh\u00e9", null);
+            return null;
+        }
+
         EditText personField = root.findViewById(R.id.edt_person);
         String person = personField.getText().toString().trim();
         if (person.isEmpty()) person = pickedLoan.personOrEmpty();
 
         EditText noteField = root.findViewById(R.id.edt_note);
         String note = noteField.getText().toString().trim();
+        String fullNote = note.isEmpty() ? payment : payment + " \u00b7 " + note;
 
-        TransactionEntity entity = new TransactionEntity(
-                person, amount, type, payment, note, pickedTime);
-        entity.setPerson(person);
-        entity.setLoanId(pickedLoan.loanIdOrEmpty().isEmpty()
-                ? "L" + pickedLoan.getId()
-                : pickedLoan.loanIdOrEmpty());
-        // Ban nay chua tinh lai nen moi dong tien tat toan deu la GOC
-        entity.setPrincipalOrInterest(null);
-        return entity;
+        TransactionEntity tx = new TransactionEntity(
+                person, amount, type, null, fullNote, pickedTime);
+        tx.setLoanId(loanId);
+
+        Draft draft = new Draft();
+        draft.tx = tx;
+        draft.partnerName = person;
+        return draft;
     }
 
     private void resetForm() {

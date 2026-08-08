@@ -5,6 +5,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.os.Build;
 
+import com.example.bmmoney.util.Categories;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
@@ -38,6 +39,11 @@ public class BmmApp extends Application {
         super.onCreate();
         createReminderChannel();
         setupFirestore();
+
+        // Ban va 08/08: danh muc gio nam trong co so du lieu, nhung Room CAM truy van
+        // tren luong giao dien. Nap san mot ban vao bo nho ngay luc khoi dong de cac
+        // man hinh doc duoc ngay ma khong bi nem loi.
+        Categories.preload(this);
     }
 
     /** Phai chay TRUOC moi thao tac Firestore dau tien, neu khong se bi nem loi. */

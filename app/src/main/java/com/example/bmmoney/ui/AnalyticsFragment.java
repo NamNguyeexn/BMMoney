@@ -17,7 +17,7 @@ import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.CategoryTotal;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionDao;
-import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.data.TxRow;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Prefs;
@@ -83,7 +83,7 @@ public class AnalyticsFragment extends Fragment {
         List<com.example.bmmoney.data.PartnerBalance> partners = new ArrayList<>();
 
         /** Danh sach khoan cho vay va khoan no con treo, han gan nhat truoc. */
-        List<TransactionEntity> debts = new ArrayList<>();
+        List<TxRow> debts = new ArrayList<>();
         double total;
         double previousTotal;
         List<String> names = new ArrayList<>();
@@ -195,9 +195,9 @@ public class AnalyticsFragment extends Fragment {
             if (partners != null) data.partners = partners;
 
             // Bao cao no: gop khoan vay goc con treo cua hai chieu, han gan nhat truoc
-            List<TransactionEntity> open = new ArrayList<>();
-            List<TransactionEntity> openLend = dao.getOpenLoans(Stats.LEND);
-            List<TransactionEntity> openDebt = dao.getOpenLoans(Stats.BORROW);
+            List<TxRow> open = new ArrayList<>();
+            List<TxRow> openLend = dao.getOpenLoans(Stats.LEND);
+            List<TxRow> openDebt = dao.getOpenLoans(Stats.BORROW);
             if (openLend != null) open.addAll(openLend);
             if (openDebt != null) open.addAll(openDebt);
             java.util.Collections.sort(open, (a, b) -> {
@@ -421,7 +421,7 @@ public class AnalyticsFragment extends Fragment {
         SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
         LayoutInflater inflater = LayoutInflater.from(container.getContext());
 
-        for (final TransactionEntity t : data.debts) {
+        for (final TxRow t : data.debts) {
             View row = inflater.inflate(R.layout.item_debt_row, container, false);
             String rowType = Stats.normalize(t.getType());
             boolean lend = Stats.isReceivable(rowType);

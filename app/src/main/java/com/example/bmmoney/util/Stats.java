@@ -1,6 +1,6 @@
 package com.example.bmmoney.util;
 
-import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.data.TxRow;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -206,15 +206,15 @@ public final class Stats {
 
     // ------------------------------------------------------------- tong hop
 
-    public static double totalExpense(List<TransactionEntity> list, long from, long to) {
+    public static double totalExpense(List<TxRow> list, long from, long to) {
         return totalOfType(list, EXPENSE, from, to);
     }
 
     /** Tong so tien cua mot loai bat ky trong khoang thoi gian. */
-    public static double totalOfType(List<TransactionEntity> list, String type, long from, long to) {
+    public static double totalOfType(List<TxRow> list, String type, long from, long to) {
         double sum = 0;
         if (list == null) return sum;
-        for (TransactionEntity t : list) {
+        for (TxRow t : list) {
             if (type.equals(normalize(t.getType())) && t.getDate() >= from && t.getDate() <= to) {
                 sum += t.getAmount();
             }
@@ -223,9 +223,9 @@ public final class Stats {
     }
 
     /** Tong chi tieu theo danh muc, sap xep giam dan. Chi tinh EXPENSE. */
-    public static List<Slice> byCategory(List<TransactionEntity> list, long from, long to) {
+    public static List<Slice> byCategory(List<TxRow> list, long from, long to) {
         Map<String, Double> map = new LinkedHashMap<>();
-        for (TransactionEntity t : list) {
+        for (TxRow t : list) {
             if (!EXPENSE.equals(normalize(t.getType()))) continue;
             if (t.getDate() < from || t.getDate() > to) continue;
             String key = t.getCategory() == null || t.getCategory().isEmpty() ? "Kh\u00e1c" : t.getCategory();

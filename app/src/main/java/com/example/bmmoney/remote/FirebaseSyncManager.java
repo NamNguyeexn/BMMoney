@@ -13,11 +13,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.example.bmmoney.data.AppDatabase;
+import com.example.bmmoney.data.CategoryEntity;
 import com.example.bmmoney.data.Db;
+import com.example.bmmoney.data.LoanEntity;
+import com.example.bmmoney.data.PartnerEntity;
 import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Prefs;
 import com.example.bmmoney.util.Reminders;
-import com.example.bmmoney.util.Stats;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
@@ -27,54 +32,64 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.Source;
 import com.google.firebase.firestore.WriteBatch;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Sao luu / khoi phuc du lieu theo mo hinh MOT BAN GHI DUY NHAT (snapshot).
+ * Dong bo Room &lt;-&gt; Firestore theo mo hinh TUNG TAI LIEU (per-document).
  *
  * <p>Cau truc tren Firestore:</p>
  * <pre>
- * users/{uid}                       ho so tai khoan (email, ten, lan cuoi dung)
- * users/{uid}/backup/latest         ban sao luu moi nhat: thiet lap + so ban ghi + so manh
- * users/{uid}/backup/part_0..N      du lieu giao dich dang JSON, cat thanh manh
+ * users/{uid}                 ho so tai khoan (email, ten, lan cuoi dung)
+ * users/{uid}/meta/sync       moc dong bo: updatedAt, count, device, schemaVersion, settings
+ * users/{uid}/cats/{id}       danh muc:  name, emoji, kind, sortOrder, archived, updatedAt, deleted
+ * users/{uid}/people/{id}     doi tac:   name, phone, note, updatedAt, deleted
+ * users/{uid}/loans/{loanId}  khoan vay: partnerName, direction, principal, rate,
+ *                                        openedDate, dueDate, settled, writtenOff, updatedAt, deleted
+ * users/{uid}/tx/{id}         giao dich: type, amount, date, title, note, categoryName,
+ *                                        partnerName, loanId, dueDate, settled, writtenOff,
+ *                                        rate, updatedAt, deleted
  * </pre>
  *
- * <p><b>Ban va 01/08:</b> ba loi khien man Tuy chon "treo" khi bam Sao luu /
- * Dong bo da duoc xu ly o day:</p>
- * <ol>
- *   <li><b>Khong bao gio bao ket qua.</b> Khi may mat mang hoac Firestore chua
- *       ket noi duoc, {@code WriteBatch.commit()} chi ghi vao hang doi duoi may;
- *       Task cua no KHONG bao gio hoan tat nen callback khong chay -> khong co
- *       thong bao thanh cong va ngay sao luu khong duoc cap nhat. Nay moi thao
- *       tac deu co dong ho canh (watchdog) va callback chi chay dung mot lan.</li>
- *   <li><b>"Failed to get document because the client is offline".</b> Do doc
- *       bang Source mac dinh trong khi cache chi nam trong RAM. Nay doc uu tien
- *       may chu, that bai moi lui ve cache, va bat mang lai truoc khi doc.</li>
- *   <li><b>Loi khong doc duoc.</b> Ma loi Firestore duoc dich sang tieng Viet
- *       de biet ngay la mat mang, het han dang nhap hay bi Rules chan.</li>
- * </ol>
+ * <p><b>Vi sao doi khoi kieu cu.</b> Ban truoc gom TOAN BO giao dich thanh mot chuoi
+ * JSON roi cat thanh cac manh part_0..N nhet vao users/{uid}/backup. Kieu do co ba
+ * cai gia phai tra: sua mot giao dich cung phai day lai ca khoi; khong query duoc gi
+ * tren cloud; va chi can mot manh hong la mat tat ca. Nay moi ban ghi la mot document
+ * rieng nen day duoc PHAN THAY DOI, doc duoc bang query, hong mot cai thi chi mat cai do.</p>
+ *
+ * <p><b>Ten collection co chu y.</b> Cloud dung <code>tx</code> / <code>cats</code> /
+ * <code>people</code> chu khong phai <code>transactions</code>, vi
+ * {@link #cleanupLegacy()} van dang phai don sach collection <code>transactions</code>
+ * cua ban rat cu. Trung ten la app se tu xoa dung du lieu vua day len.</p>
+ *
+ * <p><b>Khong bao gio day id cuc bo len cloud.</b> categoryId / partnerId la so
+ * tu tang cua RIENG tung may, may khac danh so khac han. Cloud chi luu TEN, luc
+ * keo ve moi tra ten thanh id cua may nay. Doc id cua cats/people van la id cuc bo,
+ * nhung chi dung lam khoa tai lieu cho on dinh, khong dung de lien ket.</p>
  */
 public class FirebaseSyncManager {
 
-    /** Gioi han an toan cho moi manh du lieu (document Firestore toi da 1MB). */
-    private static final int PART_SIZE = 300000;
+    /** Mot WriteBatch cua Firestore toi da 500 thao tac; chua 400 cho con bien. */
+    private static final int BATCH_LIMIT = 400;
 
-    /** So document toi da duoc xoa trong mot lan don cloud kieu cu. */
+    /** So document toi da duoc xoa trong mot vong. */
     private static final int CLEAN_LIMIT = 400;
 
     /** Qua khoang nay ma may chu chua tra loi thi coi nhu that bai va bao nguoi dung. */
     private static final long TIMEOUT_MS = 20000L;
+
+    /** Phien ban cau truc du lieu tren cloud, ghi vao meta/sync de sau nay con biet duong doc. */
+    private static final int SCHEMA_VERSION = 5;
 
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
@@ -84,17 +99,30 @@ public class FirebaseSyncManager {
      */
     private static final String TAG = "BmmSync";
 
+    private static final String C_TX = "tx";
+    private static final String C_CATS = "cats";
+    private static final String C_PEOPLE = "people";
+    private static final String C_LOANS = "loans";
+    private static final String C_META = "meta";
+    private static final String D_SYNC = "sync";
+
+    /** Cac collection cua BAN NAY, xoa het khi nguoi dung bam Xoa ban sao luu. */
+    private static final String[] OWNED = { C_TX, C_LOANS, C_CATS, C_PEOPLE };
+
+    /**
+     * Cac collection cua BAN CU, chi don di.
+     * <code>transactions</code> la kieu per-document doi dau, <code>backup</code> la
+     * kieu JSON cat manh. Ca hai deu khong con duoc doc nua.
+     */
+    private static final String[] LEGACY = { "transactions", "backup" };
+
     /** Ket qua cua mot lan sao luu hoac khoi phuc. */
     public interface Result {
         void onDone(boolean ok, int count, @Nullable String error);
     }
 
     /**
-     * Ban va 03/08 (sua tiep). Ket qua cua nut "Dong bo", co kem HUONG da chay.
-     *
-     * <p>Truoc day man hinh chi bao "Da dong bo N giao dich" nen khi app chon huong
-     * DAY LEN, nguoi dung nhin thay bao thanh cong ma so lieu tren may khong doi va
-     * tuong la nut hong. Nay bao ro day len hay tai ve.</p>
+     * Ket qua cua nut "Dong bo", co kem HUONG da chay.
      *
      * pushed true = day du lieu may len cloud, false = tai cloud ve may
      */
@@ -109,9 +137,9 @@ public class FirebaseSyncManager {
         public final int count;
         public final String device;
         /**
-         * Ban va 03/08. true nghia la KHONG doc duoc may chu, so lieu nay chi la ban
-         * nam trong bo nho dem duoi may (co the la chinh lenh ghi dang xep hang).
-         * Tin vao no ma dong bo thi rat de day / keo nham.
+         * true nghia la KHONG doc duoc may chu, so lieu nay chi la ban nam trong bo nho
+         * dem duoi may (co the la chinh lenh ghi dang xep hang). Tin vao no ma dong bo
+         * thi rat de day / keo nham.
          */
         public final boolean fromCache;
 
@@ -127,18 +155,12 @@ public class FirebaseSyncManager {
             this.fromCache = fromCache;
         }
 
-        /**
-         * Loi 03/08: KHONG xac nhan duoc voi may chu (chua dang nhap, mat mang,
-         * het gio cho, Rules chan). Dong bo phai dung lai o truong hop nay.
-         */
+        /** KHONG xac nhan duoc voi may chu. Dong bo phai dung lai o truong hop nay. */
         static Info unreachable() {
             return new Info(false, 0, 0, "", true);
         }
 
-        /**
-         * May chu TRA LOI RO RANG la tai khoan nay chua co ban sao luu nao.
-         * Khac han unreachable(): day la ket qua dang tin, dong bo cu day len.
-         */
+        /** May chu TRA LOI RO RANG la tai khoan nay chua co ban sao luu nao. */
         static Info emptyOnServer() {
             return new Info(false, 0, 0, "", false);
         }
@@ -190,6 +212,7 @@ public class FirebaseSyncManager {
         return user == null ? null : user.getDisplayName();
     }
 
+    // ------------------------------------------------------------- duong dan
     @Nullable
     private DocumentReference rootRef() {
         String id = uid();
@@ -198,16 +221,21 @@ public class FirebaseSyncManager {
     }
 
     @Nullable
-    private CollectionReference backupRef() {
+    private CollectionReference col(String name) {
         DocumentReference root = rootRef();
-        return root == null ? null : root.collection("backup");
+        return root == null ? null : root.collection(name);
+    }
+
+    @Nullable
+    private DocumentReference metaRef() {
+        CollectionReference meta = col(C_META);
+        return meta == null ? null : meta.document(D_SYNC);
     }
 
     // ------------------------------------------------- ket qua chi bao dung mot lan
     /**
      * Boc callback cua man hinh lai: dam bao chi chay dung MOT lan va luon chay
-     * tren luong giao dien. Truoc day mot lan sao luu that bai co the vua khong
-     * bao gi, vua co nguy co bao hai lan khi vua timeout vua co phan hoi muon.
+     * tren luong giao dien.
      */
     private static final class Once {
         private final AtomicBoolean fired = new AtomicBoolean(false);
@@ -274,62 +302,62 @@ public class FirebaseSyncManager {
 
     /** Dich loi cua Firestore sang cau tieng Viet de con biet duong xu ly. */
     private static String friendly(@Nullable Throwable t) {
-        if (t == null) return "l\u1ed7i kh\u00f4ng r\u00f5";
+        if (t == null) return "l\\u1ed7i kh\\u00f4ng r\\u00f5";
         if (t instanceof FirebaseFirestoreException) {
             FirebaseFirestoreException.Code code = ((FirebaseFirestoreException) t).getCode();
             switch (code) {
                 case UNAVAILABLE:
                 case DEADLINE_EXCEEDED:
-                    return "kh\u00f4ng k\u1ebft n\u1ed1i \u0111\u01b0\u1ee3c m\u00e1y ch\u1ee7, ki\u1ec3m tra m\u1ea1ng nh\u00e9";
+                    return "kh\\u00f4ng k\\u1ebft n\\u1ed1i \\u0111\\u01b0\\u1ee3c m\\u00e1y ch\\u1ee7, ki\\u1ec3m tra m\\u1ea1ng nh\\u00e9";
                 case PERMISSION_DENIED: {
                     String detail = t.getMessage() == null ? "" : t.getMessage();
                     if (detail.contains("has not been used in project")
                             || detail.contains("SERVICE_DISABLED")
                             || detail.contains("is disabled")) {
-                        return "d\u1ef1 \u00e1n Firebase ch\u01b0a b\u1eadt Cloud Firestore API, "
-                                + "v\u00e0o Firebase Console t\u1ea1o Firestore Database tr\u01b0\u1edbc nh\u00e9";
+                        return "d\\u1ef1 \\u00e1n Firebase ch\\u01b0a b\\u1eadt Cloud Firestore API, "
+                                + "v\\u00e0o Firebase Console t\\u1ea1o Firestore Database tr\\u01b0\\u1edbc nh\\u00e9";
                     }
-                    return "t\u00e0i kho\u1ea3n ch\u01b0a c\u00f3 quy\u1ec1n ghi (xem Firestore Rules)";
+                    return "t\\u00e0i kho\\u1ea3n ch\\u01b0a c\\u00f3 quy\\u1ec1n ghi (xem Firestore Rules)";
                 }
                 case UNAUTHENTICATED:
-                    return "phi\u00ean \u0111\u0103ng nh\u1eadp \u0111\u00e3 h\u1ebft h\u1ea1n, \u0111\u0103ng nh\u1eadp l\u1ea1i nh\u00e9";
+                    return "phi\\u00ean \\u0111\\u0103ng nh\\u1eadp \\u0111\\u00e3 h\\u1ebft h\\u1ea1n, \\u0111\\u0103ng nh\\u1eadp l\\u1ea1i nh\\u00e9";
                 case NOT_FOUND:
-                    return "cloud ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u n\u00e0o";
+                    return "cloud ch\\u01b0a c\\u00f3 b\\u1ea3n sao l\\u01b0u n\\u00e0o";
                 case RESOURCE_EXHAUSTED:
-                    return "d\u1ef1 \u00e1n Firebase \u0111\u00e3 h\u1ebft h\u1ea1n m\u1ee9c mi\u1ec5n ph\u00ed h\u00f4m nay";
+                    return "d\\u1ef1 \\u00e1n Firebase \\u0111\\u00e3 h\\u1ebft h\\u1ea1n m\\u1ee9c mi\\u1ec5n ph\\u00ed h\\u00f4m nay";
                 default:
                     break;
             }
         }
         String message = t.getMessage();
-        if (message == null || message.trim().isEmpty()) return "l\u1ed7i kh\u00f4ng r\u00f5";
+        if (message == null || message.trim().isEmpty()) return "l\\u1ed7i kh\\u00f4ng r\\u00f5";
         if (message.contains("has not been used in project") || message.contains("SERVICE_DISABLED")) {
-            return "d\u1ef1 \u00e1n Firebase ch\u01b0a b\u1eadt Cloud Firestore API";
+            return "d\\u1ef1 \\u00e1n Firebase ch\\u01b0a b\\u1eadt Cloud Firestore API";
         }
         if (message.toLowerCase().contains("offline")) {
-            return "m\u00e1y \u0111ang ngo\u1ea1i tuy\u1ebfn v\u1edbi Firestore, ki\u1ec3m tra m\u1ea1ng nh\u00e9";
+            return "m\\u00e1y \\u0111ang ngo\\u1ea1i tuy\\u1ebfn v\\u1edbi Firestore, ki\\u1ec3m tra m\\u1ea1ng nh\\u00e9";
         }
         return message;
     }
 
+    // ------------------------------------------------------------- doc cloud
     /**
      * Doc mot document: uu tien ban tren may chu, that bai moi lui ve cache.
-     * Nho vay khi may chu khong voi toi duoc ta van con du lieu de lam viec,
-     * thay vi bao thang "failed to get document because the client is offline".
+     * Nho vay khi may chu khong voi toi duoc ta van con du lieu de lam viec.
      */
     private void readDoc(final DocumentReference ref, final DocRead callback) {
         ref.get(Source.SERVER)
-                .addOnSuccessListener(new com.google.android.gms.tasks.OnSuccessListener<DocumentSnapshot>() {
+                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
                     public void onSuccess(DocumentSnapshot snapshot) {
                         callback.onRead(snapshot, null);
                     }
                 })
-                .addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
+                .addOnFailureListener(new OnFailureListener() {
                     @Override
-                    public void onFailure(final Exception serverError) {
+                    public void onFailure(@NonNull final Exception serverError) {
                         ref.get(Source.CACHE)
-                                .addOnSuccessListener(new com.google.android.gms.tasks.OnSuccessListener<DocumentSnapshot>() {
+                                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                                     @Override
                                     public void onSuccess(DocumentSnapshot snapshot) {
                                         if (snapshot != null && snapshot.exists()) {
@@ -339,9 +367,9 @@ public class FirebaseSyncManager {
                                         }
                                     }
                                 })
-                                .addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
+                                .addOnFailureListener(new OnFailureListener() {
                                     @Override
-                                    public void onFailure(Exception cacheError) {
+                                    public void onFailure(@NonNull Exception cacheError) {
                                         callback.onRead(null, serverError);
                                     }
                                 });
@@ -353,105 +381,336 @@ public class FirebaseSyncManager {
         void onRead(@Nullable DocumentSnapshot snapshot, @Nullable Exception error);
     }
 
+    /**
+     * Doc ca mot collection, cung kieu uu tien may chu roi lui ve cache.
+     * Tra ve danh sach RONG nghia la may chu noi that su khong co gi;
+     * tra ve null nghia la khong doc duoc - hai chuyen hoan toan khac nhau.
+     */
+    private void readCol(final CollectionReference ref, final ColRead callback) {
+        ref.get(Source.SERVER)
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot snapshot) {
+                        callback.onRead(snapshot == null
+                                ? new ArrayList<DocumentSnapshot>()
+                                : snapshot.getDocuments(), null);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull final Exception serverError) {
+                        ref.get(Source.CACHE)
+                                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                                    @Override
+                                    public void onSuccess(QuerySnapshot snapshot) {
+                                        if (snapshot != null && !snapshot.isEmpty()) {
+                                            callback.onRead(snapshot.getDocuments(), null);
+                                        } else {
+                                            callback.onRead(null, serverError);
+                                        }
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception cacheError) {
+                                        callback.onRead(null, serverError);
+                                    }
+                                });
+                    }
+                });
+    }
+
+    private interface ColRead {
+        void onRead(@Nullable List<DocumentSnapshot> docs, @Nullable Exception error);
+    }
+
+    // ------------------------------------------------------------- doc gia tri
+    private static String str(DocumentSnapshot d, String key) {
+        Object v = d.get(key);
+        return v == null ? "" : String.valueOf(v);
+    }
+
+    @Nullable
+    private static String strOrNull(DocumentSnapshot d, String key) {
+        Object v = d.get(key);
+        if (v == null) return null;
+        String s = String.valueOf(v).trim();
+        return s.isEmpty() ? null : s;
+    }
+
+    private static long lng(DocumentSnapshot d, String key) {
+        Object v = d.get(key);
+        if (v instanceof Number) return ((Number) v).longValue();
+        try {
+            return Long.parseLong(String.valueOf(v));
+        } catch (Throwable ignored) {
+            return 0L;
+        }
+    }
+
+    private static int itg(DocumentSnapshot d, String key) {
+        return (int) lng(d, key);
+    }
+
+    @Nullable
+    private static Double dbl(DocumentSnapshot d, String key) {
+        Object v = d.get(key);
+        return v instanceof Number ? ((Number) v).doubleValue() : null;
+    }
+
+    /** Khoa tai lieu la id cuc bo; doc khong ra so thi de Room tu danh so moi. */
+    private static int idOf(DocumentSnapshot d) {
+        try {
+            return Integer.parseInt(d.getId());
+        } catch (Throwable ignored) {
+            return 0;
+        }
+    }
+
+    // ------------------------------------------------------------- dung tai lieu
+    private static Map<String, Object> mapOf(CategoryEntity c) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("name", c.getName());
+        m.put("emoji", c.getEmoji());
+        m.put("kind", c.getKind());
+        m.put("sortOrder", c.getSortOrder());
+        m.put("archived", c.getArchived());
+        m.put("updatedAt", c.getUpdatedAt());
+        m.put("deleted", c.getDeleted());
+        return m;
+    }
+
+    private static Map<String, Object> mapOf(PartnerEntity p) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("name", p.getName());
+        m.put("phone", p.getPhone());
+        m.put("note", p.getNote());
+        m.put("updatedAt", p.getUpdatedAt());
+        m.put("deleted", p.getDeleted());
+        return m;
+    }
+
+    private static Map<String, Object> mapOf(LoanEntity l, @Nullable String partnerName) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("partnerName", partnerName);
+        m.put("direction", l.getDirection());
+        m.put("principal", l.getPrincipal());
+        m.put("rate", l.getRate());
+        m.put("openedDate", l.getOpenedDate());
+        m.put("dueDate", l.getDueDate());
+        m.put("settled", l.getSettled());
+        m.put("writtenOff", l.getWrittenOff());
+        m.put("updatedAt", l.getUpdatedAt());
+        m.put("deleted", l.getDeleted());
+        return m;
+    }
+
+    private static Map<String, Object> mapOf(TransactionEntity t,
+                                             @Nullable String categoryName,
+                                             @Nullable String partnerName) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("type", t.getType());
+        m.put("amount", t.getAmount());
+        m.put("date", t.getDate());
+        m.put("title", t.getTitle());
+        m.put("note", t.getNote());
+        m.put("categoryName", categoryName);
+        m.put("partnerName", partnerName);
+        m.put("loanId", t.getLoanId());
+        m.put("dueDate", t.getDueDate());
+        m.put("settled", t.getSettled());
+        m.put("writtenOff", t.getWrittenOff());
+        m.put("rate", t.getRate());
+        m.put("updatedAt", t.getUpdatedAt());
+        m.put("deleted", t.getDeleted());
+        // dayKey / monthKey / yearKey deu suy ra tu date nen khong day len,
+        // luc keo ve setDate() se tu tinh lai.
+        return m;
+    }
+
     // ------------------------------------------------------------- sao luu
-    /** Ghi de ban sao luu tren cloud bang toan bo du lieu hien tai cua may. */
+    /**
+     * Day du lieu duoi may len cloud.
+     *
+     * <p>Doc <code>meta/sync</code> truoc de biet lan day cuoi la luc nao. Con moc do
+     * thi chi day nhung ban ghi co <code>updatedAt</code> moi hon - thuong la vai cai.
+     * Chua co moc (cloud trong, hoac doc rot ve cache nen khong dam chac) thi day
+     * toan bo cho an toan.</p>
+     */
     public void backupNow(@Nullable Result result) {
         final Once once = new Once(result);
-        final CollectionReference backup = backupRef();
-        if (backup == null) {
-            once.finish(false, 0, "ch\u01b0a \u0111\u0103ng nh\u1eadp");
+        final DocumentReference meta = metaRef();
+        if (meta == null) {
+            once.finish(false, 0, "ch\\u01b0a \\u0111\\u0103ng nh\\u1eadp");
             return;
         }
         if (!hasNetwork()) {
-            once.finish(false, 0, "m\u00e1y \u0111ang kh\u00f4ng c\u00f3 m\u1ea1ng");
+            once.finish(false, 0, "m\\u00e1y \\u0111ang kh\\u00f4ng c\\u00f3 m\\u1ea1ng");
             return;
         }
+        once.arm("m\\u00e1y ch\\u1ee7 kh\\u00f4ng tr\\u1ea3 l\\u1eddi, th\\u1eed l\\u1ea1i nh\\u00e9");
         wakeNetwork();
-        once.arm("m\u00e1y ch\u1ee7 kh\u00f4ng ph\u1ea3n h\u1ed3i n\u00ean l\u1ec7nh ghi ch\u1ec9 n\u1eb1m "
-                + "trong h\u00e0ng \u0111\u1ee3i d\u01b0\u1edbi m\u00e1y. Th\u01b0\u1eddng l\u00e0 do ch\u01b0a b\u1eadt "
-                + "Cloud Firestore API ho\u1eb7c Rules ch\u1eb7n ghi");
+        Log.i(TAG, "backupNow: bat dau, uid=" + uid());
 
-        Db.io(new Runnable() {
+        readDoc(meta, new DocRead() {
             @Override
-            public void run() {
-                final List<TransactionEntity> all;
-                final String payload;
-                try {
-                    List<TransactionEntity> list = db.transactionDao().getAllTransactions();
-                    all = list == null ? new ArrayList<TransactionEntity>() : list;
-                    payload = toJson(all);
-                } catch (Throwable t) {
-                    once.finish(false, 0, "kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c d\u1eef li\u1ec7u m\u00e1y");
-                    return;
-                }
-                writeSnapshot(backup, all.size(), payload, once);
+            public void onRead(@Nullable DocumentSnapshot head, @Nullable Exception error) {
+                if (once.isDone()) return;
+                boolean live = head != null
+                        && (head.getMetadata() == null || !head.getMetadata().isFromCache());
+                final long since = (live && head.exists()) ? lng(head, "updatedAt") : 0L;
+                Log.i(TAG, since <= 0
+                        ? "backupNow: day TOAN BO"
+                        : "backupNow: day PHAN THAY DOI tu moc " + since);
+                Db.io(new Runnable() {
+                    @Override
+                    public void run() {
+                        pushData(once, since);
+                    }
+                });
             }
         });
     }
 
-    /** Doc so manh cua ban sao luu cu de xoa phan du, roi ghi ban moi trong mot batch. */
-    private void writeSnapshot(final CollectionReference backup, final int count,
-                               final String payload, final Once once) {
-        readDoc(backup.document("latest"), new DocRead() {
-            @Override
-            public void onRead(@Nullable DocumentSnapshot old, @Nullable Exception error) {
-                int oldParts = 0;
-                if (old != null && old.exists()) {
-                    Long value = old.getLong("parts");
-                    if (value != null) oldParts = value.intValue();
-                }
-                commitSnapshot(backup, count, payload, oldParts, once);
+    /** Gom du lieu can day. Chay tren luong nen vi doc Room. */
+    private void pushData(final Once once, final long since) {
+        final List<DocumentReference> refs = new ArrayList<>();
+        final List<Map<String, Object>> bodies = new ArrayList<>();
+        int liveCount = 0;
+        try {
+            CollectionReference cats = col(C_CATS);
+            CollectionReference people = col(C_PEOPLE);
+            CollectionReference loans = col(C_LOANS);
+            CollectionReference tx = col(C_TX);
+            if (cats == null || people == null || loans == null || tx == null) {
+                once.finish(false, 0, "ch\\u01b0a \\u0111\\u0103ng nh\\u1eadp");
+                return;
             }
-        });
+
+            // Ban do id -> ten, dung cho ca ban ghi cu lan moi.
+            Map<Integer, String> catName = new HashMap<>();
+            for (CategoryEntity c : db.categoryDao().getAllForSync()) {
+                catName.put(c.getId(), c.getName());
+            }
+            Map<Integer, String> personName = new HashMap<>();
+            for (PartnerEntity p : db.partnerDao().getAllForSync()) {
+                personName.put(p.getId(), p.getName());
+            }
+
+            List<CategoryEntity> catRows = since <= 0
+                    ? db.categoryDao().getAllForSync()
+                    : db.categoryDao().changedSince(since);
+            for (CategoryEntity c : catRows) {
+                refs.add(cats.document(String.valueOf(c.getId())));
+                bodies.add(mapOf(c));
+            }
+
+            List<PartnerEntity> peopleRows = since <= 0
+                    ? db.partnerDao().getAllForSync()
+                    : db.partnerDao().changedSince(since);
+            for (PartnerEntity p : peopleRows) {
+                refs.add(people.document(String.valueOf(p.getId())));
+                bodies.add(mapOf(p));
+            }
+
+            List<LoanEntity> loanRows = since <= 0
+                    ? db.loanDao().getAllForSync()
+                    : db.loanDao().changedSince(since);
+            for (LoanEntity l : loanRows) {
+                String loanId = l.getLoanId();
+                if (loanId == null || loanId.trim().isEmpty()) continue;
+                refs.add(loans.document(loanId));
+                bodies.add(mapOf(l, personName.get(l.getPartnerId())));
+            }
+
+            List<TransactionEntity> txRows = since <= 0
+                    ? db.transactionDao().getAllForSync()
+                    : db.transactionDao().changedSince(since);
+            for (TransactionEntity t : txRows) {
+                refs.add(tx.document(String.valueOf(t.getId())));
+                bodies.add(mapOf(t, catName.get(t.getCategoryId()), personName.get(t.getPartnerId())));
+            }
+
+            liveCount = db.transactionDao().count();
+        } catch (Throwable t) {
+            Log.e(TAG, "backupNow: doc du lieu duoi may that bai", t);
+            once.finish(false, 0, friendly(t));
+            return;
+        }
+        Log.i(TAG, "backupNow: co " + refs.size() + " ban ghi can day");
+        commitAll(once, refs, bodies, liveCount);
     }
 
-    private void commitSnapshot(CollectionReference backup, final int count, String payload,
-                                int oldParts, final Once once) {
-        List<String> parts = split(payload);
-        final long now = System.currentTimeMillis();
-
-        Map<String, Object> meta = new HashMap<>();
-        // v4: them loanId / writtenOff cho nghiep vu cong no. Van doc duoc v2 va v3 cu.
-        meta.put("version", 4);
-        meta.put("updatedAt", now);
-        meta.put("count", count);
-        meta.put("parts", parts.size());
-        meta.put("device", Build.MANUFACTURER + " " + Build.MODEL);
-        meta.put("settings", settingsMap());
-
+    /**
+     * Ghi theo lo roi moi dong dau.
+     *
+     * <p>Phai ghi du lieu XONG HAN moi duoc ghi <code>meta/sync</code>: moc trong do la
+     * can cu cho lan day sau. Ghi dau truoc ma du lieu hong giua chung thi lan sau app
+     * tuong da day het roi va bo qua dung nhung ban ghi con thieu.</p>
+     */
+    private void commitAll(final Once once, final List<DocumentReference> refs,
+                           final List<Map<String, Object>> bodies, final int liveCount) {
+        final List<Task<Void>> jobs = new ArrayList<>();
         WriteBatch batch = firestore.batch();
-        batch.set(backup.document("latest"), meta);
-        for (int i = 0; i < parts.size(); i++) {
-            Map<String, Object> chunk = new HashMap<>();
-            chunk.put("data", parts.get(i));
-            batch.set(backup.document("part_" + i), chunk);
+        int inBatch = 0;
+        for (int i = 0; i < refs.size(); i++) {
+            batch.set(refs.get(i), bodies.get(i), SetOptions.merge());
+            inBatch++;
+            if (inBatch >= BATCH_LIMIT) {
+                jobs.add(batch.commit());
+                batch = firestore.batch();
+                inBatch = 0;
+            }
         }
-        // Xoa cac manh du thua tu lan sao luu truoc -> cloud khong phinh ra
-        for (int i = parts.size(); i < oldParts; i++) {
-            batch.delete(backup.document("part_" + i));
-        }
+        if (inBatch > 0) jobs.add(batch.commit());
 
-        batch.commit()
-                .addOnSuccessListener(new com.google.android.gms.tasks.OnSuccessListener<Void>() {
+        final int written = refs.size();
+        Tasks.whenAll(jobs)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void unused) {
-                        // Chi khi may chu da nhan that su moi ghi nhan moc thoi gian
-                        Prefs.setLastBackup(context, now);
-                        // Ban va 03/08 (sua tiep): dong bo moc "du lieu may doi lan cuoi"
-                        // ve dung thoi diem ban sao luu nay. Thieu dong nay thi ngay sau khi
-                        // Sao luu xong, may van bi coi la CU hon cloud nen lan bam Dong bo
-                        // ke tiep se KEO CLOUD VE va xoa du lieu vua nhap.
-                        Prefs.setLocalChangedAt(context, now);
-                        Log.i(TAG, "backupNow: da ghi " + count + " giao dich len cloud");
-                        saveAccountProfile();
-                        cleanupLegacy();
-                        once.finish(true, count, null);
+                        writeHead(once, liveCount, written);
                     }
                 })
-                .addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
+                .addOnFailureListener(new OnFailureListener() {
                     @Override
-                    public void onFailure(Exception e) {
-                        Log.w(TAG, "backupNow: ghi that bai", e);
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "backupNow: ghi du lieu that bai", e);
+                        once.finish(false, 0, friendly(e));
+                    }
+                });
+    }
+
+    /** Ghi moc dong bo. Buoc cuoi cung, chi chay khi du lieu da len het. */
+    private void writeHead(final Once once, final int liveCount, final int written) {
+        DocumentReference meta = metaRef();
+        if (meta == null) {
+            once.finish(false, 0, "ch\\u01b0a \\u0111\\u0103ng nh\\u1eadp");
+            return;
+        }
+        final long now = System.currentTimeMillis();
+        Map<String, Object> head = new HashMap<>();
+        head.put("updatedAt", now);
+        head.put("count", liveCount);
+        head.put("device", Build.MODEL);
+        head.put("schemaVersion", SCHEMA_VERSION);
+        head.put("settings", settingsMap());
+
+        meta.set(head, SetOptions.merge())
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        Prefs.setLastBackup(context, now);
+                        Log.i(TAG, "backupNow: xong, day " + written + " ban ghi, cloud giu "
+                                + liveCount + " giao dich");
+                        cleanupLegacy();
+                        once.finish(true, liveCount, null);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "backupNow: ghi moc dong bo that bai", e);
                         once.finish(false, 0, friendly(e));
                     }
                 });
@@ -482,11 +741,11 @@ public class FirebaseSyncManager {
         return data;
     }
 
-    // ------------------------------------------------------------- khoi phuc
+    // ------------------------------------------------------------- xem cloud
     /** Doc thong tin ban sao luu tren cloud (khong thay doi gi duoi may). */
     public void loadInfo(final InfoResult result) {
-        CollectionReference backup = backupRef();
-        if (backup == null) {
+        DocumentReference meta = metaRef();
+        if (meta == null) {
             Db.ui(new Runnable() {
                 @Override
                 public void run() {
@@ -496,10 +755,8 @@ public class FirebaseSyncManager {
             return;
         }
 
-        // Ban va 03/08: chi bao dung MOT lan va co dong ho canh.
-        // Truoc day neu Firestore khong tra loi (mat mang, rules chan) thi callback
-        // khong bao gio chay, man Cai dat ket o trang thai "Dang kiem tra..." va nguoi
-        // dung thay nut Dong bo / Sao luu nhu bi liet.
+        // Chi bao dung MOT lan va co dong ho canh. Neu Firestore khong tra loi (mat mang,
+        // rules chan) thi man Cai dat khong con ket o trang thai "Dang kiem tra...".
         final AtomicBoolean fired = new AtomicBoolean(false);
         final Runnable[] watchdog = new Runnable[1];
         final InfoResult once = new InfoResult() {
@@ -528,7 +785,7 @@ public class FirebaseSyncManager {
             return;
         }
         wakeNetwork();
-        readDoc(backup.document("latest"), new DocRead() {
+        readDoc(meta, new DocRead() {
             @Override
             public void onRead(@Nullable final DocumentSnapshot d, @Nullable Exception error) {
                 final Info info;
@@ -536,19 +793,14 @@ public class FirebaseSyncManager {
                     // Khong doc noi may chu (va cache cung khong co) -> trang thai mo ho
                     info = Info.unreachable();
                 } else if (!d.exists()) {
-                    // Loi 03/08: truoc day nhanh nay tra ve Info voi fromCache = true (mac dinh
-                    // cua ham dung 4 tham so), nen syncNow luon tuong la "chua doc duoc may chu"
-                    // va dung lai. Tai khoan chua tung sao luu se KHONG BAO GIO dong bo duoc.
                     // Doc thanh cong tu SERVER ma khong co document nghia la cloud dang rong.
+                    // Phai phan biet ro voi unreachable(), neu khong tai khoan chua tung sao
+                    // luu se KHONG BAO GIO dong bo duoc.
                     boolean cached = d.getMetadata() != null && d.getMetadata().isFromCache();
                     info = cached ? Info.unreachable() : Info.emptyOnServer();
                 } else {
-                    Long updatedAt = d.getLong("updatedAt");
-                    Long count = d.getLong("count");
                     boolean cached = d.getMetadata() != null && d.getMetadata().isFromCache();
-                    info = new Info(true,
-                            updatedAt == null ? 0 : updatedAt,
-                            count == null ? 0 : count.intValue(),
+                    info = new Info(true, lng(d, "updatedAt"), itg(d, "count"),
                             d.getString("device"), cached);
                 }
                 once.onDone(info);
@@ -556,48 +808,39 @@ public class FirebaseSyncManager {
         });
     }
 
-    /**
-     * Ban va 03/08 (sua tiep). Mo ta nhanh trang thai dong bo de chan doan khi
-     * nguoi dung bao "bam nut khong an gi". Dung cho hop thoai Chi tiet dong bo.
-     */
+    /** Mo ta nhanh trang thai dong bo, dung cho hop thoai Chi tiet dong bo. */
     public String describeStatus() {
         StringBuilder sb = new StringBuilder();
-        sb.append("\u0110\u0103ng nh\u1eadp: ").append(isSignedIn() ? email() : "ch\u01b0a").append('\n');
-        sb.append("UID: ").append(uid() == null ? "\u2014" : uid()).append('\n');
-        sb.append("M\u1ea1ng: ").append(hasNetwork() ? "c\u00f3" : "kh\u00f4ng").append('\n');
-        sb.append("M\u00e1y \u0111\u1ed5i l\u1ea7n cu\u1ed1i: ").append(stampText(Prefs.localChangedAt(context))).append('\n');
-        sb.append("Sao l\u01b0u l\u1ea7n cu\u1ed1i: ").append(stampText(Prefs.lastBackup(context)));
+        sb.append("\\u0110\\u0103ng nh\\u1eadp: ").append(isSignedIn() ? email() : "ch\\u01b0a").append("\\n");
+        sb.append("UID: ").append(uid() == null ? "\\u2014" : uid()).append("\\n");
+        sb.append("M\\u1ea1ng: ").append(hasNetwork() ? "c\\u00f3" : "kh\\u00f4ng").append("\\n");
+        sb.append("M\\u00e1y \\u0111\\u1ed5i l\\u1ea7n cu\\u1ed1i: ").append(stampText(Prefs.localChangedAt(context))).append("\\n");
+        sb.append("Sao l\\u01b0u l\\u1ea7n cu\\u1ed1i: ").append(stampText(Prefs.lastBackup(context)));
         return sb.toString();
     }
 
     private static String stampText(long time) {
-        if (time <= 0) return "ch\u01b0a c\u00f3";
+        if (time <= 0) return "ch\\u01b0a c\\u00f3";
         return android.text.format.DateFormat.format("dd/MM/yyyy HH:mm", time).toString();
     }
 
+    // ------------------------------------------------------------- dong bo
     /**
-     * Ban va 03/08. DONG BO THONG MINH cho nut "Dong bo".
+     * DONG BO THONG MINH cho nut "Dong bo": so sanh hai moc thoi gian roi tu quyet dinh.
      *
-     * <p>Truoc day nut nay goi thang restoreLatest, tuc la LUON keo cloud ve va xoa
-     * trang du lieu duoi may. Ai vua nhap mot loat giao dich roi bam Dong bo la mat
-     * sach - dung trieu chung ma ban gap.</p>
-     *
-     * <p>Nay app so sanh hai moc thoi gian roi tu quyet dinh:</p>
      * <ul>
-     *   <li>Duoi may moi hon cloud, hoac cloud chua co gi: DAY LEN (backupNow).</li>
-     *   <li>Cloud moi hon: KEO VE (restoreLatest).</li>
+     *   <li>Duoi may moi hon cloud, hoac cloud chua co gi: DAY LEN.</li>
+     *   <li>Cloud moi hon: KEO VE.</li>
      *   <li>Hai ben bang nhau: day len cho chac, khong xoa gi duoi may.</li>
      * </ul>
-     *
-     * @param result bao ket qua; count la so ban ghi da day len hoac tai ve
      */
     public void syncNow(@Nullable final SyncResult result) {
         if (!isSignedIn()) {
-            report(result, false, 0, true, "ch\u01b0a \u0111\u0103ng nh\u1eadp");
+            report(result, false, 0, true, "ch\\u01b0a \\u0111\\u0103ng nh\\u1eadp");
             return;
         }
         if (!hasNetwork()) {
-            report(result, false, 0, true, "m\u00e1y \u0111ang kh\u00f4ng c\u00f3 m\u1ea1ng");
+            report(result, false, 0, true, "m\\u00e1y \\u0111ang kh\\u00f4ng c\\u00f3 m\\u1ea1ng");
             return;
         }
         Log.i(TAG, "syncNow: bat dau, uid=" + uid());
@@ -611,24 +854,21 @@ public class FirebaseSyncManager {
                         + " | local=" + local);
                 if (info.fromCache) {
                     // Doc rot ve cache nghia la may chu dang tu choi hoac khong voi toi.
-                    // Truoc day van day / keo theo so lieu cache nen bao thanh cong gia.
-                    Log.w(TAG, "syncNow: chua doc duoc may chu, chi co ban trong cache -> dung lai");
+                    Log.w(TAG, "syncNow: chua doc duoc may chu -> dung lai");
                     report(result, false, 0, true,
-                            "ch\u01b0a \u0111\u1ecdc \u0111\u01b0\u1ee3c m\u00e1y ch\u1ee7 Firestore. "
-                                    + "Ki\u1ec3m tra \u0111\u00e3 b\u1eadt Cloud Firestore API "
-                                    + "v\u00e0 Rules cho ph\u00e9p t\u00e0i kho\u1ea3n n\u00e0y ch\u01b0a");
+                            "ch\\u01b0a \\u0111\\u1ecdc \\u0111\\u01b0\\u1ee3c m\\u00e1y ch\\u1ee7 Firestore. "
+                                    + "Ki\\u1ec3m tra \\u0111\\u00e3 b\\u1eadt Cloud Firestore API "
+                                    + "v\\u00e0 Rules cho ph\\u00e9p t\\u00e0i kho\\u1ea3n n\\u00e0y ch\\u01b0a");
                     return;
                 }
 
                 // Cloud chua co gi, hoac co ban sao luu RONG: luon day len.
-                // Day la chot an toan quan trong nhat - truoc day mot ban sao luu rong
-                // tren cloud du de xoa sach du lieu duoi may.
+                // Day la chot an toan quan trong nhat.
                 if (!info.exists || info.updatedAt <= 0 || info.count <= 0) {
                     Log.i(TAG, "syncNow: chon DAY LEN (cloud rong hoac chua co)");
                     pushUp(result);
                     return;
                 }
-                // Chua tung ghi nhan moc nao (may moi cai lai): lay cloud ve.
                 if (local > 0 && local >= info.updatedAt) {
                     Log.i(TAG, "syncNow: chon DAY LEN (may moi hon cloud)");
                     pushUp(result);
@@ -669,153 +909,282 @@ public class FirebaseSyncManager {
         });
     }
 
+    // ------------------------------------------------------------- khoi phuc
     /**
-     * Xoa toan bo du lieu duoi may va thay bang ban sao luu cuoi cung tren cloud.
-     * Day la ban duy nhat duoc coi la dung, ke ca khi no rong.
+     * Doc ca bon collection tren cloud roi dung lai du lieu duoi may.
+     *
+     * <p>Doc theo dung THU TU khoa ngoai: danh muc va doi tac truoc, roi khoan vay,
+     * cuoi cung moi den giao dich. Room bat <code>PRAGMA foreign_keys = ON</code> nen
+     * chen mot giao dich tro toi khoan vay chua ton tai la loi ngay.</p>
      */
     public void restoreLatest(@Nullable Result result) {
         final Once once = new Once(result);
-        final CollectionReference backup = backupRef();
-        if (backup == null) {
-            once.finish(false, 0, "ch\u01b0a \u0111\u0103ng nh\u1eadp");
+        final DocumentReference meta = metaRef();
+        final CollectionReference cats = col(C_CATS);
+        final CollectionReference people = col(C_PEOPLE);
+        final CollectionReference loans = col(C_LOANS);
+        final CollectionReference tx = col(C_TX);
+        if (meta == null || cats == null || people == null || loans == null || tx == null) {
+            once.finish(false, 0, "ch\\u01b0a \\u0111\\u0103ng nh\\u1eadp");
             return;
         }
         if (!hasNetwork()) {
-            once.finish(false, 0, "m\u00e1y \u0111ang kh\u00f4ng c\u00f3 m\u1ea1ng");
+            once.finish(false, 0, "m\\u00e1y \\u0111ang kh\\u00f4ng c\\u00f3 m\\u1ea1ng");
             return;
         }
+        once.arm("t\\u1ea3i d\\u1eef li\\u1ec7u qu\\u00e1 l\\u00e2u, th\\u1eed l\\u1ea1i nh\\u00e9");
         wakeNetwork();
-        once.arm("m\u00e1y ch\u1ee7 kh\u00f4ng ph\u1ea3n h\u1ed3i, th\u1eed l\u1ea1i sau nh\u00e9");
+        Log.i(TAG, "restoreLatest: bat dau, uid=" + uid());
 
-        readDoc(backup.document("latest"), new DocRead() {
+        readDoc(meta, new DocRead() {
             @Override
-            public void onRead(@Nullable DocumentSnapshot meta, @Nullable Exception error) {
-                if (meta == null || !meta.exists()) {
-                    once.finish(false, 0, error == null
-                            ? "cloud ch\u01b0a c\u00f3 b\u1ea3n sao l\u01b0u n\u00e0o"
-                            : friendly(error));
+            public void onRead(@Nullable final DocumentSnapshot head, @Nullable Exception headError) {
+                if (once.isDone()) return;
+                if (head == null) {
+                    once.finish(false, 0, friendly(headError));
                     return;
                 }
-                // Ban va 03/08: KHONG ap cai dat cloud o day nua.
-                // Truoc day cai dat bi ghi de ngay ca khi buoc doc manh phia sau that bai,
-                // nen ngan sach / chu ky cua nguoi dung bi doi ma du lieu thi khong ve.
-                readParts(backup, meta, once);
+                if (!head.exists()) {
+                    once.finish(false, 0, "cloud ch\\u01b0a c\\u00f3 b\\u1ea3n sao l\\u01b0u n\\u00e0o");
+                    return;
+                }
+                readCol(cats, new ColRead() {
+                    @Override
+                    public void onRead(@Nullable final List<DocumentSnapshot> catDocs,
+                                       @Nullable Exception e1) {
+                        if (once.isDone()) return;
+                        if (catDocs == null) {
+                            once.finish(false, 0, friendly(e1));
+                            return;
+                        }
+                        readCol(people, new ColRead() {
+                            @Override
+                            public void onRead(@Nullable final List<DocumentSnapshot> peopleDocs,
+                                               @Nullable Exception e2) {
+                                if (once.isDone()) return;
+                                if (peopleDocs == null) {
+                                    once.finish(false, 0, friendly(e2));
+                                    return;
+                                }
+                                readCol(loans, new ColRead() {
+                                    @Override
+                                    public void onRead(@Nullable final List<DocumentSnapshot> loanDocs,
+                                                       @Nullable Exception e3) {
+                                        if (once.isDone()) return;
+                                        if (loanDocs == null) {
+                                            once.finish(false, 0, friendly(e3));
+                                            return;
+                                        }
+                                        readCol(tx, new ColRead() {
+                                            @Override
+                                            public void onRead(@Nullable List<DocumentSnapshot> txDocs,
+                                                               @Nullable Exception e4) {
+                                                if (once.isDone()) return;
+                                                if (txDocs == null) {
+                                                    once.finish(false, 0, friendly(e4));
+                                                    return;
+                                                }
+                                                Log.i(TAG, "restoreLatest: doc duoc "
+                                                        + catDocs.size() + " danh muc, "
+                                                        + peopleDocs.size() + " doi tac, "
+                                                        + loanDocs.size() + " khoan vay, "
+                                                        + txDocs.size() + " giao dich");
+                                                applyRestore(once, head, catDocs, peopleDocs,
+                                                        loanDocs, txDocs);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
             }
         });
     }
 
-    /**
-     * Truoc day ham nay tai CA collection backup roi do tim tung manh. Chi can
-     * mot manh khong doc duoc la ca lan khoi phuc hong. Nay doc thang tung
-     * document part_i theo dung so manh ghi trong "latest": it luot doc hon,
-     * co the lui ve cache va bao ro manh nao thieu.
-     */
-    private void readParts(final CollectionReference backup, final DocumentSnapshot meta,
-                           final Once once) {
-        Long parts = meta.getLong("parts");
-        final int total = parts == null ? 0 : parts.intValue();
-        Long stampValue = meta.getLong("updatedAt");
-        final long stamp = stampValue == null ? 0L : stampValue;
-        if (total <= 0) {
-            applyRemoteSettings(meta);
-            replaceLocal("[]", once, stamp);
-            return;
-        }
-
-        // Ban va 03/08: dung Source.SERVER roi moi lui ve CACHE, giong readDoc.
-        // Truoc day .get() de Firestore tu chon nguon nen khi mang chap chon co the
-        // nhan lai manh cu trong cache ma van bao thanh cong -> khoi phuc ra du lieu cu.
-        final List<Task<DocumentSnapshot>> tasks = new ArrayList<>();
-        for (int i = 0; i < total; i++) {
-            tasks.add(readPart(backup, i));
-        }
-
-        Tasks.whenAllComplete(tasks)
-                .addOnSuccessListener(new com.google.android.gms.tasks.OnSuccessListener<List<Task<?>>>() {
-                    @Override
-                    public void onSuccess(List<Task<?>> finished) {
-                        StringBuilder sb = new StringBuilder();
-                        for (int i = 0; i < tasks.size(); i++) {
-                            Task<DocumentSnapshot> task = tasks.get(i);
-                            if (!task.isSuccessful() || task.getResult() == null) {
-                                once.finish(false, 0, "thi\u1ebfu m\u1ea3nh d\u1eef li\u1ec7u part_" + i
-                                        + " tr\u00ean cloud (" + friendly(task.getException()) + ")");
-                                return;
-                            }
-                            String data = task.getResult().getString("data");
-                            if (data != null) sb.append(data);
-                        }
-                        // Doc du manh roi moi ap cai dat, tranh doi cai dat nua chung
-                        applyRemoteSettings(meta);
-                        replaceLocal(sb.toString(), once, stamp);
-                    }
-                })
-                .addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
-                    @Override
-                    public void onFailure(Exception e) {
-                        once.finish(false, 0, friendly(e));
-                    }
-                });
-    }
-
-    /**
-     * Doc mot manh sao luu: uu tien may chu, that bai moi lui ve cache.
-     *
-     * <p>Truoc day cho goi thang {@code .get()} nen Firestore tu chon nguon; khi mang
-     * chap chon no co the tra ve manh CU trong cache ma van bao thanh cong, khien lan
-     * khoi phuc ghi de du lieu moi bang du lieu cu ma khong bao loi gi.</p>
-     */
-    private Task<DocumentSnapshot> readPart(final CollectionReference backup, final int index) {
-        return backup.document("part_" + index).get(Source.SERVER)
-                .continueWithTask(new com.google.android.gms.tasks.Continuation<DocumentSnapshot, Task<DocumentSnapshot>>() {
-                    @Override
-                    public Task<DocumentSnapshot> then(@NonNull Task<DocumentSnapshot> task) {
-                        if (task.isSuccessful()) return task;
-                        return backup.document("part_" + index).get(Source.CACHE);
-                    }
-                });
-    }
-
-    /**
-     * Thay toan bo bang giao dich duoi may bang du lieu vua tai ve.
-     *
-     * @param stamp moc updatedAt cua ban cloud vua ap; 0 neu khong ro
-     */
-    private void replaceLocal(final String payload, final Once once, final long stamp) {
+    /** Ghi du lieu vua tai ve vao Room. Chay tren luong nen. */
+    private void applyRestore(final Once once,
+                              final DocumentSnapshot head,
+                              final List<DocumentSnapshot> catDocs,
+                              final List<DocumentSnapshot> peopleDocs,
+                              final List<DocumentSnapshot> loanDocs,
+                              final List<DocumentSnapshot> txDocs) {
         Db.io(new Runnable() {
             @Override
             public void run() {
                 try {
-                    List<TransactionEntity> list = fromJson(payload);
-                    // Chot an toan: ban cloud rong ma duoi may dang co du lieu thi DUNG LAI.
-                    // Nguoi dung mat du lieu vi truong hop nay chu khong phai vi ky thuat.
-                    if (list.isEmpty()) {
-                        int existing = 0;
-                        try {
-                            List<TransactionEntity> local = db.transactionDao().getAllTransactions();
-                            existing = local == null ? 0 : local.size();
-                        } catch (Throwable ignored) {
-                        }
-                        if (existing > 0) {
-                            Log.w(TAG, "restore: cloud rong nhung may co " + existing
-                                    + " giao dich -> khong xoa");
-                            once.finish(false, 0, "b\u1ea3n tr\u00ean cloud \u0111ang r\u1ed7ng "
-                                    + "n\u00ean kh\u00f4ng ghi \u0111\u00e8 " + existing
-                                    + " giao d\u1ecbch \u0111ang c\u00f3 tr\u00ean m\u00e1y");
-                            return;
+                    int live = 0;
+                    for (DocumentSnapshot d : txDocs) {
+                        if (itg(d, "deleted") == 0) live++;
+                    }
+
+                    // Chot an toan: cloud rong ma may dang co du lieu thi DUNG LAI.
+                    // Mot ban sao luu rong khong duoc phep xoa sach du lieu that.
+                    if (live == 0 && db.transactionDao().count() > 0) {
+                        Log.w(TAG, "restoreLatest: cloud rong ma may con du lieu -> tu choi");
+                        once.finish(false, 0,
+                                "b\\u1ea3n tr\\u00ean cloud \\u0111ang r\\u1ed7ng, "
+                                        + "kh\\u00f4ng l\\u1ea5y v\\u1ec1 \\u0111\\u1ec3 kh\\u1ecfi "
+                                        + "m\\u1ea5t d\\u1eef li\\u1ec7u tr\\u00ean m\\u00e1y");
+                        return;
+                    }
+
+                    // Xoa theo thu tu nguoc voi khoa ngoai: con truoc, cha sau.
+                    db.transactionDao().wipe();
+                    db.loanDao().wipe();
+
+                    // Danh muc va doi tac chi thay the khi cloud that su co du lieu.
+                    // Cloud rong ma van wipe la mat luon bo danh muc mac dinh cua may.
+                    if (!catDocs.isEmpty()) {
+                        db.categoryDao().wipe();
+                        for (DocumentSnapshot d : catDocs) {
+                            if (itg(d, "deleted") == 1) continue;
+                            String name = strOrNull(d, "name");
+                            if (name == null) continue;
+                            CategoryEntity c = new CategoryEntity();
+                            c.setId(idOf(d));
+                            c.setName(name);
+                            String emoji = strOrNull(d, "emoji");
+                            c.setEmoji(emoji == null ? CategoryEntity.FALLBACK_EMOJI : emoji);
+                            String kind = strOrNull(d, "kind");
+                            c.setKind(kind == null ? CategoryEntity.KIND_BOTH : kind);
+                            c.setSortOrder(itg(d, "sortOrder"));
+                            c.setArchived(itg(d, "archived"));
+                            c.setUpdatedAt(lng(d, "updatedAt"));
+                            c.setDeleted(0);
+                            db.categoryDao().insertIgnore(c);
                         }
                     }
-                    db.transactionDao().deleteAll();
-                    if (!list.isEmpty()) db.transactionDao().insertAll(list);
-                    // Sau khi keo ve, du lieu may CHINH LA ban cloud do -> lay chung moc,
-                    // tranh viec lan dong bo sau lai tuong may moi hon roi day nguoc len.
-                    Prefs.setLocalChangedAt(context, stamp > 0 ? stamp : System.currentTimeMillis());
-                    once.finish(true, list.size(), null);
+                    if (!peopleDocs.isEmpty()) {
+                        db.partnerDao().wipe();
+                        for (DocumentSnapshot d : peopleDocs) {
+                            if (itg(d, "deleted") == 1) continue;
+                            String name = strOrNull(d, "name");
+                            if (name == null) continue;
+                            PartnerEntity p = new PartnerEntity();
+                            p.setId(idOf(d));
+                            p.setName(name);
+                            p.setPhone(strOrNull(d, "phone"));
+                            p.setNote(strOrNull(d, "note"));
+                            p.setUpdatedAt(lng(d, "updatedAt"));
+                            p.setDeleted(0);
+                            db.partnerDao().insertIgnore(p);
+                        }
+                    }
+
+                    // Ten -> id cua RIENG may nay. Cloud khong he biet nhung so nay.
+                    Map<String, Integer> catId = new HashMap<>();
+                    for (CategoryEntity c : db.categoryDao().getAllForSync()) {
+                        catId.put(c.getName(), c.getId());
+                    }
+                    Map<String, Integer> personId = new HashMap<>();
+                    for (PartnerEntity p : db.partnerDao().getAllForSync()) {
+                        personId.put(p.getName(), p.getId());
+                    }
+
+                    // VONG 1: dung dau cac khoan vay truoc.
+                    Set<String> headers = new HashSet<>();
+                    for (DocumentSnapshot d : loanDocs) {
+                        if (itg(d, "deleted") == 1) continue;
+                        String loanId = d.getId();
+                        if (loanId == null || loanId.trim().isEmpty()) continue;
+                        LoanEntity l = new LoanEntity();
+                        l.setLoanId(loanId);
+                        l.setPartnerId(personKey(personId, strOrNull(d, "partnerName")));
+                        String direction = strOrNull(d, "direction");
+                        l.setDirection(direction == null ? LoanEntity.LEND : direction);
+                        l.setPrincipal(lng(d, "principal"));
+                        l.setRate(dbl(d, "rate"));
+                        l.setOpenedDate(lng(d, "openedDate"));
+                        l.setDueDate(lng(d, "dueDate"));
+                        l.setSettled(itg(d, "settled"));
+                        l.setWrittenOff(itg(d, "writtenOff"));
+                        l.setUpdatedAt(lng(d, "updatedAt"));
+                        l.setDeleted(0);
+                        db.loanDao().insert(l);
+                        headers.add(loanId);
+                    }
+
+                    // VONG 2 + 3: giao dich. Gap loanId chua co dau thi dung tam mot cai,
+                    // neu khong khoa ngoai se chan ca me chen.
+                    List<TransactionEntity> rows = new ArrayList<>();
+                    for (DocumentSnapshot d : txDocs) {
+                        if (itg(d, "deleted") == 1) continue;
+                        String loanId = strOrNull(d, "loanId");
+                        if (loanId != null && !headers.contains(loanId)) {
+                            String type = str(d, "type");
+                            LoanEntity ghost = new LoanEntity();
+                            ghost.setLoanId(loanId);
+                            ghost.setPartnerId(personKey(personId, strOrNull(d, "partnerName")));
+                            ghost.setDirection("REPAY".equals(type) || "BORROW".equals(type)
+                                    ? LoanEntity.BORROW : LoanEntity.LEND);
+                            ghost.setPrincipal(0L);
+                            ghost.setOpenedDate(lng(d, "date"));
+                            ghost.setDueDate(0L);
+                            ghost.setSettled(0);
+                            ghost.setWrittenOff(0);
+                            ghost.setUpdatedAt(lng(d, "updatedAt"));
+                            ghost.setDeleted(0);
+                            db.loanDao().insert(ghost);
+                            headers.add(loanId);
+                            Log.w(TAG, "restoreLatest: thieu dau khoan vay " + loanId + ", da dung tam");
+                        }
+
+                        TransactionEntity t = new TransactionEntity();
+                        t.setId(idOf(d));
+                        t.setType(str(d, "type"));
+                        t.setAmount(lng(d, "amount"));
+                        t.setDate(lng(d, "date"));
+                        t.setTitle(str(d, "title"));
+                        t.setNote(str(d, "note"));
+                        t.setCategoryId(categoryKey(catId, strOrNull(d, "categoryName")));
+                        t.setPartnerId(personKey(personId, strOrNull(d, "partnerName")));
+                        t.setLoanId(loanId);
+                        t.setDueDate(lng(d, "dueDate"));
+                        t.setSettled(itg(d, "settled"));
+                        t.setWrittenOff(itg(d, "writtenOff"));
+                        t.setRate(dbl(d, "rate"));
+                        t.setUpdatedAt(lng(d, "updatedAt"));
+                        t.setDeleted(0);
+                        rows.add(t);
+                    }
+                    db.transactionDao().insertAll(rows);
+
+                    applyRemoteSettings(head);
+                    long stamp = lng(head, "updatedAt");
+                    Prefs.setLastBackup(context, stamp);
+                    Prefs.setLocalChangedAt(context, stamp);
+                    Categories.refresh(context);
+
+                    Log.i(TAG, "restoreLatest: xong, dat lai " + rows.size() + " giao dich");
+                    once.finish(true, rows.size(), null);
                 } catch (Throwable t) {
-                    once.finish(false, 0, "d\u1eef li\u1ec7u sao l\u01b0u kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c");
+                    Log.e(TAG, "restoreLatest: ghi vao Room that bai", t);
+                    once.finish(false, 0, friendly(t));
                 }
             }
         });
+    }
+
+    @Nullable
+    private Integer categoryKey(Map<String, Integer> cache, @Nullable String name) {
+        if (name == null) return null;
+        Integer found = cache.get(name);
+        if (found != null) return found;
+        Integer made = db.categoryDao().ensure(name, CategoryEntity.FALLBACK_EMOJI);
+        if (made != null) cache.put(name, made);
+        return made;
+    }
+
+    @Nullable
+    private Integer personKey(Map<String, Integer> cache, @Nullable String name) {
+        if (name == null) return null;
+        Integer found = cache.get(name);
+        if (found != null) return found;
+        Integer made = db.partnerDao().ensure(name);
+        if (made != null) cache.put(name, made);
+        return made;
     }
 
     private void applyRemoteSettings(DocumentSnapshot meta) {
@@ -850,9 +1219,8 @@ public class FirebaseSyncManager {
         String reminders = string(data.get("reminders"));
         if (reminders != null) {
             Prefs.setRemindersRaw(context, reminders);
-            // Ban va 04/08: keo gio nhac ve thoi la CHUA du - phai dat lai bao thuc that.
-            // Truoc day sau khi khoi phuc, man Cai dat hien day cac moc gio nhung khong
-            // moc nao no, vi bao thuc cua he thong khong he duoc dat.
+            // Keo gio nhac ve thoi la CHUA du - phai dat lai bao thuc that, neu khong
+            // man Cai dat hien day cac moc gio nhung khong moc nao no.
             Reminders.rescheduleAll(context);
         }
 
@@ -861,187 +1229,146 @@ public class FirebaseSyncManager {
 
     @Nullable
     private static String string(@Nullable Object value) {
-        return value instanceof String ? (String) value : null;
+        return value == null ? null : String.valueOf(value);
     }
 
     @Nullable
     private static Double number(@Nullable Object value) {
-        return value instanceof Number ? ((Number) value).doubleValue() : null;
+        if (value instanceof Number) return ((Number) value).doubleValue();
+        if (value == null) return null;
+        try {
+            return Double.parseDouble(String.valueOf(value));
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
-    // ------------------------------------------------------------- xoa ban sao luu
-    /**
-     * Ban va 03/08 (bo sung). Xoa han ban sao luu tren Firestore.
-     *
-     * <p>Truoc day app chi biet GHI len cloud chu khong biet xoa: khi doi may, cho
-     * nguoi khac muon tai khoan, hay chi muon lam lai tu dau, du lieu cu van nam mai
-     * tren cloud va lan Dong bo ke tiep co the keo nguoc no ve.</p>
-     *
-     * <p>Ham nay xoa toan bo collection {@code users/{uid}/backup}, tuc ca document
-     * {@code latest} lan moi manh {@code part_N} - ke ca cac manh thua sot lai tu
-     * nhung lan sao luu truoc. Doc danh sach bang {@link Source#SERVER} de khong
-     * xoa nham theo ban cache cu duoi may.</p>
-     *
-     * <p>Chi dong den cloud. Du lieu trong may KHONG bi anh huong.</p>
-     *
-     * @param result so giao dich tra ve la SO DOCUMENT da xoa, khong phai so giao dich
-     */
+    // ------------------------------------------------------------- xoa cloud
+    /** Xoa toan bo du lieu tren cloud. Du lieu duoi may van con nguyen. */
     public void deleteBackup(@Nullable Result result) {
         final Once once = new Once(result);
-
-        if (!isSignedIn()) {
-            once.finish(false, 0, "ch\u01b0a \u0111\u0103ng nh\u1eadp");
+        final DocumentReference meta = metaRef();
+        if (meta == null) {
+            once.finish(false, 0, "ch\\u01b0a \\u0111\\u0103ng nh\\u1eadp");
             return;
         }
         if (!hasNetwork()) {
-            once.finish(false, 0, "m\u00e1y \u0111ang kh\u00f4ng c\u00f3 m\u1ea1ng");
+            once.finish(false, 0, "m\\u00e1y \\u0111ang kh\\u00f4ng c\\u00f3 m\\u1ea1ng");
             return;
         }
-        final CollectionReference backup = backupRef();
-        if (backup == null) {
-            once.finish(false, 0, "kh\u00f4ng x\u00e1c \u0111\u1ecbnh \u0111\u01b0\u1ee3c t\u00e0i kho\u1ea3n");
-            return;
-        }
-
-        once.arm("m\u00e1y ch\u1ee7 kh\u00f4ng ph\u1ea3n h\u1ed3i n\u00ean ch\u01b0a x\u00f3a \u0111\u01b0\u1ee3c b\u1ea3n sao l\u01b0u");
-
-        backup.get(Source.SERVER)
-                .addOnSuccessListener(snapshot -> {
-                    if (snapshot == null || snapshot.isEmpty()) {
-                        // Cloud von da trong, coi nhu xong
-                        Prefs.setLastBackup(context, 0);
-                        Log.i(TAG, "deleteBackup: cloud khong co gi de xoa");
-                        once.finish(true, 0, null);
-                        return;
-                    }
-
-                    final int removed = snapshot.size();
-                    WriteBatch batch = firestore.batch();
-                    for (DocumentSnapshot d : snapshot.getDocuments()) {
-                        batch.delete(d.getReference());
-                    }
-                    batch.commit()
-                            .addOnSuccessListener(unused -> {
-                                // Xoa luon moc thoi gian duoi may, neu khong man Cai dat
-                                // van khoe "da sao luu luc ..." trong khi cloud da rong
-                                Prefs.setLastBackup(context, 0);
-                                Prefs.setAutoBackupDay(context, 0);
-                                Log.i(TAG, "deleteBackup: da xoa " + removed + " document tren cloud");
-                                once.finish(true, removed, null);
-                            })
-                            .addOnFailureListener(e -> {
-                                Log.w(TAG, "deleteBackup: xoa that bai", e);
-                                once.finish(false, 0, friendly(e));
-                            });
-                })
-                .addOnFailureListener(e -> {
-                    Log.w(TAG, "deleteBackup: khong doc duoc danh sach", e);
-                    once.finish(false, 0, friendly(e));
-                });
+        once.arm("x\\u00f3a qu\\u00e1 l\\u00e2u, th\\u1eed l\\u1ea1i nh\\u00e9");
+        wakeNetwork();
+        purgeNext(once, 0, meta);
     }
 
-    // ------------------------------------------------------------- don cloud kieu cu
+    private void purgeNext(final Once once, final int index, final DocumentReference meta) {
+        if (once.isDone()) return;
+        if (index >= OWNED.length) {
+            meta.delete()
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            Prefs.setLastBackup(context, 0L);
+                            Log.i(TAG, "deleteBackup: da xoa sach cloud");
+                            once.finish(true, 0, null);
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            once.finish(false, 0, friendly(e));
+                        }
+                    });
+            return;
+        }
+        final CollectionReference ref = col(OWNED[index]);
+        if (ref == null) {
+            once.finish(false, 0, "ch\\u01b0a \\u0111\\u0103ng nh\\u1eadp");
+            return;
+        }
+        readCol(ref, new ColRead() {
+            @Override
+            public void onRead(@Nullable List<DocumentSnapshot> docs, @Nullable Exception error) {
+                if (once.isDone()) return;
+                if (docs == null) {
+                    // Khong doc duoc collection nay thi bo qua, con lai van xoa.
+                    purgeNext(once, index + 1, meta);
+                    return;
+                }
+                deleteDocs(docs, new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        purgeNext(once, index + 1, meta);
+                    }
+                }, new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        once.finish(false, 0, friendly(e));
+                    }
+                });
+            }
+        });
+    }
+
+    private void deleteDocs(List<DocumentSnapshot> docs,
+                            OnSuccessListener<Void> ok, OnFailureListener fail) {
+        List<Task<Void>> jobs = new ArrayList<>();
+        WriteBatch batch = firestore.batch();
+        int inBatch = 0;
+        for (DocumentSnapshot d : docs) {
+            batch.delete(d.getReference());
+            inBatch++;
+            if (inBatch >= CLEAN_LIMIT) {
+                jobs.add(batch.commit());
+                batch = firestore.batch();
+                inBatch = 0;
+            }
+        }
+        if (inBatch > 0) jobs.add(batch.commit());
+        Tasks.whenAll(jobs).addOnSuccessListener(ok).addOnFailureListener(fail);
+    }
+
     /**
-     * Ban dau moi giao dich la mot document rieng trong users/{uid}/transactions.
-     * Sau khi chuyen sang snapshot, cac document do khong con dung nen se duoc xoa dan
-     * de khong chiem cho tren cloud.
+     * Don sach cau truc cu tren cloud: collection <code>transactions</code> cua ban
+     * per-document doi dau va collection <code>backup</code> cua ban JSON cat manh.
+     *
+     * <p>Chay ngam sau moi lan sao luu thanh cong, chi mot lan cho moi may.</p>
      */
     public void cleanupLegacy() {
         if (Prefs.legacyCleaned(context)) return;
         DocumentReference root = rootRef();
         if (root == null) return;
+        cleanLegacy(root, 0);
+    }
 
-        final CollectionReference legacy = root.collection("transactions");
+    private void cleanLegacy(final DocumentReference root, final int index) {
+        if (index >= LEGACY.length) {
+            Prefs.setLegacyCleaned(context, true);
+            Log.i(TAG, "cleanupLegacy: da don xong cau truc cu");
+            return;
+        }
+        final CollectionReference legacy = root.collection(LEGACY[index]);
         legacy.limit(CLEAN_LIMIT).get()
-                .addOnSuccessListener(snapshot -> {
-                    if (snapshot == null || snapshot.isEmpty()) {
-                        Prefs.setLegacyCleaned(context, true);
-                        return;
-                    }
-                    WriteBatch batch = firestore.batch();
-                    for (DocumentSnapshot d : snapshot.getDocuments()) {
-                        batch.delete(d.getReference());
-                    }
-                    batch.commit().addOnSuccessListener(v -> {
-                        if (snapshot.size() < CLEAN_LIMIT) {
-                            Prefs.setLegacyCleaned(context, true);
-                        } else {
-                            cleanupLegacy();
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot snapshot) {
+                        if (snapshot == null || snapshot.isEmpty()) {
+                            cleanLegacy(root, index + 1);
+                            return;
                         }
-                    });
+                        final int size = snapshot.size();
+                        WriteBatch batch = firestore.batch();
+                        for (DocumentSnapshot d : snapshot.getDocuments()) {
+                            batch.delete(d.getReference());
+                        }
+                        batch.commit().addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void unused) {
+                                // Con day mot vong thi collection nay co the con nua.
+                                cleanLegacy(root, size < CLEAN_LIMIT ? index + 1 : index);
+                            }
+                        });
+                    }
                 });
-    }
-
-    // ------------------------------------------------------------- chuyen doi JSON
-    private static String toJson(List<TransactionEntity> list) {
-        JSONArray array = new JSONArray();
-        for (TransactionEntity t : list) {
-            JSONObject item = new JSONObject();
-            try {
-                item.put("t", t.getTitle());
-                item.put("a", t.getAmount());
-                item.put("y", t.getType());
-                item.put("c", t.getCategory());
-                item.put("n", t.getNote() == null ? "" : t.getNote());
-                item.put("d", t.getDate());
-                // Ban va 02/08: ba truong cua khoan cho vay / no phai tra
-                item.put("p", t.getPerson() == null ? "" : t.getPerson());
-                item.put("u", t.dueMillis());
-                item.put("s", t.isSettled() ? 1 : 0);
-                // Ban va 03/08 (v4): ma khoan vay goc va co xoa so
-                item.put("l", t.loanIdOrEmpty());
-                item.put("w", t.isWrittenOff() ? 1 : 0);
-            } catch (Throwable ignored) {
-                continue;
-            }
-            array.put(item);
-        }
-        return array.toString();
-    }
-
-    private static List<TransactionEntity> fromJson(String payload) throws Exception {
-        List<TransactionEntity> list = new ArrayList<>();
-        if (payload == null || payload.trim().isEmpty()) return list;
-
-        JSONArray array = new JSONArray(payload);
-        for (int i = 0; i < array.length(); i++) {
-            JSONObject item = array.optJSONObject(i);
-            if (item == null) continue;
-            String title = item.optString("t", "");
-            // Ban sao luu cu con luu "DEBT"; doi ngay sang BORROW cho khop nghiep vu moi
-            String type = Stats.normalize(item.optString("y", "EXPENSE"));
-            String category = item.optString("c", "");
-            long date = item.optLong("d", 0L);
-            if (date <= 0) continue;
-            TransactionEntity entity = new TransactionEntity(title, item.optDouble("a", 0d),
-                    type, category, item.optString("n", ""), date);
-
-            // Ban sao luu cu (v2) khong co ba truong nay, khi do de nguyen gia tri rong
-            String person = item.optString("p", "");
-            if (!person.isEmpty()) entity.setPerson(person);
-            long due = item.optLong("u", 0L);
-            if (due > 0) entity.setDueDate(due);
-            entity.setSettled(item.optInt("s", 0));
-
-            // Ban sao luu v2 / v3 khong co hai truong nay
-            String loanId = item.optString("l", "");
-            if (!loanId.isEmpty()) entity.setLoanId(loanId);
-            entity.setWrittenOff(item.optInt("w", 0));
-
-            list.add(entity);
-        }
-        return list;
-    }
-
-    private static List<String> split(String payload) {
-        List<String> parts = new ArrayList<>();
-        if (payload == null || payload.isEmpty()) {
-            parts.add("[]");
-            return parts;
-        }
-        for (int start = 0; start < payload.length(); start += PART_SIZE) {
-            parts.add(payload.substring(start, Math.min(payload.length(), start + PART_SIZE)));
-        }
-        return parts;
     }
 }

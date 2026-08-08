@@ -15,7 +15,7 @@ import com.example.bmmoney.MainActivity;
 import com.example.bmmoney.R;
 import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.Db;
-import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.data.TxRow;
 import com.example.bmmoney.util.Reminders;
 
 import java.util.Calendar;
@@ -88,7 +88,7 @@ public class ReminderReceiver extends BroadcastReceiver {
         long from = c.getTimeInMillis();
         long to = from + 24L * 60 * 60 * 1000 - 1;
 
-        List<TransactionEntity> list = AppDatabase.dao(context).getTransactionsByDateRange(from, to);
+        List<TxRow> list = AppDatabase.dao(context).getTransactionsByDateRange(from, to);
         return list != null && !list.isEmpty();
     }
 

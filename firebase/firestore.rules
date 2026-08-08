@@ -1,0 +1,66 @@
+rules_version = '2';
+
+// Luat bao mat Firestore cho BMMoney.
+//
+// QUAN TRONG: file nay KHONG tu dong co hieu luc khi ban giai nen ma nguon.
+// Phai dan noi dung vao Firebase Console > Firestore Database > Rules > Publish,
+// hoac chay: firebase deploy --only firestore:rules
+//
+// Nguyen tac: du lieu chi tieu la du lieu rieng tu. Moi tai khoan chi duoc doc
+// va ghi dung nhanh users/{uid} cua chinh minh, khong co ngoai le.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Chu tai khoan, va phai la tai khoan that su chu khong phai khach vang lai
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Chan ban ghi rac: so tien phai la so, moc thoi gian phai la so
+    function validTransaction() {
+      let d = request.resource.data;
+      return d.amount is number
+          && d.date is number
+          && d.type is string
+          && d.updatedAt is number;
+    }
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      // ---- Giai doan 1 (dang chay): ban sao luu dang khoi JSON chia manh ----
+      match /backup/{docId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // ---- Giai doan 2: moi ban ghi mot tai lieu rieng ----
+      match /transactions/{txId} {
+        allow read: if isOwner(uid);
+        allow delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validTransaction();
+      }
+
+      match /categories/{categoryId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /partners/{partnerId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /loans/{loanId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /meta/{docId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // Bat ky duong dan nao khac deu bi tu choi
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

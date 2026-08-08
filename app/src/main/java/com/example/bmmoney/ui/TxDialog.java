@@ -1,7 +1,6 @@
 package com.example.bmmoney.ui;
 
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -17,7 +16,7 @@ import androidx.core.content.ContextCompat;
 import com.example.bmmoney.R;
 import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.Db;
-import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.data.TxRow;
 import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Stats;
@@ -28,12 +27,14 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * Ban va 02/08. Popup chi tiet mot ban ghi, dung dung chu de cua app thay cho
- * AlertDialog mac dinh cua he thong.
+ * Popup chi tiet mot ban ghi, dung dung chu de cua app thay cho AlertDialog mac dinh.
  *
- * <p>Dung chung cho man Tim kiem, Trang chu va man Lich de ba noi hien thi
- * giong het nhau. Voi khoan Cho vay / No phai tra, popup hien them nguoi lien
- * quan, han doi hoac han tra, so ngay con lai va nut danh dau da tat toan.</p>
+ * <p>Dung chung cho man Tim kiem, Trang chu va man Lich de ba noi hien thi giong het
+ * nhau. Voi khoan Cho vay / No phai tra, popup hien them nguoi lien quan, han doi hoac
+ * han tra, so ngay con lai va nut danh dau da tat toan.</p>
+ *
+ * <p><b>Ban va 08/08:</b> nhan {@link TxRow} thay vi ban ghi goc. Ten danh muc va ten
+ * doi tac da di kem san trong tung dong nen popup khong phai tra cuu them.</p>
  */
 public final class TxDialog {
 
@@ -50,7 +51,7 @@ public final class TxDialog {
     private TxDialog() {
     }
 
-    public static void show(Context context, TransactionEntity t) {
+    public static void show(Context context, TxRow t) {
         show(context, t, false, null);
     }
 
@@ -58,7 +59,7 @@ public final class TxDialog {
      * @param allowDelete co hien nut Xoa hay khong
      * @param onChanged   goi lai khi du lieu doi (xoa hoac tat toan)
      */
-    public static void show(final Context context, final TransactionEntity t,
+    public static void show(final Context context, final TxRow t,
                             boolean allowDelete, final OnChanged onChanged) {
         if (context == null || t == null) return;
 
@@ -71,7 +72,6 @@ public final class TxDialog {
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
-        // Ban va 03/08: chuan hoa loai, ban ghi cu con luu "DEBT"
         final String type = Stats.normalize(t.getType());
         final boolean debtKind = Stats.isDebtKind(type);
         final boolean loan = Stats.BORROW.equals(type) || Stats.LEND.equals(type);
@@ -118,7 +118,7 @@ public final class TxDialog {
         row(rows, "Ghi ch\u00fa", empty(t.getNote()) ? "Kh\u00f4ng c\u00f3" : t.getNote());
 
         if (debtKind) {
-            // Nghiep vu moi: cong no CO lam doi so du vi, chi khong tinh vao lai lo
+            // Cong no CO lam doi so du vi, chi khong tinh vao lai lo
             row(rows, "\u1ea2nh h\u01b0\u1edfng",
                     (Stats.walletSign(type) > 0 ? "Ti\u1ec1n v\u00e0o v\u00ed" : "Ti\u1ec1n ra v\u00ed")
                             + " \u00b7 kh\u00f4ng t\u00ednh v\u00e0o l\u00e3i l\u1ed7");
@@ -134,9 +134,19 @@ public final class TxDialog {
                     : "\u0110\u00e3 tr\u1ea3 xong kho\u1ea3n n\u00e0y");
             settle.setOnClickListener(v -> {
                 final int next = t.isSettled() ? 0 : 1;
-                final android.content.Context app = context.getApplicationContext();
+                final Context app = context.getApplicationContext();
                 Db.io(() -> {
-                    AppDatabase.dao(app).setSettled(t.getId(), next);
+                    long now = System.currentTimeMillis();
+                    AppDatabase.dao(app).setSettled(t.getId(), next, now);
+
+                    // PHAI danh dau CA khoan goc, khong chi rieng dong giao dich.
+                    // Tong "con phai thu" / "con phai tra" gio doc tu bang khoan vay;
+                    // neu chi doi co dong giao dich thi popup hien "da tat toan" trong
+                    // khi Trang chu van cong khoan do vao cong no.
+                    if (!empty(t.loanIdOrEmpty())) {
+                        AppDatabase.loans(app).setSettled(t.loanIdOrEmpty(), next, now);
+                    }
+
                     AutoBackup.scheduleSoon(app);
                     Db.ui(() -> {
                         dialog.dismiss();
@@ -152,9 +162,21 @@ public final class TxDialog {
         if (allowDelete && onChanged != null) {
             delete.setVisibility(View.VISIBLE);
             delete.setOnClickListener(v -> {
-                final android.content.Context app = context.getApplicationContext();
+                final Context app = context.getApplicationContext();
                 Db.io(() -> {
-                    AppDatabase.dao(app).delete(t);
+                    long now = System.currentTimeMillis();
+
+                    // XOA MEM: dong van nam lai voi dau xoa. Xoa that thi may khac
+                    // khong biet dong do tung ton tai nen lan dong bo sau se day
+                    // nguoc no tro lai.
+                    AppDatabase.dao(app).softDelete(t.getId(), now);
+
+                    // Xoa khoan vay GOC thi xoa luon phan dau khoan, neu khong no se
+                    // treo lai trong tong cong no ma khong con dong nao tro tOi.
+                    if (loan && !empty(t.loanIdOrEmpty())) {
+                        AppDatabase.loans(app).softDelete(t.loanIdOrEmpty(), now);
+                    }
+
                     AutoBackup.scheduleSoon(app);
                     Db.ui(() -> {
                         dialog.dismiss();
@@ -176,7 +198,7 @@ public final class TxDialog {
     }
 
     /** Tieu de goi y: khoan vay / no lay ten nguoi lam tieu de neu chua dat ten. */
-    private static String title(TransactionEntity t) {
+    private static String title(TxRow t) {
         if (!empty(t.getTitle())) return t.getTitle();
         if (!empty(t.personOrEmpty())) return t.personOrEmpty();
         return Stats.typeName(Stats.normalize(t.getType()));

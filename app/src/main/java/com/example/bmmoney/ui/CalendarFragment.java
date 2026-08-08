@@ -20,7 +20,7 @@ import com.example.bmmoney.adapter.TransactionAdapter;
 import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionDao;
-import com.example.bmmoney.data.TransactionEntity;
+import com.example.bmmoney.data.TxRow;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Prefs;
 import com.example.bmmoney.util.Refresh;
@@ -76,7 +76,7 @@ public class CalendarFragment extends Fragment {
         double[] byDay = new double[32];
         double monthTotal;
         double threshold;
-        List<TransactionEntity> dayItems = new ArrayList<>();
+        List<TxRow> dayItems = new ArrayList<>();
         double dayExpense;
         double dayIncome;
     }
@@ -149,10 +149,10 @@ public class CalendarFragment extends Fragment {
         Db.load(() -> {
             Data data = new Data();
 
-            List<TransactionEntity> all = dao.getRangeAscending(monthStart, monthEnd);
+            List<TxRow> all = dao.getRangeAscending(monthStart, monthEnd);
             if (all != null) {
                 Calendar cal = Calendar.getInstance();
-                for (TransactionEntity t : all) {
+                for (TxRow t : all) {
                     cal.setTimeInMillis(t.getDate());
                     int day = cal.get(Calendar.DAY_OF_MONTH);
                     if (day < 1 || day > 31) continue;
@@ -164,10 +164,10 @@ public class CalendarFragment extends Fragment {
             }
             data.threshold = data.monthTotal * bigPercent / 100d;
 
-            List<TransactionEntity> items = dao.getRangeAscending(dayStart, dayEnd);
+            List<TxRow> items = dao.getRangeAscending(dayStart, dayEnd);
             if (items != null) {
                 data.dayItems = items;
-                for (TransactionEntity t : items) {
+                for (TxRow t : items) {
                     if (Stats.EXPENSE.equals(t.getType())) data.dayExpense += t.getAmount();
                     else if (Stats.INCOME.equals(t.getType())) data.dayIncome += t.getAmount();
                 }

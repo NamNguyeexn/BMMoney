@@ -1,315 +1,416 @@
 package com.example.bmmoney.data;
 
-import androidx.room.*;
+import androidx.room.Dao;
+import androidx.room.Insert;
+import androidx.room.Query;
+import androidx.room.Update;
 
 import java.util.List;
 
 /**
- * Truy van Room.
+ * Truy van bang giao dich.
  *
- * <p><b>Quy uoc ke toan (ban va 03/08, chua tinh lai):</b></p>
- * <pre>
- * soDuVi   = INCOME - EXPENSE + BORROW - REPAY - LEND + COLLECT
- * phaiThu  = LEND   - COLLECT
- * phaiTra  = BORROW - REPAY
- * taiSanRong = soDuVi + phaiThu - phaiTra
- * </pre>
+ * <h3>MOT DIEU KIEN DUNG CHUNG - thay doi quan trong nhat file nay</h3>
  *
- * <p>Bon loai cong no LAM DOI so du vi nhung KHONG tinh vao thu nhap / chi tieu,
- * nen moi truy van ngan sach va bieu do danh muc van chi loc EXPENSE / INCOME
- * nhu cu.</p>
+ * <p>Man Tim kiem can ba con so tu cung mot bo loc: TONG SO ket qua (de hien
+ * "12 ket qua"), TONG TIEN, va MOT TRANG ket qua. Ban cu viet ba cau SQL rieng, moi
+ * cau chep lai dieu kien loc bang tay. Chi can sua mot cau ma quen hai cau kia la
+ * bo dem va danh sach di theo hai duong khac nhau - man hinh bao "12 ket qua" nhung
+ * chi ve duoc vai dong, va khong co gi bao loi ca.</p>
  *
- * <p>Moi phep cong don deu day xuong SQLite thay vi tai ca bang len roi cong
- * trong Java.</p>
+ * <p>Nay {@link #SEARCH_WHERE} la mot hang so duy nhat, ca ba cau deu ghep tu no.
+ * Sua dieu kien la ca ba doi cung luc - khong con cach nao de chung lech nhau.</p>
+ *
+ * <h3>Tim kiem chu chay HOAN TOAN trong SQL</h3>
+ *
+ * <p>Ban cu keo het ban ghi ve roi so tu khoa bang Java, vi {@code LIKE} cua SQLite
+ * khong hieu chu tieng Viet co dau. Do la ly do bo dem tang cho MOI dong khop trong
+ * khi danh sach hien thi bi cat o {@code limit} - hai con so khong the nao khop, va
+ * phan trang thi khong the lam duoc.</p>
+ *
+ * <p>Nay moi ban ghi luu san mot ban da bo dau ({@code searchText}), nen dieu kien
+ * tu khoa nam ngay trong {@link #SEARCH_WHERE}.</p>
+ *
+ * <h3>Xoa mem</h3>
+ *
+ * <p>Moi cau doc deu co {@code t.deleted = 0}. Xoa that thi may khac khong bao gio
+ * biet dong do tung ton tai, nen lan dong bo sau se hoi sinh no.</p>
  */
 @Dao
 public interface TransactionDao {
 
-    @Insert long insert(TransactionEntity transaction);
-    @Update void update(TransactionEntity transaction);
-    @Delete void delete(TransactionEntity transaction);
+    // =====================================================================
+    // Cac manh SQL dung chung
+    // =====================================================================
 
-    @Query("SELECT * FROM transactions ORDER BY date DESC") List<TransactionEntity> getAllTransactions();
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'INCOME'") Double getTotalIncome();
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'EXPENSE'") Double getTotalExpense();
-    @Query("SELECT * FROM transactions WHERE date BETWEEN :start AND :end ORDER BY date DESC") List<TransactionEntity> getTransactionsByDateRange(long start, long end);
-    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE type = 'EXPENSE' GROUP BY category ORDER BY total DESC") List<CategoryTotal> getExpenseByCategory();
-    @Query("SELECT type, SUM(amount) as total FROM transactions GROUP BY type") List<TypeTotal> getTotalByType();
+    /** Ban ghi goc kem ten danh muc / doi tac. Do vao {@link TxRow}. */
+    String ROW_SELECT =
+            "SELECT t.*, c.name AS categoryName, c.emoji AS categoryEmoji, "
+                    + "pn.name AS partnerName ";
 
-    // ---- Thu chi: giu nguyen, chi loc EXPENSE / INCOME ----
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'EXPENSE' AND date BETWEEN :start AND :end")
-    Double getExpenseInRange(long start, long end);
+    /** Noi hai bang chieu. LEFT JOIN nen giao dich chua gan danh muc van hien ra. */
+    String FROM_JOIN =
+            "FROM transactions t "
+                    + "LEFT JOIN categories c ON c.id = t.categoryId "
+                    + "LEFT JOIN partners pn ON pn.id = t.partnerId ";
 
-    @Query("SELECT category, SUM(amount) AS total FROM transactions WHERE type = 'EXPENSE' AND date BETWEEN :start AND :end GROUP BY category ORDER BY total DESC")
-    List<CategoryTotal> getExpenseByCategoryInRange(long start, long end);
+    /**
+     * DIEU KIEN LOC DUY NHAT cua man Tim kiem.
+     *
+     * <p>Moi dieu kien deu co duong tat rieng, nen khong chon gi thi cau lenh khong
+     * ton them chi phi:</p>
+     *
+     * <ul>
+     *   <li>{@code :ignoreTime = 1} bo qua khoang thoi gian</li>
+     *   <li>{@code :type IS NULL} lay moi loai ghi chu</li>
+     *   <li>{@code :allCats = 1} lay moi danh muc</li>
+     *   <li>{@code :minAmount <= 0} khong chan so tien</li>
+     *   <li>{@code :keyword IS NULL} khong loc tu khoa</li>
+     *   <li>{@code :openOnly = 0} lay ca khoan da tat toan</li>
+     * </ul>
+     *
+     * <p><b>Luu y khi goi:</b> {@code :cats} KHONG duoc rong. SQLite khong chap nhan
+     * {@code IN ()}. Khi khong loc danh muc thi truyen {@code allCats = 1} kem mot
+     * danh sach mot phan tu bat ky.</p>
+     */
+    String SEARCH_WHERE =
+            "WHERE t.deleted = 0 "
+                    + "AND (:ignoreTime = 1 OR t.date BETWEEN :fromTime AND :toTime) "
+                    + "AND (:type IS NULL OR t.type = :type) "
+                    + "AND (:allCats = 1 OR c.name IN (:cats)) "
+                    + "AND (:minAmount <= 0 OR t.amount >= :minAmount) "
+                    + "AND (:keyword IS NULL "
+                    + "     OR t.searchText LIKE :keyword "
+                    + "     OR c.searchName LIKE :keyword "
+                    + "     OR pn.searchName LIKE :keyword "
+                    + "     OR (:digits IS NOT NULL AND CAST(t.amount AS TEXT) LIKE :digits)) "
+                    + "AND (:openOnly = 0 OR EXISTS ( "
+                    + "       SELECT 1 FROM loans l "
+                    + "       WHERE l.loanId = t.loanId "
+                    + "         AND l.deleted = 0 AND l.settled = 0 AND l.writtenOff = 0 "
+                    + "         AND l.principal > COALESCE(( "
+                    + "               SELECT SUM(p.amount) FROM transactions p "
+                    + "               WHERE p.loanId = l.loanId AND p.deleted = 0 "
+                    + "                 AND p.type IN ('REPAY', 'COLLECT')), 0))) ";
 
-    @Query("SELECT * FROM transactions ORDER BY date DESC LIMIT :limit")
-    List<TransactionEntity> getRecent(int limit);
+    /** Moi noi deu sap xep giong nhau: moi nhat truoc, id lam moc pha hoa. */
+    String NEWEST_FIRST = "ORDER BY t.date DESC, t.id DESC ";
 
-    @Insert
-    void insertAll(List<TransactionEntity> list);
+    /** Khoan cong no con treo: han gan nhat len truoc, chua dat han xuong cuoi. */
+    String OPEN_LOAN_EXISTS =
+            "EXISTS (SELECT 1 FROM loans l WHERE l.loanId = t.loanId "
+                    + "  AND l.deleted = 0 AND l.settled = 0 AND l.writtenOff = 0 "
+                    + "  AND l.principal > COALESCE((SELECT SUM(p.amount) FROM transactions p "
+                    + "        WHERE p.loanId = l.loanId AND p.deleted = 0 "
+                    + "          AND p.type IN ('REPAY', 'COLLECT')), 0)) ";
 
-    @Query("DELETE FROM transactions")
-    void deleteAll();
+    // =====================================================================
+    // Man Tim kiem - ba cau, MOT dieu kien
+    // =====================================================================
 
-    @Query("SELECT COUNT(*) FROM transactions")
+    /** Tong so ket qua khop bo loc. */
+    @Query("SELECT COUNT(*) " + FROM_JOIN + SEARCH_WHERE)
+    int searchCount(int ignoreTime, long fromTime, long toTime, String type,
+                    int openOnly, int allCats, List<String> cats, long minAmount,
+                    String keyword, String digits);
+
+    /** Tong tien cua TOAN BO ket qua khop bo loc, khong chi rieng trang dang xem. */
+    @Query("SELECT COALESCE(SUM(t.amount), 0) " + FROM_JOIN + SEARCH_WHERE)
+    long searchTotal(int ignoreTime, long fromTime, long toTime, String type,
+                     int openOnly, int allCats, List<String> cats, long minAmount,
+                     String keyword, String digits);
+
+    /**
+     * Mot trang ket qua.
+     *
+     * <p>Dung CHINH XAC dieu kien cua {@link #searchCount}, nen khi bo dem bao 12 thi
+     * cuon het cac trang se dem duoc dung 12 dong.</p>
+     */
+    @Query(ROW_SELECT + FROM_JOIN + SEARCH_WHERE + NEWEST_FIRST + "LIMIT :limit OFFSET :offset")
+    List<TxRow> searchPage(int ignoreTime, long fromTime, long toTime, String type,
+                           int openOnly, int allCats, List<String> cats, long minAmount,
+                           String keyword, String digits, int limit, int offset);
+
+    /**
+     * Tong tien cua ca khoang thoi gian dang xem, KHONG ap cac the loc chi tiet.
+     *
+     * <p>Dung lam mau so cho the loc "Dang chu y": mot khoan duoc coi la dang chu y
+     * khi no chiem qua N phan tram tong chi cua ky.</p>
+     */
+    @Query("SELECT COALESCE(SUM(amount), 0) FROM transactions "
+            + "WHERE deleted = 0 AND type = :type "
+            + "AND (:ignoreTime = 1 OR date BETWEEN :fromTime AND :toTime)")
+    long searchScopeTotal(int ignoreTime, long fromTime, long toTime, String type);
+
+    // =====================================================================
+    // Doc danh sach
+    // =====================================================================
+
+    @Query(ROW_SELECT + FROM_JOIN + "WHERE t.deleted = 0 " + NEWEST_FIRST + "LIMIT :limit")
+    List<TxRow> getRecent(int limit);
+
+    @Query(ROW_SELECT + FROM_JOIN
+            + "WHERE t.deleted = 0 AND t.date BETWEEN :from AND :to " + NEWEST_FIRST)
+    List<TxRow> getTransactionsByDateRange(long from, long to);
+
+    @Query(ROW_SELECT + FROM_JOIN
+            + "WHERE t.deleted = 0 AND t.date BETWEEN :from AND :to "
+            + "ORDER BY t.date ASC, t.id ASC")
+    List<TxRow> getRangeAscending(long from, long to);
+
+    @Query(ROW_SELECT + FROM_JOIN
+            + "WHERE t.deleted = 0 AND t.type = :type AND t.date BETWEEN :from AND :to "
+            + NEWEST_FIRST)
+    List<TxRow> getByTypeInRange(String type, long from, long to);
+
+    /** Khoan vay goc mot chieu ma van con du no. */
+    @Query(ROW_SELECT + FROM_JOIN
+            + "WHERE t.deleted = 0 AND t.type = :type AND " + OPEN_LOAN_EXISTS
+            + "ORDER BY CASE WHEN t.dueDate = 0 THEN 1 ELSE 0 END ASC, "
+            + "t.dueDate ASC, t.date DESC")
+    List<TxRow> getOpenLoans(String type);
+
+    @Query(ROW_SELECT + FROM_JOIN + "WHERE t.id = :id LIMIT 1")
+    TxRow byId(int id);
+
+    /** Ban ghi goc, khong kem ten. Dung khi can sua roi ghi lai. */
+    @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
+    TransactionEntity rawById(int id);
+
+    @Query("SELECT COUNT(*) FROM transactions WHERE deleted = 0")
     int count();
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'INCOME' AND date BETWEEN :start AND :end")
-    Double getIncomeInRange(long start, long end);
-
-    /** Tong so tien cua mot loai bat ky trong khoang thoi gian. */
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = :type AND date BETWEEN :start AND :end")
-    Double getSumInRange(String type, long start, long end);
-
-    /** Danh sach mot loai bat ky trong khoang thoi gian, moi nhat truoc. */
-    @Query("SELECT * FROM transactions WHERE type = :type AND date BETWEEN :start AND :end ORDER BY date DESC")
-    List<TransactionEntity> getByTypeInRange(String type, long start, long end);
-
-    /** Toan bo ban ghi trong mot khoang, sap tang dan (dung cho man Lich). */
-    @Query("SELECT * FROM transactions WHERE date BETWEEN :start AND :end ORDER BY date ASC")
-    List<TransactionEntity> getRangeAscending(long start, long end);
-
-    /** Doc lai mot ban ghi theo id. */
-    @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
-    TransactionEntity getById(int id);
-
-    /** Danh dau tat toan / bo tat toan thu cong cho mot khoan vay goc. */
-    @Query("UPDATE transactions SET settled = :settled WHERE id = :id")
-    void setSettled(int id, int settled);
-
-    /** Danh dau xoa so mot khoan no khong doi duoc nua. */
-    @Query("UPDATE transactions SET writtenOff = :writtenOff WHERE id = :id")
-    void setWrittenOff(int id, int writtenOff);
-
-    /** Gan ma khoan vay cho mot ban ghi vua chen. */
-    @Query("UPDATE transactions SET loanId = :loanId WHERE id = :id")
-    void setLoanId(int id, String loanId);
-
     // =====================================================================
-    // Ban va 03/08 - ba bao cao theo nghiep vu ke toan
+    // So lieu tong hop - cong ngay trong SQLite
     // =====================================================================
 
     /**
-     * Bao cao 1 - SO DU VI.
-     * Tien vao: INCOME, BORROW, COLLECT. Tien ra: EXPENSE, REPAY, LEND.
+     * SO DU VI.
+     *
+     * <pre>
+     * soDuVi = INCOME - EXPENSE + BORROW - REPAY - LEND + COLLECT
+     * </pre>
+     *
+     * <p>Ban cu tai het ban ghi len roi cong bang vong lap Java. Nay la mot cau lenh
+     * chay tren index.</p>
      */
-    @Query("SELECT IFNULL(SUM(CASE "
-            + "WHEN type IN ('INCOME', 'BORROW', 'COLLECT') THEN amount "
-            + "WHEN type IN ('EXPENSE', 'REPAY', 'LEND') THEN -amount "
-            + "ELSE 0 END), 0) FROM transactions")
+    @Query("SELECT COALESCE(SUM(CASE type "
+            + "WHEN 'INCOME' THEN amount WHEN 'BORROW' THEN amount WHEN 'COLLECT' THEN amount "
+            + "WHEN 'EXPENSE' THEN -amount WHEN 'REPAY' THEN -amount WHEN 'LEND' THEN -amount "
+            + "ELSE 0 END), 0) FROM transactions WHERE deleted = 0")
     double walletBalance();
 
-    /** So du vi tinh den mot moc thoi gian (dung cho man Lich va bieu do). */
-    @Query("SELECT IFNULL(SUM(CASE "
-            + "WHEN type IN ('INCOME', 'BORROW', 'COLLECT') THEN amount "
-            + "WHEN type IN ('EXPENSE', 'REPAY', 'LEND') THEN -amount "
-            + "ELSE 0 END), 0) FROM transactions WHERE date <= :until")
+    @Query("SELECT COALESCE(SUM(CASE type "
+            + "WHEN 'INCOME' THEN amount WHEN 'BORROW' THEN amount WHEN 'COLLECT' THEN amount "
+            + "WHEN 'EXPENSE' THEN -amount WHEN 'REPAY' THEN -amount WHEN 'LEND' THEN -amount "
+            + "ELSE 0 END), 0) FROM transactions WHERE deleted = 0 AND date <= :until")
     double walletBalanceUntil(long until);
 
-    /** Bao cao 2 - TONG CON PHAI THU = LEND - COLLECT, bo qua khoan da xoa so. */
-    @Query("SELECT IFNULL(SUM(CASE WHEN type = 'LEND' THEN amount ELSE -amount END), 0) "
-            + "FROM transactions WHERE type IN ('LEND', 'COLLECT') AND IFNULL(writtenOff, 0) = 0")
+    /** Tong mot loai trong khoang thoi gian. */
+    @Query("SELECT COALESCE(SUM(amount), 0) FROM transactions "
+            + "WHERE deleted = 0 AND type = :type AND date BETWEEN :from AND :to")
+    Double getSumInRange(String type, long from, long to);
+
+    @Query("SELECT COALESCE(SUM(amount), 0) FROM transactions "
+            + "WHERE deleted = 0 AND type = 'INCOME' AND date BETWEEN :from AND :to")
+    Double getIncomeInRange(long from, long to);
+
+    /**
+     * Tong chi cua ky, BO danh muc can bang so du.
+     *
+     * <p>Khoan can bang van la EXPENSE / INCOME de so du vi tu dong dung, nhung no
+     * khong phai chi tieu that. Neu khong loai ra, mot lan can bang ba trieu se bop
+     * meo toan bo the "Phan tich theo danh muc".</p>
+     */
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM transactions t "
+            + "LEFT JOIN categories c ON c.id = t.categoryId "
+            + "WHERE t.deleted = 0 AND t.type = 'EXPENSE' "
+            + "AND t.date BETWEEN :from AND :to "
+            + "AND COALESCE(c.name, '') <> :skipCategory")
+    Double getExpenseInRangeSkip(long from, long to, String skipCategory);
+
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM transactions t "
+            + "LEFT JOIN categories c ON c.id = t.categoryId "
+            + "WHERE t.deleted = 0 AND t.type = 'INCOME' "
+            + "AND t.date BETWEEN :from AND :to "
+            + "AND COALESCE(c.name, '') <> :skipCategory")
+    Double getIncomeInRangeSkip(long from, long to, String skipCategory);
+
+    /** Lai / lo = thu nhap - chi tieu, bo danh muc can bang. */
+    @Query("SELECT COALESCE(SUM(CASE t.type "
+            + "WHEN 'INCOME' THEN t.amount WHEN 'EXPENSE' THEN -t.amount ELSE 0 END), 0) "
+            + "FROM transactions t LEFT JOIN categories c ON c.id = t.categoryId "
+            + "WHERE t.deleted = 0 AND t.date BETWEEN :from AND :to "
+            + "AND COALESCE(c.name, '') <> :skipCategory")
+    double netProfitInRangeSkip(long from, long to, String skipCategory);
+
+    /**
+     * Chi tieu gop theo danh muc.
+     *
+     * <p>Ten va emoji lay tu BANG DANH MUC chu khong phai tu chuoi chep tren giao
+     * dich, nen doi ten danh muc la bieu do doi theo ngay lap tuc - khong con canh
+     * mot danh muc bi tach lam hai cot chi vi go khac hoa thuong.</p>
+     */
+    @Query("SELECT c.name AS category, c.emoji AS emoji, "
+            + "COALESCE(SUM(t.amount), 0) AS total, COUNT(t.id) AS items "
+            + "FROM transactions t INNER JOIN categories c ON c.id = t.categoryId "
+            + "WHERE t.deleted = 0 AND t.type = 'EXPENSE' "
+            + "AND t.date BETWEEN :from AND :to AND c.name <> :skipCategory "
+            + "GROUP BY c.id ORDER BY total DESC")
+    List<CategoryTotal> getExpenseByCategoryInRangeSkip(long from, long to, String skipCategory);
+
+    // ------------------------------------------------------------ cong no
+
+    /** Tong con phai thu: khoan minh cho vay, tru phan da thu lai. */
+    @Query("SELECT COALESCE(SUM(l.principal - COALESCE((SELECT SUM(t.amount) "
+            + "    FROM transactions t WHERE t.loanId = l.loanId AND t.deleted = 0 "
+            + "      AND t.type IN ('REPAY', 'COLLECT')), 0)), 0) "
+            + "FROM loans l WHERE l.deleted = 0 AND l.direction = 'LEND' "
+            + "AND l.settled = 0 AND l.writtenOff = 0")
     double totalReceivable();
 
-    /** Bao cao 2 - TONG CON PHAI TRA = BORROW - REPAY. */
-    @Query("SELECT IFNULL(SUM(CASE WHEN type = 'BORROW' THEN amount ELSE -amount END), 0) "
-            + "FROM transactions WHERE type IN ('BORROW', 'REPAY') AND IFNULL(writtenOff, 0) = 0")
+    /** Tong con phai tra: khoan minh di vay, tru phan da tra bot. */
+    @Query("SELECT COALESCE(SUM(l.principal - COALESCE((SELECT SUM(t.amount) "
+            + "    FROM transactions t WHERE t.loanId = l.loanId AND t.deleted = 0 "
+            + "      AND t.type IN ('REPAY', 'COLLECT')), 0)), 0) "
+            + "FROM loans l WHERE l.deleted = 0 AND l.direction = 'BORROW' "
+            + "AND l.settled = 0 AND l.writtenOff = 0")
     double totalPayable();
 
-    /** Bao cao 3 - LAI LO THUAN cua mot ky = INCOME - EXPENSE. */
-    @Query("SELECT IFNULL(SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END), 0) "
-            + "FROM transactions WHERE type IN ('INCOME', 'EXPENSE') AND date BETWEEN :start AND :end")
-    double netProfitInRange(long start, long end);
-
-    /**
-     * Bao cao 2 - CONG NO GOP THEO DOI TAC.
-     * Chi tra ve doi tac con so du khac 0, xep theo quy mo giam dan.
-     */
-    @Query("SELECT IFNULL(person, '') AS person, "
-            + "SUM(CASE WHEN type = 'LEND' THEN amount WHEN type = 'COLLECT' THEN -amount ELSE 0 END) AS receivable, "
-            + "SUM(CASE WHEN type = 'BORROW' THEN amount WHEN type = 'REPAY' THEN -amount ELSE 0 END) AS payable, "
-            + "IFNULL(MIN(CASE WHEN type IN ('BORROW', 'LEND') AND IFNULL(settled, 0) = 0 "
-            + "AND IFNULL(dueDate, 0) > 0 THEN dueDate END), 0) AS nextDue "
-            + "FROM transactions "
-            + "WHERE type IN ('BORROW', 'REPAY', 'LEND', 'COLLECT') AND IFNULL(writtenOff, 0) = 0 "
-            + "GROUP BY IFNULL(person, '') "
+    /** So du cong no tung doi tac. Xem them {@link PartnerDao#balances()}. */
+    @Query("SELECT p.id AS partnerId, p.name AS person, "
+            + "COALESCE(SUM(CASE t.type WHEN 'LEND' THEN t.amount "
+            + "                          WHEN 'COLLECT' THEN -t.amount ELSE 0 END), 0) AS receivable, "
+            + "COALESCE(SUM(CASE t.type WHEN 'BORROW' THEN t.amount "
+            + "                          WHEN 'REPAY' THEN -t.amount ELSE 0 END), 0) AS payable, "
+            + "COALESCE(MIN(CASE WHEN t.dueDate > 0 AND t.settled = 0 AND t.writtenOff = 0 "
+            + "                  THEN t.dueDate END), 0) AS nextDue "
+            + "FROM partners p "
+            + "LEFT JOIN transactions t ON t.partnerId = p.id AND t.deleted = 0 "
+            + "WHERE p.deleted = 0 GROUP BY p.id "
             + "HAVING receivable <> 0 OR payable <> 0 "
-            + "ORDER BY (ABS(receivable) + ABS(payable)) DESC")
+            + "ORDER BY (receivable - payable) DESC")
     List<PartnerBalance> partnerBalances();
 
-    /**
-     * Danh sach khoan vay goc kem so da tra bot.
-     * Xep theo han gan nhat truoc, khoan chua dat han xuong cuoi.
-     */
-    @Query("SELECT l.loanId AS loanId, l.type AS type, l.person AS person, "
-            + "l.amount AS principal, "
-            + "IFNULL((SELECT SUM(p.amount) FROM transactions p "
-            + "WHERE p.loanId = l.loanId AND p.type IN ('REPAY', 'COLLECT')), 0) AS paid, "
-            + "IFNULL(l.dueDate, 0) AS dueDate, "
-            + "IFNULL(l.writtenOff, 0) AS writtenOff, "
-            + "IFNULL(l.settled, 0) AS settled "
-            + "FROM transactions l "
-            + "WHERE l.type IN ('BORROW', 'LEND') AND l.loanId IS NOT NULL "
-            + "ORDER BY CASE WHEN IFNULL(l.dueDate, 0) = 0 THEN 1 ELSE 0 END ASC, "
-            + "IFNULL(l.dueDate, 0) ASC, l.date ASC")
-    List<LoanBalance> loanBalances();
+    // ------------------------------------------------------- theo moc thoi gian
+
+    /** Tong theo thang, dung cho bieu do xu huong. */
+    @Query("SELECT monthKey AS bucket, COALESCE(SUM(amount), 0) AS total, "
+            + "COUNT(*) AS items FROM transactions "
+            + "WHERE deleted = 0 AND type = :type AND monthKey BETWEEN :fromMonth AND :toMonth "
+            + "GROUP BY monthKey ORDER BY monthKey ASC")
+    List<BucketTotal> totalByMonth(String type, int fromMonth, int toMonth);
+
+    /** Tong theo ngay, dung cho man Lich. */
+    @Query("SELECT dayKey AS bucket, COALESCE(SUM(amount), 0) AS total, "
+            + "COUNT(*) AS items FROM transactions "
+            + "WHERE deleted = 0 AND type = :type AND dayKey BETWEEN :fromDay AND :toDay "
+            + "GROUP BY dayKey ORDER BY dayKey ASC")
+    List<BucketTotal> totalByDay(String type, int fromDay, int toDay);
+
+    @Query("SELECT yearKey AS bucket, COALESCE(SUM(amount), 0) AS total, "
+            + "COUNT(*) AS items FROM transactions "
+            + "WHERE deleted = 0 AND type = :type GROUP BY yearKey ORDER BY yearKey ASC")
+    List<BucketTotal> totalByYear(String type);
+
+    @Query("SELECT c.id AS categoryId, c.name AS category, c.emoji AS emoji, "
+            + "COALESCE(SUM(t.amount), 0) AS total, COUNT(t.id) AS items "
+            + "FROM transactions t INNER JOIN categories c ON c.id = t.categoryId "
+            + "WHERE t.deleted = 0 AND t.type = :type "
+            + "AND t.monthKey BETWEEN :fromMonth AND :toMonth "
+            + "GROUP BY c.id ORDER BY total DESC")
+    List<CategoryReport> byCategoryInMonths(String type, int fromMonth, int toMonth);
 
     /**
-     * Cac khoan vay goc CON TREO cua mot loai (BORROW hoac LEND):
-     * chua xoa so, chua danh dau tat toan va chua tra du goc.
+     * Tong da can bang tu truoc den nay: khoan THU tru khoan CHI mang danh muc nay.
+     *
+     * <p>Danh muc gio la khoa so nen phai noi sang bang danh muc de so theo TEN. Doi
+     * ten danh muc thi con so nay tu dung theo, khong phai sua truy van.</p>
      */
-    @Query("SELECT * FROM transactions l "
-            + "WHERE l.type = :type AND IFNULL(l.writtenOff, 0) = 0 AND IFNULL(l.settled, 0) = 0 "
-            + "AND l.amount > IFNULL((SELECT SUM(p.amount) FROM transactions p "
-            + "WHERE p.loanId = l.loanId AND p.type IN ('REPAY', 'COLLECT')), 0) "
-            + "ORDER BY CASE WHEN IFNULL(l.dueDate, 0) = 0 THEN 1 ELSE 0 END ASC, "
-            + "IFNULL(l.dueDate, 0) ASC, l.date ASC")
-    List<TransactionEntity> getOpenLoans(String type);
-
-    /**
-     * Giu lai ten cu de cac man hinh chua chuyen doi van bien dich duoc.
-     * Y nghia moi: cac khoan vay goc con treo cua loai truyen vao.
-     */
-    @Query("SELECT * FROM transactions WHERE type = :type AND IFNULL(settled, 0) = 0 "
-            + "AND IFNULL(writtenOff, 0) = 0 "
-            + "ORDER BY CASE WHEN IFNULL(dueDate, 0) = 0 THEN 1 ELSE 0 END ASC, "
-            + "IFNULL(dueDate, 0) ASC, date ASC")
-    List<TransactionEntity> getOpenByType(String type);
-
-    /** Tong so tien goc con treo cua mot loai. */
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = :type "
-            + "AND IFNULL(settled, 0) = 0 AND IFNULL(writtenOff, 0) = 0")
-    Double getOpenTotal(String type);
-
-    /** Tong da tra bot / thu bot cho mot khoan vay goc. */
-    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions "
-            + "WHERE loanId = :loanId AND type IN ('REPAY', 'COLLECT')")
-    double paidOfLoan(String loanId);
-
-    /** Ma khoan vay lon nhat dang co, dung de sinh ma tiep theo. */
-    @Query("SELECT MAX(id) FROM transactions")
-    Integer maxId();
-
-    // =====================================================================
-    // Ban va 04/08 - KHOAN THU / CHI CAN BANG
-    //
-    // Khoan can bang lam doi so du vi (walletBalance van tinh no, dung y muon)
-    // nhung khong phai chi tieu / thu nhap thuc. Nam truy van duoi day la ban
-    // "Skip" cua cac truy van bao cao: giong het ban goc, chi them dieu kien
-    // loai mot danh muc ra. Cac man Trang chu / Phan tich / Cai dat dung ban nay
-    // de ngan sach va bieu do danh muc khong bi khoan can bang lam meo.
-    // =====================================================================
-
-    /** Tong chi tieu cua ky, bo qua mot danh muc. */
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'EXPENSE' "
-            + "AND date BETWEEN :start AND :end AND IFNULL(category, '') != :skip")
-    Double getExpenseInRangeSkip(long start, long end, String skip);
-
-    /** Tong thu nhap cua ky, bo qua mot danh muc. */
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'INCOME' "
-            + "AND date BETWEEN :start AND :end AND IFNULL(category, '') != :skip")
-    Double getIncomeInRangeSkip(long start, long end, String skip);
-
-    /** Chi tieu gop theo danh muc trong ky, bo qua mot danh muc. */
-    @Query("SELECT category, SUM(amount) AS total FROM transactions "
-            + "WHERE type = 'EXPENSE' AND date BETWEEN :start AND :end "
-            + "AND IFNULL(category, '') != :skip GROUP BY category ORDER BY total DESC")
-    List<CategoryTotal> getExpenseByCategoryInRangeSkip(long start, long end, String skip);
-
-    /** Lai lo thuan cua ky, bo qua mot danh muc. */
-    @Query("SELECT IFNULL(SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END), 0) "
-            + "FROM transactions WHERE type IN ('INCOME', 'EXPENSE') "
-            + "AND date BETWEEN :start AND :end AND IFNULL(category, '') != :skip")
-    double netProfitInRangeSkip(long start, long end, String skip);
-
-    /**
-     * Tong so tien da can bang tu truoc den nay: thu tinh cong, chi tinh tru.
-     * Duong nghia la app hay ghi thieu tien vao, am nghia la hay ghi thieu tien ra.
-     */
-    @Query("SELECT IFNULL(SUM(CASE WHEN type = 'INCOME' THEN amount ELSE -amount END), 0) "
-            + "FROM transactions WHERE IFNULL(category, '') = :category")
+    @Query("SELECT COALESCE(SUM(CASE t.type "
+            + "WHEN 'INCOME' THEN t.amount "
+            + "WHEN 'EXPENSE' THEN -t.amount "
+            + "ELSE 0 END), 0) "
+            + "FROM transactions t INNER JOIN categories c ON c.id = t.categoryId "
+            + "WHERE t.deleted = 0 AND c.name = :category")
     double balanceAdjustTotal(String category);
 
-    /** Ban ghi moi nhat cua mot danh muc, dung de khoe lan can bang gan nhat. */
-    @Query("SELECT * FROM transactions WHERE IFNULL(category, '') = :category "
-            + "ORDER BY date DESC LIMIT 1")
+    /** Lan can bang gan nhat, de man hinh noi duoc "lan gan nhat ngay nao". */
+    @Query("SELECT t.* FROM transactions t "
+            + "INNER JOIN categories c ON c.id = t.categoryId "
+            + "WHERE t.deleted = 0 AND c.name = :category "
+            + "ORDER BY t.date DESC, t.id DESC LIMIT 1")
     TransactionEntity latestOfCategory(String category);
 
-    // =====================================================================
-    // Ban va 06/08 - TRUY VAN CHO MAN TIM KIEM
-    //
-    // Truoc day man Tim kiem keo TOAN BO ban ghi cua ky len roi loc bang Java.
-    // Nay moi dieu kien co the day xuong SQLite deu duoc day xuong, va man hinh
-    // chi doc dung so dong dang ve (LIMIT) thay vi ca bang.
-    //
-    // Quy uoc tham so "co - khong":
-    //   ignoreTime = 1   bo qua khoang thoi gian (xem tat ca)
-    //   type       = null xem moi loai; ban ghi cu 'DEBT' tu quy ve 'BORROW'
-    //   openOnly   = 1   chi khoan vay goc con treo (chua tat toan, chua tra du goc)
-    //   allCats    = 1   khong loc danh muc
-    //   minAmount <= 0   khong loc theo so tien
-    // =====================================================================
-
-    String SEARCH_WHERE =
-            "(:ignoreTime = 1 OR date BETWEEN :fromTime AND :toTime) "
-            + "AND (:type IS NULL OR (CASE WHEN type = 'DEBT' THEN 'BORROW' ELSE type END) = :type) "
-            + "AND (:openOnly = 0 OR (IFNULL(settled, 0) = 0 AND IFNULL(writtenOff, 0) = 0 "
-            + "AND amount > IFNULL((SELECT SUM(p.amount) FROM transactions p "
-            + "WHERE p.loanId = transactions.loanId AND p.type IN ('REPAY', 'COLLECT')), 0))) "
-            + "AND (:allCats = 1 OR IFNULL(category, '') IN (:cats)) "
-            + "AND (:minAmount <= 0 OR amount >= :minAmount)";
-
     /**
-     * Thu tu on dinh - BAT BUOC cho phan trang. Thieu khoa phu id thi hai ban ghi
-     * cung moc thoi gian co the doi cho nhau giua hai lan doc, gay trung dong hoac
-     * sot dong khi mo rong cua so.
+     * Da tra / da thu duoc bao nhieu cho mot khoan goc.
      *
-     * <p>openOnly = 1 (khoan vay goc con treo): han gan nhat truoc, khoan chua dat
-     * han xuong cuoi. Cac truong hop con lai: moi nhat truoc.</p>
+     * <p>Tra ve {@code null} khi chua co dong tra nao, nen ben goi phai tu coi null la
+     * khong. Giu nguyen kieu nay vi man Them khoan dang doi chieu voi null.</p>
      */
-    String SEARCH_ORDER =
-            "CASE WHEN :openOnly = 1 AND IFNULL(dueDate, 0) = 0 THEN 1 ELSE 0 END ASC, "
-            + "CASE WHEN :openOnly = 1 THEN IFNULL(dueDate, 0) ELSE 0 END ASC, "
-            + "CASE WHEN :openOnly = 1 THEN date ELSE 0 END ASC, "
-            + "CASE WHEN :openOnly = 1 THEN 0 ELSE date END DESC, id DESC";
+    @Query("SELECT SUM(amount) FROM transactions "
+            + "WHERE deleted = 0 AND loanId = :loanId "
+            + "AND type IN ('REPAY', 'COLLECT')")
+    Double paidOfLoan(String loanId);
 
-    /** Tong so ket qua khop bo loc - de o dem "N ket qua" hien dung. */
-    @Query("SELECT COUNT(*) FROM transactions WHERE " + SEARCH_WHERE)
-    int searchCount(int ignoreTime, long fromTime, long toTime, String type, int openOnly,
-                    int allCats, List<String> cats, double minAmount);
+    // =====================================================================
+    // Ghi
+    // =====================================================================
 
-    /** Tong tien cua TAT CA ket qua, khong phai chi trang dang xem. */
-    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE " + SEARCH_WHERE)
-    double searchTotal(int ignoreTime, long fromTime, long toTime, String type, int openOnly,
-                       int allCats, List<String> cats, double minAmount);
+    @Insert
+    long insert(TransactionEntity transaction);
 
-    /** Mot trang ket qua. offset = 0, limit = so dong dang ve. */
-    @Query("SELECT * FROM transactions WHERE " + SEARCH_WHERE
-            + " ORDER BY " + SEARCH_ORDER + " LIMIT :limit OFFSET :offset")
-    List<TransactionEntity> searchPage(int ignoreTime, long fromTime, long toTime, String type,
-                                       int openOnly, int allCats, List<String> cats,
-                                       double minAmount, int limit, int offset);
+    @Insert
+    void insertAll(List<TransactionEntity> transactions);
+
+    @Update
+    void update(TransactionEntity transaction);
 
     /**
-     * Ban day du, chi dung khi CO tu khoa. SQLite LIKE khong phan biet hoa - thuong
-     * cho chu co dau tieng Viet ("An sang" khong khop "an sang") nen buoc so tu khoa
-     * van phai lam bang Java de khong bo sot. Cac dieu kien con lai da loc sach o day.
+     * XOA MEM.
+     *
+     * <p>Dong van nam lai trong bang voi {@code deleted = 1}. May khac nhin thay dau
+     * xoa nay va xoa theo. Neu xoa that, may kia khong biet dong do tung ton tai nen
+     * lan dong bo sau se day nguoc no tro lai - loi "giao dich da xoa tu song lai".</p>
      */
-    @Query("SELECT * FROM transactions WHERE " + SEARCH_WHERE + " ORDER BY " + SEARCH_ORDER)
-    List<TransactionEntity> searchAll(int ignoreTime, long fromTime, long toTime, String type,
-                                      int openOnly, int allCats, List<String> cats,
-                                      double minAmount);
+    @Query("UPDATE transactions SET deleted = 1, updatedAt = :now WHERE id = :id")
+    void softDelete(int id, long now);
+
+    @Query("UPDATE transactions SET settled = :settled, updatedAt = :now WHERE id = :id")
+    void setSettled(int id, int settled, long now);
+
+    @Query("UPDATE transactions SET writtenOff = :writtenOff, updatedAt = :now WHERE id = :id")
+    void setWrittenOff(int id, int writtenOff, long now);
+
+    @Query("UPDATE transactions SET loanId = :loanId, updatedAt = :now WHERE id = :id")
+    void setLoanId(int id, String loanId, long now);
+
+    /** Xoa sach de nap lai tu ban sao luu. Chi dung trong luong khoi phuc. */
+    @Query("DELETE FROM transactions")
+    void wipe();
+
+    // =====================================================================
+    // Dong bo
+    // =====================================================================
 
     /**
-     * Tong cua ca ky theo loai dang xem, KHONG tinh bo loc danh muc / so tien / tu khoa.
-     * Dung lam mau so cho nguong "Khoan dang chu y" (x% tong cua nhom).
+     * Tat ca cac dong KEM TEN danh muc va ten doi tac.
+     *
+     * <p>Ban sao luu phai mang TEN chu khong mang khoa so. Khoa so chi co y nghia
+     * trong may nay: may thu hai cua cung mot nguoi se danh so danh muc khac di, nen
+     * chep khoa sang la moi giao dich tro nham danh muc.</p>
      */
-    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE "
-            + "(:ignoreTime = 1 OR date BETWEEN :fromTime AND :toTime) "
-            + "AND (CASE WHEN type = 'DEBT' THEN 'BORROW' ELSE type END) = :type "
-            + "AND (:openOnly = 0 OR (IFNULL(settled, 0) = 0 AND IFNULL(writtenOff, 0) = 0 "
-            + "AND amount > IFNULL((SELECT SUM(p.amount) FROM transactions p "
-            + "WHERE p.loanId = transactions.loanId AND p.type IN ('REPAY', 'COLLECT')), 0)))")
-    double searchScopeTotal(int ignoreTime, long fromTime, long toTime, String type, int openOnly);
+    @Query(ROW_SELECT + FROM_JOIN + "WHERE t.deleted = 0 " + NEWEST_FIRST)
+    List<TxRow> allRows();
+
+    /** Lay tat ca, KE CA dong da xoa mem, de day dau xoa len may khac. */
+    @Query("SELECT * FROM transactions")
+    List<TransactionEntity> getAllForSync();
+
+    /** Chi lay phan doi sau lan day cuoi - nen tang cua dong bo tang dan. */
+    @Query("SELECT * FROM transactions WHERE updatedAt > :since")
+    List<TransactionEntity> changedSince(long since);
+
+    @Query("SELECT COALESCE(MAX(updatedAt), 0) FROM transactions")
+    long maxUpdatedAt();
 }

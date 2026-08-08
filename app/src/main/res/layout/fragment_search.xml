@@ -7,13 +7,12 @@
     android:layout_height="match_parent"
     android:background="@color/cream">
 
-    <androidx.core.widget.NestedScrollView 
+    <ScrollView 
     
     android:id="@+id/screen_search"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/cream"
-    android:fillViewport="true"
     android:scrollbars="none">
 
     <LinearLayout
@@ -289,7 +288,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
-                <!-- Ban va 06/08 (b): the mac dinh khi moi vao man -->
                 <TextView
                     android:id="@+id/chip_today"
                     android:layout_width="wrap_content"
@@ -467,12 +465,18 @@
         </FrameLayout>
     </LinearLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_results"
+    <!-- Ban va 08/08: khung dung ket qua.
+         Ca man hinh nay da nam trong mot khung cuon (NestedScrollView). Long them
+         mot danh sach cuon nua vao trong la hai ben tranh nhau tinh chieu cao. Cac
+         dong ket qua duoc gan THANG vao khung dung nay, nen chieu cao thanh ra hien
+         nhien. Cach nay cung hop voi nut "Xem them" hon: chi phai gan them dong moi
+         thay vi ve lai ca danh sach. -->
+    <LinearLayout
+        android:id="@+id/container_results"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:nestedScrollingEnabled="false" />
+        android:orientation="vertical" />
 
     <TextView
         android:id="@+id/tv_empty_results"
@@ -487,32 +491,34 @@
         android:textColor="@color/olive"
         android:visibility="gone" />
 
-    <!-- Ban va 06/08: phan trang - moi lan bam mo rong them 20 ket qua -->
+    <!-- Ban va 08/08: dong dem trang va nut tai them. SearchFragment tu bat/tat
+         hai o nay theo so ket qua con lai, nen mac dinh de gone. -->
     <TextView
         android:id="@+id/tv_page_info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="12dp"
         android:gravity="center"
-        android:text="Đang xem 20/20"
+        android:text="Đang xem 20 trên 42"
         android:textSize="12sp"
         android:textColor="@color/grey_gold"
         android:visibility="gone" />
 
-    <com.google.android.material.button.MaterialButton
+    <TextView
         android:id="@+id/btn_load_more"
-        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:letterSpacing="0"
-        android:text="Xem thêm 20 kết quả"
-        android:textAllCaps="false"
+        android:layout_marginTop="8dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:gravity="center"
+        android:background="@drawable/bg_pill_cream"
+        android:text="Tải thêm"
         android:textSize="14sp"
+        android:textColor="@color/olive"
         android:textStyle="bold"
-        android:textColor="@color/dark_green"
-        app:backgroundTint="@color/chip_cream"
-        app:cornerRadius="16dp"
+        android:clickable="true"
+        android:focusable="true"
         android:visibility="gone" />
 
     <com.google.android.material.card.MaterialCardView
@@ -569,6 +575,6 @@
     </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+</ScrollView>
 
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

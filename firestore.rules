@@ -1,16 +1,29 @@
 rules_version = '2';
 
-// Dat noi dung nay vao Firebase Console > Firestore Database > Rules > Publish.
-// Neu Rules dang chan, app se bao "tai khoan chua co quyen ghi (xem Firestore Rules)".
+// BMMoney - Firestore Security Rules
+//
+// Nguyen tac duy nhat: moi nguoi chi doc/ghi duoc nhanh users/{uid} cua chinh minh.
+// Khong co bat ky duong nao khac duoc mo. Mac dinh cua Firestore la TU CHOI HET,
+// nen chi can khong khai bao la da khoa.
+//
+// Cach nap:  firebase deploy --only firestore:rules
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Moi nguoi chi duoc doc/ghi dung ho so va ban sao luu cua chinh minh
-    match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
 
+    // Ho so tai khoan: users/{uid}
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      // Toan bo du lieu con:
+      //   meta/sync, cats/{id}, people/{id}, loans/{loanId}, tx/{id}
+      // va ca hai collection cu dang cho don: transactions/{id}, backup/{id}
       match /{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if isOwner(uid);
       }
     }
   }

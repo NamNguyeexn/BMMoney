@@ -62,6 +62,9 @@ public final class BalanceDialog {
     /** Chan tran o nhap de Double.parseDouble khong tran so. */
     private static final int MAX_DIGITS = 15;
 
+    /** Bieu tuong cua danh muc can bang, dung khi danh muc chua co trong bang. */
+    private static final String CATEGORY_EMOJI = "\u2696\uFE0F";
+
     public interface OnDone {
         /** @param difference so tien da can bang, duong la thu, am la chi, 0 la da khop san */
         void onDone(double difference);
@@ -189,9 +192,14 @@ public final class BalanceDialog {
                 return;
             }
 
-            final TransactionEntity entity = entity(diff, actual, snap.wallet);
             Db.io(() -> {
-                AppDatabase.dao(app).insert(entity);
+                // Danh muc gio la KHOA SO tro sang bang danh muc chu khong con la
+                // chuoi ten nam trong tung dong. Phai tra ve khoa TRUOC khi dung ban
+                // ghi, va viec tra cuu do doc co so du lieu nen buoc phai nam trong
+                // luong nen nay.
+                Integer categoryId = AppDatabase.categories(app)
+                        .ensure(Stats.CATEGORY_BALANCE, CATEGORY_EMOJI);
+                AppDatabase.dao(app).insert(entity(categoryId, diff, actual, snap.wallet));
                 // Gom thay doi roi sao luu mot lan, giong moi giao dich khac
                 AutoBackup.scheduleSoon(app);
                 Db.ui(() -> {
@@ -204,16 +212,19 @@ public final class BalanceDialog {
     }
 
     /** Dung INCOME / EXPENSE san co nen tang ke toan khong phai sua gi. */
-    private static TransactionEntity entity(double diff, double actual, double wallet) {
+    private static TransactionEntity entity(Integer categoryId, double diff,
+                                            double actual, double wallet) {
         boolean surplus = diff > 0;
         String title = surplus
                 ? "C\u00e2n b\u1eb1ng s\u1ed1 d\u01b0 (th\u1eeba)"
                 : "C\u00e2n b\u1eb1ng s\u1ed1 d\u01b0 (thi\u1ebfu)";
         String note = "Th\u1ef1c t\u1ebf " + Money.vnd(actual)
                 + " \u00b7 App t\u00ednh " + Money.vnd(wallet);
-        return new TransactionEntity(title, Math.abs(diff),
+        // So tien gio la so nguyen dong. Tien Viet khong co phan le, luu dang thap
+        // phan chi de lai sai so tich luy qua cac phep cong tru.
+        return new TransactionEntity(title, Math.round(Math.abs(diff)),
                 surplus ? Stats.INCOME : Stats.EXPENSE,
-                Stats.CATEGORY_BALANCE, note, System.currentTimeMillis());
+                categoryId, note, System.currentTimeMillis());
     }
 
     private static String history(Snapshot snap) {

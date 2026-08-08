@@ -3,34 +3,42 @@ package com.example.bmmoney.data;
 import com.example.bmmoney.util.Stats;
 
 /**
- * Ban va 03/08. Mot khoan vay goc kem so con lai.
+ * Mot khoan vay kem so con lai, tinh san trong SQLite.
  *
- * <p>Dung cho o chon "Tra cho khoan nao" khi ghi Tra no goc / Thu hoi no goc,
- * va cho the Bao cao cong no o man Phan tich.</p>
+ * <p>Dung cho o chon "Tra cho khoan nao" khi ghi Tra no goc / Thu hoi no goc, va
+ * cho the Bao cao cong no o man Phan tich.</p>
  */
 public class LoanBalance {
 
     public String loanId;
-    /** BORROW (minh di vay) hoac LEND (minh cho vay). */
+
+    /** LEND (minh cho vay) hoac BORROW (minh di vay). */
     public String type;
+
     public String person;
-    /** So tien goc ban dau cua khoan vay. */
-    public double principal;
-    /** Tong da tra bot (REPAY) hoac da thu bot (COLLECT) cho khoan nay. */
-    public double paid;
+
+    /** So tien goc ban dau. */
+    public long principal;
+
+    /** Tong da tra bot (REPAY) hoac da thu bot (COLLECT). */
+    public long paid;
+
+    /** Han tra / han doi, 0 la chua dat. */
     public long dueDate;
+
     public int writtenOff;
+
     public int settled;
 
     /** So con lai chua tat toan, khong bao gio am. */
-    public double remaining() {
-        double left = principal - paid;
-        return left < 0 ? 0d : left;
+    public long remaining() {
+        long left = principal - paid;
+        return left < 0 ? 0L : left;
     }
 
-    /** Khoan nay da dong chua: xoa so, danh dau tat toan, hoac tra du goc. */
+    /** Da dong chua: xoa so, danh dau tat toan, hoac da tra du goc. */
     public boolean isClosed() {
-        return writtenOff == 1 || settled == 1 || remaining() <= 0d;
+        return writtenOff == 1 || settled == 1 || remaining() <= 0L;
     }
 
     public boolean isReceivable() {
@@ -38,11 +46,25 @@ public class LoanBalance {
     }
 
     public String personOrUnknown() {
-        return person == null || person.trim().isEmpty() ? "Ch\u01b0a ghi t\u00ean" : person;
+        return person == null || person.trim().isEmpty()
+                ? PartnerEntity.UNKNOWN_LABEL : person;
     }
 
     /** Nhan hien thi trong danh sach chon khoan no. */
     public String label() {
         return Stats.typeName(type) + " \u00b7 " + personOrUnknown();
+    }
+
+    /** Giu ten cu de cac man hinh khong phai sua than ham. */
+    public long getAmount() {
+        return principal;
+    }
+
+    public String loanIdOrEmpty() {
+        return loanId == null ? "" : loanId;
+    }
+
+    public long dueMillis() {
+        return dueDate;
     }
 }
