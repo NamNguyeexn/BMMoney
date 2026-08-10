@@ -2,6 +2,8 @@ package com.example.bmmoney.util;
 
 import android.content.Context;
 
+import androidx.annotation.Nullable;
+
 import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.CategoryDao;
 import com.example.bmmoney.data.CategoryEntity;
@@ -115,6 +117,36 @@ public final class Categories {
         return new ArrayList<>(snapshot);
     }
 
+    /** Ban sao trong bo nho da nap xong chua. */
+    public static boolean isReady() {
+        return cache != null;
+    }
+
+    /**
+     * Cho ban sao nap xong roi chay {@code done} tren luong giao dien.
+     *
+     * <p>Vi sao can: {@link #all(Context)} tra ve danh sach RONG khi ban sao chua kip
+     * nap. Man hinh nao ve danh muc ngay luc vua mo app se hien "0 muc" hoac mat sach
+     * the loc, va khong co gi keo no ve lai - phai roi di roi quay lai moi thay.</p>
+     *
+     * <p>Sau khi {@code done} chay thi {@link #isReady()} chac chan tra ve {@code true}
+     * (du danh sach co the van rong that), nen ben goi kiem tra {@code isReady()} truoc
+     * roi goi lai chinh no se khong bao gio lap vo han.</p>
+     */
+    public static void whenReady(final Context context, @Nullable final Runnable done) {
+        if (cache != null) {
+            if (done != null) Db.ui(done);
+            return;
+        }
+        Db.io(new Runnable() {
+            @Override
+            public void run() {
+                refresh(context);
+                if (done != null) Db.ui(done);
+            }
+        });
+    }
+
     public static String[] names(Context context) {
         List<Item> list = all(context);
         String[] out = new String[list.size()];
@@ -130,6 +162,19 @@ public final class Categories {
      * danh muc - lich su chi tieu thung mot mang ma khong the khoi phuc.</p>
      */
     public static void save(final Context context, final List<Item> list) {
+        save(context, list, null);
+    }
+
+    /**
+     * Nhu {@link #save(Context, List)}, nhung bao lai khi da ghi VA nap lai xong.
+     *
+     * <p>Vi sao can {@code done}: viec ghi chay tren luong nen, con ben goi truoc day ve
+     * lai danh sach NGAY dong ke tiep - tuc la ve bang ban sao CU. Doi ten, sap xep lai,
+     * them hay xoa mot danh muc deu khong thay gi doi cho den luc roi khoi man hinh roi
+     * quay lai. Chay {@code done} sau khi lam moi ban sao thi giao dien khop ngay.</p>
+     */
+    public static void save(final Context context, final List<Item> list,
+                            @Nullable final Runnable done) {
         final List<Item> copy = list == null ? new ArrayList<Item>() : new ArrayList<>(list);
         Db.io(new Runnable() {
             @Override
@@ -140,6 +185,7 @@ public final class Categories {
                     // Khong de loi ghi lam sap app
                 }
                 refresh(context);
+                if (done != null) Db.ui(done);
             }
         });
     }

@@ -398,6 +398,12 @@ public class SettingsFragment extends Fragment {
         final LinearLayout container = root.findViewById(R.id.container_categories);
         if (container == null || getContext() == null) return;
 
+        if (!Categories.isReady()) {
+            // Ban sao danh muc chua nap xong: cho roi ve lai, thay vi hien "0 muc"
+            Categories.whenReady(getContext(), this::buildCategories);
+            return;
+        }
+
         final List<Categories.Item> list = Categories.all(getContext());
         text(R.id.tv_cat_count, list.size() + " m\u1ee5c");
         root.findViewById(R.id.tv_no_category).setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
@@ -470,8 +476,8 @@ public class SettingsFragment extends Fragment {
 
         Categories.Item moving = list.remove(index);
         list.add(target, moving);
-        Categories.save(getContext(), list);
-        buildCategories();
+        // Ve lai SAU khi ban sao duoc lam moi, neu khong van la danh sach cu
+        Categories.save(getContext(), list, this::buildCategories);
     }
 
     private void confirmDeleteCategory(final int index, double spent) {
@@ -492,8 +498,7 @@ public class SettingsFragment extends Fragment {
                 "X\u00f3a",
                 () -> {
                     list.remove(index);
-                    Categories.save(requireContext(), list);
-                    buildCategories();
+                    Categories.save(requireContext(), list, this::buildCategories);
                 });
     }
 
@@ -550,9 +555,8 @@ public class SettingsFragment extends Fragment {
             } else {
                 list.add(new Categories.Item(newEmoji, newName));
             }
-            Categories.save(context, list);
+            Categories.save(context, list, this::buildCategories);
             dialog.dismiss();
-            buildCategories();
         });
 
         dialog.show();

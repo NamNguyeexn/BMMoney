@@ -279,6 +279,12 @@ public class SearchFragment extends Fragment {
         LinearLayout box = root.findViewById(R.id.container_cat_chips);
         if (box == null) return;
 
+        if (!Categories.isReady()) {
+            // Chua nap xong ban sao danh muc: cho roi ve lai, tranh mat the loc
+            Categories.whenReady(getContext(), this::setupCategoryChips);
+            return;
+        }
+
         box.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(getContext());
 

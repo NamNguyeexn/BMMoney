@@ -418,6 +418,12 @@ public class AddExpenseFragment extends Fragment {
     private void buildCategories() {
         if (root == null || getContext() == null) return;
 
+        if (!Categories.isReady()) {
+            // Chua nap xong ban sao danh muc: cho roi ve lai, tranh o chon rong
+            Categories.whenReady(getContext(), this::buildCategories);
+            return;
+        }
+
         items.clear();
         items.addAll(Categories.all(getContext()));
 

@@ -701,6 +701,11 @@ public class FirebaseSyncManager {
                     @Override
                     public void onSuccess(Void unused) {
                         Prefs.setLastBackup(context, now);
+                        // Ban va 10/08. Phai keo ca moc "may doi lan cuoi" len bang moc
+                        // vua ghi. Thieu dong nay thi may luon nhin nhu CU HON cloud, nen
+                        // lan bam Dong bo ke tiep se chon TAI VE va xoa sach du lieu duoi
+                        // may de dung lai tu cloud, du hai ben dang giong het nhau.
+                        Prefs.setLocalChangedAt(context, now);
                         Log.i(TAG, "backupNow: xong, day " + written + " ban ghi, cloud giu "
                                 + liveCount + " giao dich");
                         cleanupLegacy();
@@ -735,9 +740,12 @@ public class FirebaseSyncManager {
         data.put("cycleMonth", Prefs.cycleMonth(context));
         data.put("warnPercent", Prefs.warnPercent(context));
         data.put("bigPercent", Prefs.bigPercent(context));
-        data.put("categories", Prefs.categoriesRaw(context));
-        data.put("reminders", Prefs.remindersRaw(context));
         data.put("strongAlarm", Prefs.strongAlarm(context));
+        // Danh muc KHONG con nam o day. Tu ban v5 chung la mot bang rieng trong Room va
+        // di len cloud thanh tung tai lieu trong collection cats. Khoa categories cu
+        // luon rong, ghi len chi lam tai lieu meta/sync trong nhu bi thieu du lieu.
+        String reminders = Prefs.remindersRaw(context);
+        if (reminders != null) data.put("reminders", reminders);
         return data;
     }
 
@@ -862,10 +870,9 @@ public class FirebaseSyncManager {
                     return;
                 }
 
-                // Cloud chua co gi, hoac co ban sao luu RONG: luon day len.
-                // Day la chot an toan quan trong nhat.
-                if (!info.exists || info.updatedAt <= 0 || info.count <= 0) {
-                    Log.i(TAG, "syncNow: chon DAY LEN (cloud rong hoac chua co)");
+                // Cloud chua co moc dong bo nao: luon day len.
+                if (!info.exists || info.updatedAt <= 0) {
+                    Log.i(TAG, "syncNow: chon DAY LEN (cloud chua co gi)");
                     pushUp(result);
                     return;
                 }
@@ -874,15 +881,34 @@ public class FirebaseSyncManager {
                     pushUp(result);
                     return;
                 }
+                if (info.count <= 0) {
+                    // Ban va 10/08. Cloud co moc dong bo nhung khong giao dich nao. Truoc
+                    // day truong hop nay LUON day len, nen mot may vua cai xong khong bao
+                    // gio keo duoc CAI DAT ve - vi cai dat nam trong meta/sync chu khong
+                    // nam trong so giao dich. Chi day len khi may dang co du lieu de mat.
+                    Db.io(new Runnable() {
+                        @Override
+                        public void run() {
+                            final int mine = db.transactionDao().count();
+                            Db.ui(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (mine > 0) {
+                                        Log.i(TAG, "syncNow: chon DAY LEN (cloud rong, may con "
+                                                + mine + " giao dich)");
+                                        pushUp(result);
+                                    } else {
+                                        Log.i(TAG, "syncNow: chon TAI VE (hai ben deu rong, lay cai dat)");
+                                        pullDown(result);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    return;
+                }
                 Log.i(TAG, "syncNow: chon TAI VE (cloud moi hon may)");
-                restoreLatest(new Result() {
-                    @Override
-                    public void onDone(boolean ok, int count, @Nullable String error) {
-                        Log.i(TAG, "syncNow: tai ve xong ok=" + ok + " count=" + count
-                                + " error=" + error);
-                        report(result, ok, count, false, error);
-                    }
-                });
+                pullDown(result);
             }
         });
     }
@@ -894,6 +920,17 @@ public class FirebaseSyncManager {
                 Log.i(TAG, "syncNow: day len xong ok=" + ok + " count=" + count
                         + " error=" + error);
                 report(result, ok, count, true, error);
+            }
+        });
+    }
+
+    private void pullDown(@Nullable final SyncResult result) {
+        restoreLatest(new Result() {
+            @Override
+            public void onDone(boolean ok, int count, @Nullable String error) {
+                Log.i(TAG, "syncNow: tai ve xong ok=" + ok + " count=" + count
+                        + " error=" + error);
+                report(result, ok, count, false, error);
             }
         });
     }
@@ -1209,9 +1246,6 @@ public class FirebaseSyncManager {
 
         Double big = number(data.get("bigPercent"));
         if (big != null) Prefs.setBigPercent(context, big.intValue());
-
-        String categories = string(data.get("categories"));
-        if (categories != null && !categories.isEmpty()) Prefs.setCategoriesRaw(context, categories);
 
         Object strong = data.get("strongAlarm");
         if (strong instanceof Boolean) Prefs.setStrongAlarm(context, (Boolean) strong);
