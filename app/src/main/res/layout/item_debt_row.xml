@@ -24,7 +24,7 @@
         android:gravity="center"
         android:text="↪"
         android:textColor="@color/dark_green"
-        android:textSize="16sp"
+        android:textSize="18sp"
         android:textStyle="bold" />
 
     <LinearLayout
@@ -42,7 +42,7 @@
             android:singleLine="true"
             android:text="Tên người"
             android:textColor="@color/dark_green"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
@@ -54,7 +54,7 @@
             android:singleLine="true"
             android:text="Hạn đòi 01/01/2026"
             android:textColor="@color/olive"
-            android:textSize="12sp" />
+            android:textSize="14sp" />
     </LinearLayout>
 
     <TextView
@@ -65,6 +65,6 @@
         android:singleLine="true"
         android:text="0 ₫"
         android:textColor="@color/burnt"
-        android:textSize="14sp"
+        android:textSize="16sp"
         android:textStyle="bold" />
 </LinearLayout>

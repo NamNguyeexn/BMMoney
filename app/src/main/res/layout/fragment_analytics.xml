@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Phân tích"
-            android:textSize="24sp"
+            android:textSize="26sp"
             android:textStyle="bold"
             android:textColor="@color/dark_green" />
 
@@ -50,7 +50,7 @@
             android:paddingBottom="8dp"
             android:background="@drawable/bg_pill_olive"
             android:text="Chu kỳ"
-            android:textSize="13sp"
+            android:textSize="15sp"
             android:textStyle="bold"
             android:textColor="@color/cream"
             android:clickable="true"
@@ -67,7 +67,7 @@
             android:paddingBottom="8dp"
             android:background="@drawable/bg_pill_cream"
             android:text="Năm"
-            android:textSize="13sp"
+            android:textSize="15sp"
             android:textStyle="bold"
             android:textColor="@color/olive"
             android:clickable="true"
@@ -92,7 +92,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Ghi chú tài chính theo chu kỳ"
-                android:textSize="16sp"
+                android:textSize="18sp"
                 android:textColor="@color/dark_green"
                 android:textStyle="bold"
                 />
@@ -127,7 +127,7 @@
                         android:layout_marginLeft="6dp"
                         android:text="Chi tiêu"
                         android:textColor="@color/olive"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -148,7 +148,7 @@
                         android:layout_marginLeft="6dp"
                         android:text="Thu nhập"
                         android:textColor="@color/olive"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -169,7 +169,7 @@
                         android:layout_marginLeft="6dp"
                         android:text="Cho vay"
                         android:textColor="@color/olive"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -190,7 +190,7 @@
                         android:layout_marginLeft="6dp"
                         android:text="Trả nợ"
                         android:textColor="@color/olive"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -229,7 +229,7 @@
                     android:layout_weight="1"
                     android:text="Đánh giá"
                     android:textColor="@color/dark_green"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -243,7 +243,7 @@
                     android:paddingBottom="4dp"
                     android:text="--"
                     android:textColor="@color/olive"
-                    android:textSize="12sp" />
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <TextView
@@ -255,7 +255,7 @@
                 android:padding="12dp"
                 android:text="Kỳ này đã chi 0 ₫"
                 android:textColor="@color/dark_green"
-                android:textSize="14sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <!-- Ban va 03/08: lai lo = thu nhap - chi tieu, khong tinh vay tra -->
@@ -268,7 +268,7 @@
                 android:padding="12dp"
                 android:text=""
                 android:textColor="@color/dark_green"
-                android:textSize="14sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
 
@@ -281,7 +281,7 @@
                 android:padding="12dp"
                 android:text=""
                 android:textColor="@color/olive"
-                android:textSize="14sp"
+                android:textSize="16sp"
                 android:visibility="gone" />
 
             <TextView
@@ -293,7 +293,7 @@
                 android:padding="12dp"
                 android:text=""
                 android:textColor="@color/sandy"
-                android:textSize="14sp"
+                android:textSize="16sp"
                 android:visibility="gone" />
 
             <TextView
@@ -305,7 +305,7 @@
                 android:padding="12dp"
                 android:text=""
                 android:textColor="@color/dark_green"
-                android:textSize="14sp"
+                android:textSize="16sp"
                 android:visibility="gone" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -350,7 +350,7 @@
                     android:layout_weight="1"
                     android:text="Phân tích theo danh mục"
                     android:textColor="@color/dark_green"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -364,7 +364,7 @@
                     android:paddingBottom="3dp"
                     android:text=""
                     android:textColor="@color/olive"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -387,7 +387,7 @@
                     android:layout_marginLeft="6dp"
                     android:text="Kỳ này"
                     android:textColor="@color/olive"
-                    android:textSize="12sp" />
+                    android:textSize="14sp" />
 
                 <View
                     android:layout_width="14dp"
@@ -401,7 +401,7 @@
                     android:layout_marginLeft="6dp"
                     android:text="Kỳ trước"
                     android:textColor="@color/olive"
-                    android:textSize="12sp" />
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -420,7 +420,7 @@
                 android:padding="18dp"
                 android:text="Kỳ này chưa có khoản chi nào để so sánh"
                 android:textColor="@color/grey_gold"
-                android:textSize="13sp"
+                android:textSize="15sp"
                 android:visibility="gone" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -459,7 +459,7 @@
                     android:layout_weight="1"
                     android:text="Công nợ"
                     android:textColor="@color/dark_green"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -473,7 +473,7 @@
                     android:paddingBottom="4dp"
                     android:text="0 người"
                     android:textColor="@color/olive"
-                    android:textSize="12sp" />
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -493,7 +493,7 @@
                         android:layout_height="wrap_content"
                         android:text="Tổng phải thu"
                         android:textColor="@color/subtle_text"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
 
                     <TextView
                         android:id="@+id/tv_receivable_total"
@@ -502,7 +502,7 @@
                         android:layout_marginTop="2dp"
                         android:text="0 ₫"
                         android:textColor="@color/net_positive"
-                        android:textSize="16sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -517,7 +517,7 @@
                         android:layout_height="wrap_content"
                         android:text="Tổng phải trả"
                         android:textColor="@color/subtle_text"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
 
                     <TextView
                         android:id="@+id/tv_payable_total"
@@ -526,7 +526,7 @@
                         android:layout_marginTop="2dp"
                         android:text="0 ₫"
                         android:textColor="@color/net_negative"
-                        android:textSize="16sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -547,7 +547,7 @@
                 android:padding="16dp"
                 android:text="Chưa có công nợ với ai"
                 android:textColor="@color/subtle_text"
-                android:textSize="13sp" />
+                android:textSize="15sp" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -578,7 +578,7 @@
                     android:layout_weight="1"
                     android:text="Báo cáo nợ"
                     android:textColor="@color/dark_green"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -592,7 +592,7 @@
                     android:paddingBottom="4dp"
                     android:text="0 khoản"
                     android:textColor="@color/olive"
-                    android:textSize="12sp" />
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <TextView
@@ -601,7 +601,7 @@
                 android:layout_marginTop="4dp"
                 android:text="Xếp theo thời hạn gần nhất"
                 android:textColor="@color/olive"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
             <ScrollView
                 android:id="@+id/scroll_debts"
@@ -628,7 +628,7 @@
                 android:gravity="center"
                 android:text="Cuộn để xem thêm"
                 android:textColor="@color/subtle_text"
-                android:textSize="11sp"
+                android:textSize="13sp"
                 android:visibility="gone" />
 
             <TextView
@@ -640,7 +640,7 @@
                 android:padding="16dp"
                 android:text="Chưa có khoản cho vay hay nợ nào đang mở"
                 android:textColor="@color/subtle_text"
-                android:textSize="13sp" />
+                android:textSize="15sp" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
@@ -685,7 +685,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Danh mục tốt nhất"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textColor="@color/olive" />
 
                 <TextView
@@ -694,7 +694,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:text="Di chuyển"
-                    android:textSize="15sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="@color/dark_green" />
 
@@ -704,7 +704,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:text="-15% tiết kiệm"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:textStyle="bold"
                     android:textColor="@color/olive" />
             </LinearLayout>
@@ -745,7 +745,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Cần chú ý"
-                    android:textSize="12sp"
+                    android:textSize="14sp"
                     android:textColor="@color/olive" />
 
                 <TextView
@@ -754,7 +754,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:text="Ăn uống"
-                    android:textSize="15sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="@color/dark_green" />
 
@@ -764,7 +764,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:text="+25% vượt mức"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:textStyle="bold"
                     android:textColor="@color/burnt" />
             </LinearLayout>

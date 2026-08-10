@@ -45,21 +45,21 @@
     <style name="Text" parent="" />
 
     <style name="Text.H1" parent="Text">
-        <item name="android:textSize">24sp</item>
+        <item name="android:textSize">26sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/dark_green</item>
     </style>
     <style name="Text.H3" parent="Text">
-        <item name="android:textSize">16sp</item>
+        <item name="android:textSize">18sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/dark_green</item>
     </style>
     <style name="Text.Body" parent="Text">
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/olive</item>
     </style>
     <style name="Text.Small" parent="Text">
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/olive</item>
     </style>
     <style name="Card" parent="Widget.MaterialComponents.CardView">

@@ -15,9 +15,9 @@
     <dimen name="gap_large">16dp</dimen>
     <dimen name="row_icon">36dp</dimen>
     <dimen name="pill_padding">10dp</dimen>
-    <dimen name="text_caption">11sp</dimen>
-    <dimen name="text_label">12sp</dimen>
-    <dimen name="text_body">14sp</dimen>
-    <dimen name="text_amount">15sp</dimen>
-    <dimen name="text_hero">28sp</dimen>
+    <dimen name="text_caption">13sp</dimen>
+    <dimen name="text_label">14sp</dimen>
+    <dimen name="text_body">16sp</dimen>
+    <dimen name="text_amount">17sp</dimen>
+    <dimen name="text_hero">30sp</dimen>
 </resources>

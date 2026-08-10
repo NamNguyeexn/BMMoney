@@ -199,7 +199,10 @@ public final class BalanceDialog {
                 // luong nen nay.
                 Integer categoryId = AppDatabase.categories(app)
                         .ensure(Stats.CATEGORY_BALANCE, CATEGORY_EMOJI);
-                AppDatabase.dao(app).insert(entity(categoryId, diff, actual, snap.wallet));
+                // Dong dau moc sua doi truoc khi ghi, cung ly do nhu man Them giao dich.
+                TransactionEntity row = entity(categoryId, diff, actual, snap.wallet);
+                row.touch();
+                AppDatabase.dao(app).insert(row);
                 // Gom thay doi roi sao luu mot lan, giong moi giao dich khac
                 AutoBackup.scheduleSoon(app);
                 Db.ui(() -> {

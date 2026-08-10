@@ -690,6 +690,9 @@ public class AddExpenseFragment extends Fragment {
                 tx.setLoanId(loanId);
             }
 
+            // Dong dau moc sua doi TRUOC khi ghi. Thieu buoc nay updatedAt = 0, ma sao
+            // luu tang dan chi lay dong co updatedAt > moc lan truoc.
+            tx.setUpdatedAt(now);
             AppDatabase.dao(app).insert(tx);
             // Khong day len cloud ngay: gom thay doi roi sao luu mot lan cho do ton bo nho
             AutoBackup.scheduleSoon(app);

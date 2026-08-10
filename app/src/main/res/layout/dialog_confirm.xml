@@ -30,7 +30,7 @@
             android:gravity="center"
             android:text="!"
             android:textColor="@color/burnt"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <TextView
@@ -41,7 +41,7 @@
             android:layout_weight="1"
             android:text="Xác nhận"
             android:textColor="@color/dark_green"
-            android:textSize="17sp"
+            android:textSize="19sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -55,7 +55,7 @@
         android:padding="12dp"
         android:text=""
         android:textColor="@color/olive"
-        android:textSize="14sp" />
+        android:textSize="16sp" />
 
     <TextView
         android:id="@+id/btn_confirm_yes"
@@ -70,7 +70,7 @@
         android:paddingBottom="13dp"
         android:text="Xóa"
         android:textColor="@color/cream"
-        android:textSize="15sp"
+        android:textSize="17sp"
         android:textStyle="bold" />
 
     <TextView
@@ -86,7 +86,7 @@
         android:paddingBottom="13dp"
         android:text=""
         android:textColor="@color/cream"
-        android:textSize="15sp"
+        android:textSize="17sp"
         android:textStyle="bold"
         android:visibility="gone" />
 
@@ -103,6 +103,6 @@
         android:paddingBottom="13dp"
         android:text="Giữ lại"
         android:textColor="@color/olive"
-        android:textSize="15sp"
+        android:textSize="17sp"
         android:textStyle="bold" />
 </LinearLayout>

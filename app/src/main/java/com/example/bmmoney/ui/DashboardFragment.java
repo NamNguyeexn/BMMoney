@@ -29,6 +29,7 @@ import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Stats;
 import com.example.bmmoney.util.ViewUtils;
 import com.example.bmmoney.view.DonutChartView;
+import com.example.bmmoney.util.HelpTip;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,12 +93,23 @@ public class DashboardFragment extends Fragment {
         adapter = new TransactionAdapter();
         adapter.setOnDelete(t -> reloadQuiet());
         recycler.setLayoutManager(new LinearLayoutManager(getContext()));
-        recycler.setHasFixedSize(true);
+        // KHONG dat setHasFixedSize(true): danh sach cao wrap_content nam trong
+        // ScrollView. Co dinh kich thuoc khien RecyclerView bo qua requestLayout khi
+        // adapter doi du lieu, nen no giu nguyen chieu cao 0 do duoc luc danh sach con
+        // rong, va giao dich moi khong bao gio hien ra.
         recycler.setItemAnimator(null);
         recycler.setNestedScrollingEnabled(false);
         recycler.setAdapter(adapter);
 
         refresh = Refresh.setup(root, R.id.refresh_dashboard, this::reloadByUser);
+
+        HelpTip.attach(root, R.id.help_budget,
+                "Ng\u00e2n s\u00e1ch l\u00e0 m\u1ee9c chi t\u1ed1i \u0111a b\u1ea1n \u0111\u1eb7t cho m\u1ed9t k\u1ef3. "
+                        + "Ph\u1ea7n tr\u0103m v\u00e0 thanh m\u00e0u b\u00ean d\u01b0\u1edbi t\u00ednh tr\u00ean t\u1ed5ng chi c\u1ee7a k\u1ef3 n\u00e0y. "
+                        + "B\u1ea5m v\u00e0o d\u00f2ng s\u1ed1 ng\u00e0y c\u00f2n l\u1ea1i \u0111\u1ec3 \u0111\u1ed5i ng\u00e0y ch\u1ed1t k\u1ef3.");
+        HelpTip.attach(root, R.id.help_vs_last_month,
+                "So s\u00e1nh t\u1ed5ng chi ti\u00eau k\u1ef3 n\u00e0y v\u1edbi k\u1ef3 li\u1ec1n tr\u01b0\u1edbc. "
+                        + "S\u1ed1 d\u01b0\u01a1ng l\u00e0 ti\u00eau nhi\u1ec1u h\u01a1n, s\u1ed1 \u00e2m l\u00e0 ti\u00eau \u00edt h\u01a1n.");
 
         root.findViewById(R.id.btn_header_add).setOnClickListener(v -> open(MainActivity.TAB_ADD));
         root.findViewById(R.id.btn_view_all).setOnClickListener(v -> open(MainActivity.TAB_SEARCH));
@@ -284,6 +296,12 @@ public class DashboardFragment extends Fragment {
         text(R.id.tv_debt_total, Money.vnd(data.payable));
         text(R.id.tv_lend_open, "C\u00f2n ph\u1ea3i thu");
         text(R.id.tv_debt_open, "C\u00f2n ph\u1ea3i tr\u1ea3");
+
+        HelpTip.attach(root, R.id.help_net_worth,
+                "Gi\u00e1 tr\u1ecb r\u00f2ng = ti\u1ec1n trong v\u00ed + ph\u1ea3i thu \u2212 ph\u1ea3i tr\u1ea3.\n\n"
+                        + "V\u00ed: " + Money.vnd(data.wallet) + "\n"
+                        + "Ph\u1ea3i thu: " + Money.vnd(data.receivable) + "\n"
+                        + "Ph\u1ea3i tr\u1ea3: " + Money.vnd(data.payable));
 
         adapter.setTransactions(data.recent);
         root.findViewById(R.id.tv_empty_recent).setVisibility(data.recent.isEmpty() ? View.VISIBLE : View.GONE);
