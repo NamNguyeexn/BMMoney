@@ -16,6 +16,7 @@ import com.example.bmmoney.util.Stats;
 import com.example.bmmoney.util.TypeStyle;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -80,7 +81,7 @@ public final class TxRowBinder {
         if (tvDate != null) {
             tvDate.setText(showTimeOnly
                     ? TIME_FMT.format(new Date(row.getDate()))
-                    : DATE_FMT.format(new Date(row.getDate())));
+                    : dayLabel(row.getDate()));
         }
 
         if (tvAmount != null) {
@@ -108,6 +109,35 @@ public final class TxRowBinder {
                 btnDelete.setOnClickListener(v -> confirmDelete(v, row, onDelete));
             }
         }
+    }
+
+    /**
+     * Nhan ngay cho cot ben phai: "Hom nay", "Hom qua", con lai la dd/MM/yyyy.
+     *
+     * <p>So sanh theo NGAY LICH chu khong theo khoang cach 24 gio. Mot khoan ghi luc
+     * 23:50 hom qua chi cach hien tai vai chuc phut, nhung no van thuoc ve hom qua -
+     * lay hieu mili giay roi chia cho 86.400.000 se doc ra "hom nay", sai voi cach
+     * nguoi dung nhin vao cuon so cua minh.</p>
+     *
+     * <p>Moc so sanh lay tai thoi diem ve, nen danh sach dang mo qua nua dem se tu dung
+     * ngay o lan nap lai ke tiep.</p>
+     */
+    public static String dayLabel(long millis) {
+        Calendar target = Calendar.getInstance();
+        target.setTimeInMillis(millis);
+
+        Calendar today = Calendar.getInstance();
+        if (sameDay(target, today)) return "H\u00f4m nay";
+
+        today.add(Calendar.DAY_OF_YEAR, -1);
+        if (sameDay(target, today)) return "H\u00f4m qua";
+
+        return DATE_FMT.format(new Date(millis));
+    }
+
+    private static boolean sameDay(Calendar a, Calendar b) {
+        return a.get(Calendar.YEAR) == b.get(Calendar.YEAR)
+                && a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR);
     }
 
     /** Khoan vay / no lay ten nguoi lam tieu de neu khong dat ten rieng. */
