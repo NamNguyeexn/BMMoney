@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.example.bmmoney.R;
 import com.example.bmmoney.util.Reminders;
+import com.example.bmmoney.util.ViewUtils;
 
 import java.util.Calendar;
 
@@ -67,12 +68,12 @@ public final class ReminderDialog {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
-        view.findViewById(R.id.btn_reminder_cancel).setOnClickListener(v -> dialog.dismiss());
+        ViewUtils.onClick(view, R.id.btn_reminder_cancel, v -> dialog.dismiss());
         delete.setOnClickListener(v -> {
             dialog.dismiss();
             if (callback != null) callback.onDelete();
         });
-        view.findViewById(R.id.btn_reminder_save).setOnClickListener(v -> {
+        ViewUtils.onClick(view, R.id.btn_reminder_save, v -> {
             hour.clearFocus();
             minute.clearFocus();
             dialog.dismiss();

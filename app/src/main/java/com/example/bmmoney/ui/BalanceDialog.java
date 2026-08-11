@@ -21,6 +21,7 @@ import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Stats;
+import com.example.bmmoney.util.ViewUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -169,15 +170,15 @@ public final class BalanceDialog {
 
         update.run();
 
-        view.findViewById(R.id.btn_bal_cancel).setOnClickListener(v -> dialog.dismiss());
+        ViewUtils.onClick(view, R.id.btn_bal_cancel, v -> dialog.dismiss());
 
-        view.findViewById(R.id.btn_bal_copy).setOnClickListener(v -> {
+        ViewUtils.onClick(view, R.id.btn_bal_copy, v -> {
             // Loi tat: dat luon so thuc te bang so app dang tinh, de nguoi dung sua nhe di
             input.setText(Money.plain(snap.wallet));
             input.setSelection(input.getText().length());
         });
 
-        view.findViewById(R.id.btn_bal_save).setOnClickListener(v -> {
+        ViewUtils.onClick(view, R.id.btn_bal_save, v -> {
             Double actual = parse(input);
             if (actual == null) {
                 diffView.setText("Nh\u1eadp s\u1ed1 d\u01b0 th\u1ef1c t\u1ebf tr\u01b0\u1edbc \u0111\u00e3 nh\u00e9");

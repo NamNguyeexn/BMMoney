@@ -27,6 +27,7 @@ import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Notice;
 import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Stats;
+import com.example.bmmoney.util.ViewUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -126,14 +127,14 @@ public class AddExpenseFragment extends Fragment {
         text(R.id.tv_date, format.format(new Date(pickedTime)));
         text(R.id.tv_payment, payment);
 
-        root.findViewById(R.id.tv_date).setOnClickListener(v ->
+        ViewUtils.onClick(root, R.id.tv_date, v ->
                 DateTimeDialog.show(getContext(), pickedTime, time -> {
                     pickedTime = time;
                     text(R.id.tv_date, format.format(new Date(pickedTime)));
                 }));
 
         // Thoi han doi / thoi han phai tra
-        root.findViewById(R.id.tv_due).setOnClickListener(v ->
+        ViewUtils.onClick(root, R.id.tv_due, v ->
                 DateTimeDialog.show(getContext(),
                         dueTime > 0 ? dueTime : pickedTime + 7L * 24 * 60 * 60 * 1000,
                         time -> {
@@ -141,7 +142,7 @@ public class AddExpenseFragment extends Fragment {
                             text(R.id.tv_due, dayFormat.format(new Date(dueTime)));
                         }));
 
-        root.findViewById(R.id.tv_payment).setOnClickListener(v ->
+        ViewUtils.onClick(root, R.id.tv_payment, v ->
                 SelectDialog.show(getContext(), "Ph\u01b0\u01a1ng th\u1ee9c thanh to\u00e1n",
                         PAYMENTS, payment, (index, value) -> {
                             payment = value;
@@ -151,13 +152,13 @@ public class AddExpenseFragment extends Fragment {
         View loanRow = root.findViewById(R.id.tv_loan);
         if (loanRow != null) loanRow.setOnClickListener(v -> pickLoan());
 
-        root.findViewById(R.id.btn_mode_expense).setOnClickListener(v -> setMode(MODE_EXPENSE));
-        root.findViewById(R.id.btn_mode_income).setOnClickListener(v -> setMode(MODE_INCOME));
-        root.findViewById(R.id.btn_mode_borrow).setOnClickListener(v -> setMode(MODE_BORROW));
-        root.findViewById(R.id.btn_mode_repay).setOnClickListener(v -> setMode(MODE_REPAY));
-        root.findViewById(R.id.btn_mode_lend).setOnClickListener(v -> setMode(MODE_LEND));
-        root.findViewById(R.id.btn_mode_collect).setOnClickListener(v -> setMode(MODE_COLLECT));
-        root.findViewById(R.id.btn_submit).setOnClickListener(v -> save());
+        ViewUtils.onClick(root, R.id.btn_mode_expense, v -> setMode(MODE_EXPENSE));
+        ViewUtils.onClick(root, R.id.btn_mode_income, v -> setMode(MODE_INCOME));
+        ViewUtils.onClick(root, R.id.btn_mode_borrow, v -> setMode(MODE_BORROW));
+        ViewUtils.onClick(root, R.id.btn_mode_repay, v -> setMode(MODE_REPAY));
+        ViewUtils.onClick(root, R.id.btn_mode_lend, v -> setMode(MODE_LEND));
+        ViewUtils.onClick(root, R.id.btn_mode_collect, v -> setMode(MODE_COLLECT));
+        ViewUtils.onClick(root, R.id.btn_submit, v -> save());
 
         buildCategories();
         buildMethods();

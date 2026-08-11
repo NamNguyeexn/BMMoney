@@ -67,7 +67,6 @@ public class DashboardFragment extends Fragment {
     private static class Data {
         double expense;
         double previous;
-//        double income;
         List<CategoryTotal> categories = new ArrayList<>();
         List<TxRow> recent = new ArrayList<>();
 
@@ -111,8 +110,8 @@ public class DashboardFragment extends Fragment {
                 "So s\u00e1nh t\u1ed5ng chi ti\u00eau k\u1ef3 n\u00e0y v\u1edbi k\u1ef3 li\u1ec1n tr\u01b0\u1edbc. "
                         + "S\u1ed1 d\u01b0\u01a1ng l\u00e0 ti\u00eau nhi\u1ec1u h\u01a1n, s\u1ed1 \u00e2m l\u00e0 ti\u00eau \u00edt h\u01a1n.");
 
-        root.findViewById(R.id.btn_header_add).setOnClickListener(v -> open(MainActivity.TAB_ADD));
-        root.findViewById(R.id.btn_view_all).setOnClickListener(v -> open(MainActivity.TAB_SEARCH));
+        ViewUtils.onClick(root, R.id.btn_header_add, v -> open(MainActivity.TAB_ADD));
+        ViewUtils.onClick(root, R.id.btn_view_all, v -> open(MainActivity.TAB_SEARCH));
 
         // Ban va 04/08: mo hop thoai can bang so du
         View balance = root.findViewById(R.id.btn_balance);
@@ -200,7 +199,6 @@ public class DashboardFragment extends Fragment {
             Data data = new Data();
             data.expense = value(dao.getExpenseInRangeSkip(current[0], current[1], Stats.CATEGORY_BALANCE));
             data.previous = value(dao.getExpenseInRangeSkip(previous[0], previous[1], Stats.CATEGORY_BALANCE));
-//            data.income = value(dao.getIncomeInRange(current[0], current[1]));
             List<CategoryTotal> cats = dao.getExpenseByCategoryInRangeSkip(current[0], current[1], Stats.CATEGORY_BALANCE);
             if (cats != null) data.categories = cats;
             List<TxRow> recent = dao.getRecent(5);
@@ -233,7 +231,6 @@ public class DashboardFragment extends Fragment {
         text(R.id.tv_total_expense, Money.vnd(expense));
         text(R.id.tv_budget_line, "Ng\u00e2n s\u00e1ch: " + Money.vnd(budget));
         text(R.id.tv_remaining, "C\u00f2n l\u1ea1i: " + Money.vnd(remaining));
-//        text(R.id.tv_income_line, "Thu: " + Money.vnd(data.income));
         text(R.id.tv_used_percent, Money.percent(usedPercent) + " \u0111\u00e3 d\u00f9ng");
         text(R.id.tv_vs_last_month, Money.signedPercent(Stats.changePercent(expense, data.previous)));
 
@@ -304,8 +301,8 @@ public class DashboardFragment extends Fragment {
                         + "Ph\u1ea3i tr\u1ea3: " + Money.vnd(data.payable));
 
         adapter.setTransactions(data.recent);
-        root.findViewById(R.id.tv_empty_recent).setVisibility(data.recent.isEmpty() ? View.VISIBLE : View.GONE);
-        root.findViewById(R.id.recycler_recent).setVisibility(data.recent.isEmpty() ? View.GONE : View.VISIBLE);
+        ViewUtils.setVisibility(root, R.id.tv_empty_recent, data.recent.isEmpty() ? View.VISIBLE : View.GONE);
+        ViewUtils.setVisibility(root, R.id.recycler_recent, data.recent.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void bar(int id, float percent, boolean animate, long delay, long duration) {

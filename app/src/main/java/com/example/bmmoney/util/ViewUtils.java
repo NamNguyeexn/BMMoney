@@ -14,6 +14,40 @@ public final class ViewUtils {
     private ViewUtils() {
     }
 
+    // ------------------------------------------------------------- tim view an toan
+
+    /**
+     * Ban va 11/08: gan su kien / doi hien thi ma KHONG so view bi thieu.
+     *
+     * <p><b>Vi sao can:</b> code cu noi chuoi thang tu findViewById sang setOnClickListener. Chi can mot lan ai do comment mot widget trong file layout
+     * la {@code findViewById} tra ve null va app sap ngay khi mo man (NullPointerException).
+     * Dung dieu nay da tung xay ra voi {@code container_cats} hom 03/08.</p>
+     *
+     * <p>Cac ham duoi day tra ve am tham khi khong tim thay view: mat mot nut bam
+     * van hon la sap ca app.</p>
+     */
+    public static View find(View root, int id) {
+        return root == null ? null : root.findViewById(id);
+    }
+
+    /** Gan su kien bam, bo qua neu view khong ton tai. */
+    public static void onClick(View root, int id, View.OnClickListener listener) {
+        View view = find(root, id);
+        if (view != null) view.setOnClickListener(listener);
+    }
+
+    /** Gan su kien bam giu, bo qua neu view khong ton tai. */
+    public static void onLongClick(View root, int id, View.OnLongClickListener listener) {
+        View view = find(root, id);
+        if (view != null) view.setOnLongClickListener(listener);
+    }
+
+    /** Doi trang thai hien thi, bo qua neu view khong ton tai. */
+    public static void setVisibility(View root, int id, int visibility) {
+        View view = find(root, id);
+        if (view != null) view.setVisibility(visibility);
+    }
+
     /** Cho thanh tien trinh chay tu 0 den percent (0..100) cua chieu rong track. */
     public static void animateBar(final View bar, final float percent, final long duration, final long delay) {
         if (bar == null) return;

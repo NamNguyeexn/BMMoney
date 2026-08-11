@@ -21,6 +21,7 @@ import com.example.bmmoney.util.AutoBackup;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Stats;
 import com.example.bmmoney.util.TypeStyle;
+import com.example.bmmoney.util.ViewUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -188,7 +189,7 @@ public final class TxDialog {
             delete.setVisibility(View.GONE);
         }
 
-        view.findViewById(R.id.btn_tx_close).setOnClickListener(v -> dialog.dismiss());
+        ViewUtils.onClick(view, R.id.btn_tx_close, v -> dialog.dismiss());
 
         dialog.show();
         if (window != null) {

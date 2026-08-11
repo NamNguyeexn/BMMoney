@@ -51,6 +51,7 @@ import com.example.bmmoney.util.Prefs;
 import com.example.bmmoney.util.Stats;
 import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Reminders;
+import com.example.bmmoney.util.ViewUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -84,10 +85,10 @@ public class SettingsFragment extends Fragment {
 
         bindProfile();
 
-        root.findViewById(R.id.tv_cycle_day).setOnClickListener(v ->
+        ViewUtils.onClick(root, R.id.tv_cycle_day, v ->
                 CycleDialog.show(getContext(), this::reload));
 
-        root.findViewById(R.id.tv_warn_percent).setOnClickListener(v ->
+        ViewUtils.onClick(root, R.id.tv_warn_percent, v ->
                 PercentDialog.show(getContext(), "Ng\u01b0\u1ee1ng chi ti\u00eau",
                         "C\u1ea3nh b\u00e1o \u1edf Trang ch\u1ee7 khi chi ti\u00eau v\u01b0\u1ee3t m\u1ee9c n\u00e0y c\u1ee7a ng\u00e2n s\u00e1ch",
                         10, 200, Prefs.warnPercent(getContext()), percent -> {
@@ -95,7 +96,7 @@ public class SettingsFragment extends Fragment {
                             reload();
                         }));
 
-        root.findViewById(R.id.tv_big_percent).setOnClickListener(v ->
+        ViewUtils.onClick(root, R.id.tv_big_percent, v ->
                 PercentDialog.show(getContext(), "M\u1ed1c chi ti\u00eau l\u1edbn",
                         "Giao d\u1ecbch chi\u1ebfm t\u1eeb m\u1ee9c n\u00e0y c\u1ee7a t\u1ed5ng chi trong k\u1ef3 s\u1ebd \u0111\u01b0\u1ee3c \u0111\u00e1nh d\u1ea5u",
                         1, 99, Prefs.bigPercent(getContext()), percent -> {
@@ -103,7 +104,7 @@ public class SettingsFragment extends Fragment {
                             reload();
                         }));
 
-        root.findViewById(R.id.btn_add_reminder).setOnClickListener(v -> {
+        ViewUtils.onClick(root, R.id.btn_add_reminder, v -> {
             askNotificationPermission();
             ReminderDialog.show(getContext(), null, new ReminderDialog.OnResult() {
                 @Override
@@ -120,27 +121,27 @@ public class SettingsFragment extends Fragment {
         });
 
         // Ban va 04/08: nhan giu nut + de xem vi sao loi nhac khong hien
-        root.findViewById(R.id.tv_alarm_mode).setOnClickListener(v -> pickAlarmMode());
+        ViewUtils.onClick(root, R.id.tv_alarm_mode, v -> pickAlarmMode());
 
-        root.findViewById(R.id.btn_add_reminder).setOnLongClickListener(v -> {
+        ViewUtils.onLongClick(root, R.id.btn_add_reminder, v -> {
             showReminderCheck();
             return true;
         });
 
         allowInnerScroll();
 
-        root.findViewById(R.id.btn_add_category).setOnClickListener(v -> editCategory(-1));
-        root.findViewById(R.id.btn_google_auth).setOnClickListener(v -> toggleGoogleAccount());
-        root.findViewById(R.id.btn_backup_now).setOnClickListener(v -> backup());
-        root.findViewById(R.id.btn_sync_now).setOnClickListener(v -> sync());
+        ViewUtils.onClick(root, R.id.btn_add_category, v -> editCategory(-1));
+        ViewUtils.onClick(root, R.id.btn_google_auth, v -> toggleGoogleAccount());
+        ViewUtils.onClick(root, R.id.btn_backup_now, v -> backup());
+        ViewUtils.onClick(root, R.id.btn_sync_now, v -> sync());
         // Ban va 03/08 (sua tiep): nhan giu nut Dong bo de xem chi tiet trang thai,
         // biet ngay dang vuong o dang nhap, mang hay moc thoi gian.
-        root.findViewById(R.id.btn_sync_now).setOnLongClickListener(v -> {
+        ViewUtils.onLongClick(root, R.id.btn_sync_now, v -> {
             showSyncStatus();
             return true;
         });
         // Ban va 03/08 (bo sung): duong xoa han ban sao luu tren cloud
-        root.findViewById(R.id.btn_delete_cloud).setOnClickListener(v -> deleteCloudBackup());
+        ViewUtils.onClick(root, R.id.btn_delete_cloud, v -> deleteCloudBackup());
 
         reload();
         return root;
@@ -264,7 +265,7 @@ public class SettingsFragment extends Fragment {
         container.removeAllViews();
 
         final List<Reminders.Item> list = Reminders.all(getContext());
-        root.findViewById(R.id.tv_no_reminder).setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+        ViewUtils.setVisibility(root, R.id.tv_no_reminder, list.isEmpty() ? View.VISIBLE : View.GONE);
 
         LayoutInflater inflater = LayoutInflater.from(getContext());
         for (int i = 0; i < list.size(); i++) {
@@ -406,7 +407,7 @@ public class SettingsFragment extends Fragment {
 
         final List<Categories.Item> list = Categories.all(getContext());
         text(R.id.tv_cat_count, list.size() + " m\u1ee5c");
-        root.findViewById(R.id.tv_no_category).setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+        ViewUtils.setVisibility(root, R.id.tv_no_category, list.isEmpty() ? View.VISIBLE : View.GONE);
         View scrollHint = root.findViewById(R.id.tv_cat_scroll_hint);
         if (scrollHint != null) scrollHint.setVisibility(list.size() > 5 ? View.VISIBLE : View.GONE);
 
@@ -447,7 +448,7 @@ public class SettingsFragment extends Fragment {
                     ? "\u0110\u00e3 chi " + Money.vnd(spent) + " trong k\u1ef3 n\u00e0y"
                     : "Ch\u01b0a d\u00f9ng trong k\u1ef3 n\u00e0y");
 
-            row.findViewById(R.id.box_cat_info).setOnClickListener(v -> editCategory(index));
+            ViewUtils.onClick(row, R.id.box_cat_info, v -> editCategory(index));
 
             View up = row.findViewById(R.id.btn_cat_up);
             View down = row.findViewById(R.id.btn_cat_down);
@@ -456,7 +457,7 @@ public class SettingsFragment extends Fragment {
             up.setOnClickListener(v -> moveCategory(index, -1));
             down.setOnClickListener(v -> moveCategory(index, 1));
 
-            row.findViewById(R.id.btn_cat_remove).setOnClickListener(v -> confirmDeleteCategory(index, spent));
+            ViewUtils.onClick(row, R.id.btn_cat_remove, v -> confirmDeleteCategory(index, spent));
             container.addView(row);
         }
     }
@@ -528,12 +529,12 @@ public class SettingsFragment extends Fragment {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
-        view.findViewById(R.id.btn_cat_cancel).setOnClickListener(v -> dialog.dismiss());
+        ViewUtils.onClick(view, R.id.btn_cat_cancel, v -> dialog.dismiss());
         delete.setOnClickListener(v -> {
             dialog.dismiss();
             confirmDeleteCategory(index, 0d);
         });
-        view.findViewById(R.id.btn_cat_save).setOnClickListener(v -> {
+        ViewUtils.onClick(view, R.id.btn_cat_save, v -> {
             String newName = name.getText().toString().trim();
             if (newName.isEmpty()) {
                 toast("Nh\u1eadp t\u00ean danh m\u1ee5c nh\u00e9");
@@ -677,37 +678,6 @@ public class SettingsFragment extends Fragment {
         }
     }
 
-//    /**
-//     * Sau khi \u0111\u0103ng nh\u1eadp: h\u1ecfi xem d\u00f9ng b\u1ea3n sao l\u01b0u tr\u00ean cloud hay \u0111\u1ea9y d\u1eef li\u1ec7u m\u00e1y l\u00ean.
-//     * Hai h\u01b0\u1edbng \u0111\u1ec1u ghi \u0111\u00e8 to\u00e0n b\u1ed9 n\u00ean lu\u00f4n \u0111\u1ec3 ng\u01b0\u1eddi d\u00f9ng ch\u1ecdn.
-//     */
-//    private void syncAfterSignIn() {
-//        if (getContext() == null) return;
-//        final Context app = getContext().getApplicationContext();
-//        final FirebaseSyncManager manager = new FirebaseSyncManager(app);
-//        manager.saveAccountProfile();
-//
-//        manager.loadInfo(info -> {
-//            if (!isAdded() || getContext() == null) return;
-//
-//            if (!info.exists || info.count <= 0) {
-//                // Cloud ch\u01b0a c\u00f3 g\u00ec: sao l\u01b0u d\u1eef li\u1ec7u m\u00e1y l\u00ean lu\u00f4n
-//                runBackup(manager);
-//                return;
-//            }
-//
-//            String when = android.text.format.DateFormat
-//                    .format("dd/MM/yyyy HH:mm", info.updatedAt).toString();
-//            new androidx.appcompat.app.AlertDialog.Builder(getContext())
-//                    .setTitle("T\u00e0i kho\u1ea3n n\u00e0y \u0111\u00e3 c\u00f3 b\u1ea3n sao l\u01b0u")
-//                    .setMessage("B\u1ea3n sao l\u01b0u l\u00fac " + when + " g\u1ed3m " + info.count
-//                            + " giao d\u1ecbch.\n\nD\u00f9ng b\u1ea3n n\u00e0y s\u1ebd xo\u00e1 d\u1eef li\u1ec7u \u0111ang c\u00f3 tr\u00ean m\u00e1y.")
-//                    .setPositiveButton("D\u00f9ng b\u1ea3n tr\u00ean cloud", (d, w) -> runRestore(manager))
-//                    .setNegativeButton("Gi\u1eef d\u1eef li\u1ec7u m\u00e1y", (d, w) -> runBackup(manager))
-//                    .setCancelable(false)
-//                    .show();
-//        });
-//    }
     /** Sau khi đăng nhập chỉ HỎI, không tự động đụng vào dữ liệu. */
     private void syncAfterSignIn() {
         if (getContext() == null) return;

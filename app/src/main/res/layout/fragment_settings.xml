@@ -7,8 +7,8 @@
     android:layout_height="match_parent"
     android:background="@color/cream">
 
-    <ScrollView 
-    
+    <ScrollView
+
     android:id="@+id/screen_settings"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -23,13 +23,12 @@
         android:paddingTop="8dp"
         android:paddingBottom="120dp">
 
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="8dp"
         android:text="Cài đặt"
-        android:textSize="26sp"
+        android:textSize="25sp"
         android:textStyle="bold"
         android:textColor="@color/dark_green" />
 
@@ -65,7 +64,7 @@
                     android:layout_weight="1"
                     android:layout_marginLeft="8dp"
                     android:text="Hồ sơ cá nhân"
-                    android:textSize="18sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="@color/dark_green" />
             </LinearLayout>
@@ -83,7 +82,7 @@
                     android:background="@drawable/bg_avatar_gradient"
                     android:elevation="3dp"
                     android:text="NL"
-                    android:textSize="22sp"
+                    android:textSize="21sp"
                     android:textStyle="bold"
                     android:textColor="@color/cream" />
 
@@ -98,7 +97,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Họ và tên"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textColor="@color/olive" />
 
                     <EditText
@@ -111,7 +110,7 @@
                         android:background="@drawable/bg_field_small"
                         android:hint="Họ tên"
                         android:textColorHint="@color/subtle_text"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="@color/dark_green" />
 
                     <TextView
@@ -119,7 +118,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="Ngân sách hàng tháng"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textColor="@color/olive" />
 
                     <EditText
@@ -132,7 +131,7 @@
                         android:hint="2.000.000"
                         android:inputType="number"
                         android:textColorHint="@color/subtle_text"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="@color/dark_green" />
                 </LinearLayout>
             </LinearLayout>
@@ -172,7 +171,7 @@
                     android:layout_weight="1"
                     android:layout_marginLeft="8dp"
                     android:text="Đồng bộ &amp; Sao lưu"
-                    android:textSize="18sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="@color/dark_green" />
             </LinearLayout>
@@ -212,7 +211,7 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:text="Chưa đăng nhập"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         android:textColor="@color/dark_green" />
 
@@ -224,7 +223,7 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:text="Đăng nhập Google để sao lưu chi tiêu và thiết lập"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textColor="@color/olive" />
 
                     <TextView
@@ -233,7 +232,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:text="Chưa sao lưu lần nào"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:textColor="@color/subtle_text" />
                 </LinearLayout>
 
@@ -247,7 +246,7 @@
                     android:paddingBottom="4dp"
                     android:background="@drawable/bg_badge_olive_light"
                     android:text="Chưa kết nối"
-                    android:textSize="13sp"
+                    android:textSize="12sp"
                     android:textColor="@color/olive" />
             </LinearLayout>
 
@@ -259,7 +258,7 @@
                 android:gravity="center"
                 android:background="@drawable/bg_burnt_button"
                 android:text="Đăng nhập bằng Google"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold"
                 android:textColor="@color/cream"
                 android:clickable="true"
@@ -280,7 +279,7 @@
                     android:padding="12dp"
                     android:background="@drawable/bg_field_small"
                     android:text="Sao lưu ngay"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="@color/olive"
                     android:clickable="true"
@@ -295,7 +294,7 @@
                     android:padding="12dp"
                     android:background="@drawable/bg_field_small"
                     android:text="Đồng bộ dữ liệu"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="@color/olive"
                     android:clickable="true"
@@ -320,7 +319,7 @@
                 android:padding="12dp"
                 android:text="Xóa bản sao lưu trên cloud"
                 android:textColor="@color/burnt"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
         </LinearLayout>
@@ -358,7 +357,7 @@
                     android:layout_weight="1"
                     android:layout_marginLeft="8dp"
                     android:text="Danh mục"
-                    android:textSize="18sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="@color/dark_green" />
 
@@ -369,7 +368,7 @@
                     android:layout_weight="1"
                     android:layout_marginLeft="8dp"
                     android:text="0 mục"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textColor="@color/olive" />
 
                 <FrameLayout
@@ -394,7 +393,7 @@
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="10dp"
                 android:text="Chạm vào tên để sửa · ↑ ↓ đổi thứ tự hiển thị · ✕ để xóa"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textColor="@color/subtle_text" />
 
             <ScrollView
@@ -418,7 +417,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:text="Cuộn trong khung để xem thêm danh mục"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textColor="@color/subtle_text"
                 android:visibility="gone" />
 
@@ -428,7 +427,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="Chưa có danh mục nào. Nhấn dấu + để thêm."
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textColor="@color/olive" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -465,7 +464,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="10dp"
                     android:text="Tùy chọn"
-                    android:textSize="18sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="@color/dark_green" />
             </LinearLayout>
@@ -480,7 +479,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Ngày chốt chu kỳ"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/olive" />
 
@@ -493,7 +492,7 @@
                     android:paddingLeft="12dp"
                     android:background="@drawable/bg_field"
                     android:text="--"
-                    android:textSize="17sp"
+                    android:textSize="16sp"
                     android:textColor="@color/dark_green"
                     android:clickable="true"
                     android:focusable="true" />
@@ -503,7 +502,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:text="Mọi số liệu được tính theo chu kỳ kết thúc vào ngày này."
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textColor="@color/olive" />
             </LinearLayout>
 
@@ -517,7 +516,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Ngưỡng chi tiêu"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/olive" />
 
@@ -530,7 +529,7 @@
                     android:paddingLeft="12dp"
                     android:background="@drawable/bg_field"
                     android:text="--"
-                    android:textSize="17sp"
+                    android:textSize="16sp"
                     android:textColor="@color/dark_green"
                     android:clickable="true"
                     android:focusable="true" />
@@ -540,7 +539,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:text="Vượt mức này sẽ hiện cảnh báo ở trang chủ."
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textColor="@color/olive" />
             </LinearLayout>
 
@@ -554,7 +553,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Mốc chi tiêu lớn"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/olive" />
 
@@ -567,7 +566,7 @@
                     android:paddingLeft="12dp"
                     android:background="@drawable/bg_field"
                     android:text="--"
-                    android:textSize="17sp"
+                    android:textSize="16sp"
                     android:textColor="@color/dark_green"
                     android:clickable="true"
                     android:focusable="true" />
@@ -577,7 +576,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:text="Giao dịch chiếm từ mức này trở lên sẽ được đánh dấu là khoản chi đáng chú ý."
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textColor="@color/olive" />
             </LinearLayout>
 
@@ -593,7 +592,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Nhắc ghi chú chi tiêu"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/olive" />
 
@@ -627,7 +626,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:text="Chưa có lời nhắc nào. Nhấn + để thêm giờ nhắc ghi chi tiêu."
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textColor="@color/olive" />
 
             <TextView
@@ -635,7 +634,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="Nhắc không hiện? Nhấn giữ nút + để kiểm tra quyền thông báo, báo thức và tối ưu pin."
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textColor="@color/grey_gold" />
 
             <TextView
@@ -647,7 +646,7 @@
                 android:paddingLeft="12dp"
                 android:background="@drawable/bg_field"
                 android:text="--"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textColor="@color/dark_green"
                 android:clickable="true"
                 android:focusable="true" />
@@ -657,7 +656,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:text="Mức đồng hồ hệ thống thì hệ thống không được hoãn lời nhắc. Cả hai chế độ đều không tốn pin khi chờ."
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textColor="@color/olive" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -681,7 +680,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="QuanLyChiTieu v2.1.0"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textColor="@color/olive"
                 android:layout_gravity="center_horizontal"
                 />
@@ -696,7 +695,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Điều khoản"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textColor="@color/olive"
                     android:clickable="true"
                     android:focusable="true" />
@@ -706,7 +705,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="16dp"
                     android:text="Quyền riêng tư"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textColor="@color/olive"
                     android:clickable="true"
                     android:focusable="true" />
@@ -716,7 +715,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="16dp"
                     android:text="Trợ giúp"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textColor="@color/olive"
                     android:clickable="true"
                     android:focusable="true" />

@@ -10,6 +10,7 @@ import android.widget.DatePicker;
 import android.widget.NumberPicker;
 
 import com.example.bmmoney.R;
+import com.example.bmmoney.util.ViewUtils;
 
 import java.util.Calendar;
 
@@ -60,8 +61,8 @@ public final class DateTimeDialog {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
-        view.findViewById(R.id.dt_cancel).setOnClickListener(v -> dialog.dismiss());
-        view.findViewById(R.id.dt_ok).setOnClickListener(v -> {
+        ViewUtils.onClick(view, R.id.dt_cancel, v -> dialog.dismiss());
+        ViewUtils.onClick(view, R.id.dt_ok, v -> {
             Calendar picked = Calendar.getInstance();
             picked.set(date.getYear(), date.getMonth(), date.getDayOfMonth(),
                     hour.getValue(), minute.getValue(), 0);

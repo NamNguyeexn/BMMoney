@@ -7,8 +7,8 @@
     android:layout_height="match_parent"
     android:background="@color/cream">
 
-    <ScrollView 
-    
+    <ScrollView
+
     android:id="@+id/screen_search"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -23,7 +23,6 @@
         android:paddingTop="8dp"
         android:paddingBottom="120dp">
 
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -36,7 +35,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Tìm kiếm &amp; Lọc"
-            android:textSize="26sp"
+            android:textSize="25sp"
             android:textStyle="bold"
             android:textColor="@color/dark_green" />
 
@@ -97,7 +96,7 @@
                     android:imeOptions="actionSearch"
                     android:singleLine="true"
                     android:textColorHint="@color/subtle_text"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textColor="@color/dark_green" />
 
             </FrameLayout>
@@ -123,7 +122,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Lọc nhanh"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:textColor="@color/dark_green"
                 android:textStyle="bold"
                 />
@@ -134,7 +133,7 @@
                 android:layout_marginTop="14dp"
                 android:text="Loại ghi chú"
                 android:textColor="@color/subtle_text"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <HorizontalScrollView
@@ -166,7 +165,7 @@
                         android:singleLine="true"
                         android:text="Chi"
                         android:textColor="@color/olive"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -185,7 +184,7 @@
                         android:singleLine="true"
                         android:text="Thu"
                         android:textColor="@color/olive"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -204,7 +203,7 @@
                         android:singleLine="true"
                         android:text="Cho vay"
                         android:textColor="@color/olive"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -223,7 +222,7 @@
                         android:singleLine="true"
                         android:text="&#272;i vay"
                         android:textColor="@color/olive"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -242,7 +241,7 @@
                         android:singleLine="true"
                         android:text="Tr&#7843; n&#7907; g&#7889;c"
                         android:textColor="@color/olive"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -261,7 +260,7 @@
                         android:singleLine="true"
                         android:text="Thu n&#7907; g&#7889;c"
                         android:textColor="@color/olive"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </HorizontalScrollView>
@@ -271,7 +270,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:text="Thời gian"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:textColor="@color/subtle_text" />
             <!-- Ban va 03/08. Hang loc thoi gian cung cho vuot ngang cho dong bo. -->
@@ -300,7 +299,7 @@
                     android:paddingBottom="8dp"
                     android:background="@drawable/bg_pill_cream"
                     android:text="Hôm nay"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textColor="@color/olive"
                     android:textStyle="bold"
                     android:clickable="true"
@@ -317,7 +316,7 @@
                     android:paddingBottom="8dp"
                     android:background="@drawable/bg_pill_cream"
                     android:text="Tuần này"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textColor="@color/olive"
                     android:textStyle="bold"
                     android:clickable="true"
@@ -334,7 +333,7 @@
                     android:paddingBottom="8dp"
                     android:background="@drawable/bg_pill_cream"
                     android:text="Tháng này"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textColor="@color/olive"
                     android:textStyle="bold"
                     android:clickable="true"
@@ -351,7 +350,7 @@
                     android:paddingBottom="8dp"
                     android:background="@drawable/bg_pill_cream"
                     android:text="Năm nay"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textColor="@color/olive"
                     android:textStyle="bold"
                     android:clickable="true"
@@ -363,7 +362,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:text="Danh mục"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:textColor="@color/subtle_text" />
             <HorizontalScrollView
@@ -381,7 +380,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:text="Giá trị"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:textColor="@color/subtle_text" />
             <LinearLayout
@@ -400,7 +399,7 @@
                 android:paddingBottom="8dp"
                 android:background="@drawable/bg_pill_cream"
                 android:text="Trên 100k"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textColor="@color/olive"
                 android:textStyle="bold"
                 android:clickable="true"
@@ -417,7 +416,7 @@
                 android:paddingBottom="8dp"
                 android:background="@drawable/bg_pill_cream"
                 android:text="Đáng chú ý"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textColor="@color/olive"
                 android:textStyle="bold"
                 android:clickable="true"
@@ -439,10 +438,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="8 kết quả"
-            android:textSize="18sp"
+            android:textSize="17sp"
             android:textStyle="bold"
             android:textColor="@color/dark_green" />
-
 
         <View
             android:layout_width="0dp"
@@ -487,7 +485,7 @@
         android:padding="20dp"
         android:background="@drawable/bg_field"
         android:text="Không tìm thấy giao dịch phù hợp"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:textColor="@color/olive"
         android:visibility="gone" />
 
@@ -500,7 +498,7 @@
         android:layout_marginTop="12dp"
         android:gravity="center"
         android:text="Đang xem 20 trên 42"
-        android:textSize="14sp"
+        android:textSize="13sp"
         android:textColor="@color/grey_gold"
         android:visibility="gone" />
 
@@ -514,7 +512,7 @@
         android:gravity="center"
         android:background="@drawable/bg_pill_cream"
         android:text="Tải thêm"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:textColor="@color/olive"
         android:textStyle="bold"
         android:clickable="true"
@@ -546,7 +544,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="Tổng chi tiêu"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textColor="@color/olive"
                 android:textStyle="bold"
                 android:layout_weight="1"
@@ -556,7 +554,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="-230.000 ₫"
-                android:textSize="22sp"
+                android:textSize="21sp"
                 android:textColor="@color/dark_green"
                 android:textStyle="bold"
                 />
@@ -567,7 +565,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="8 giao dịch tháng này"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textColor="@color/olive"
                 />
 

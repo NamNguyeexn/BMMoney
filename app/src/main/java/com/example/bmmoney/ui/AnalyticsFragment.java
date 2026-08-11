@@ -104,8 +104,8 @@ public class AnalyticsFragment extends Fragment {
 
         refresh = Refresh.setup(root, R.id.refresh_analytics, this::reloadByUser);
 
-        root.findViewById(R.id.btn_period_month).setOnClickListener(v -> setMode(false));
-        root.findViewById(R.id.btn_period_year).setOnClickListener(v -> setMode(true));
+        ViewUtils.onClick(root, R.id.btn_period_month, v -> setMode(false));
+        ViewUtils.onClick(root, R.id.btn_period_year, v -> setMode(true));
         applyModeStyle();
         return root;
     }

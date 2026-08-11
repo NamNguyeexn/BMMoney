@@ -10,6 +10,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.example.bmmoney.R;
+import com.example.bmmoney.util.ViewUtils;
 
 import java.util.List;
 
@@ -53,7 +54,7 @@ public final class SelectDialog {
             container.addView(row);
         }
 
-        view.findViewById(R.id.btn_select_cancel).setOnClickListener(v -> dialog.dismiss());
+        ViewUtils.onClick(view, R.id.btn_select_cancel, v -> dialog.dismiss());
         dialog.show();
     }
 }

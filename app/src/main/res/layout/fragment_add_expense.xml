@@ -59,7 +59,7 @@
                     android:layout_weight="1"
                     android:text="Thêm ghi chú"
                     android:textColor="@color/dark_green"
-                    android:textSize="26sp"
+                    android:textSize="25sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -102,7 +102,7 @@
                             android:padding="10dp"
                             android:text="💸 Chi tiêu"
                             android:textColor="@color/cream"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -119,7 +119,7 @@
                             android:padding="10dp"
                             android:text="💰 Thu nhập"
                             android:textColor="@color/olive"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
@@ -143,7 +143,7 @@
                             android:padding="10dp"
                             android:text="↩ Đi vay"
                             android:textColor="@color/olive"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -160,7 +160,7 @@
                             android:padding="10dp"
                             android:text="↗ Cho vay"
                             android:textColor="@color/olive"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
@@ -184,7 +184,7 @@
                             android:padding="10dp"
                             android:text="↪ Trả nợ"
                             android:textColor="@color/olive"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -201,7 +201,7 @@
                             android:padding="10dp"
                             android:text="↙ Thu hồi nợ"
                             android:textColor="@color/olive"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
@@ -214,7 +214,7 @@
                         android:padding="10dp"
                         android:text="Khoản này trừ vào ngân sách chi tiêu của kỳ."
                         android:textColor="@color/olive"
-                        android:textSize="14sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -240,7 +240,7 @@
                         android:layout_height="wrap_content"
                         android:text="Số tiền"
                         android:textColor="@color/subtle_text"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
 
                     <EditText
@@ -255,7 +255,7 @@
                         android:padding="16dp"
                         android:textColor="@color/dark_green"
                         android:textColorHint="@color/subtle_text"
-                        android:textSize="30sp"
+                        android:textSize="29sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -290,7 +290,7 @@
                             android:layout_height="wrap_content"
                             android:text="Ai vay"
                             android:textColor="@color/subtle_text"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <EditText
@@ -306,7 +306,7 @@
                             android:singleLine="true"
                             android:textColor="@color/dark_green"
                             android:textColorHint="@color/subtle_text"
-                            android:textSize="17sp" />
+                            android:textSize="16sp" />
                     </LinearLayout>
 
                     <!-- Mo ta : chi hien o chi tieu va thu nhap -->
@@ -321,7 +321,7 @@
                             android:layout_height="wrap_content"
                             android:text="Mô tả"
                             android:textColor="@color/subtle_text"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <EditText
@@ -337,28 +337,18 @@
                             android:singleLine="true"
                             android:textColor="@color/dark_green"
                             android:textColorHint="@color/subtle_text"
-                            android:textSize="17sp" />
+                            android:textSize="16sp" />
                     </LinearLayout>
 
                     <!-- Danh muc chi tieu -->
 <!--                    <LinearLayout-->
-<!--                        android:id="@+id/box_category"-->
-<!--                        android:layout_width="match_parent"-->
-<!--                        android:layout_height="wrap_content"-->
 <!--                        android:orientation="vertical">-->
 
 <!--                        <TextView-->
-<!--                            android:layout_width="wrap_content"-->
-<!--                            android:layout_height="wrap_content"-->
-<!--                            android:text="Danh mục"-->
 <!--                            android:textColor="@color/subtle_text"-->
-<!--                            android:textSize="14sp"-->
 <!--                            android:textStyle="bold" />-->
 
 <!--                        <LinearLayout-->
-<!--                            android:id="@+id/container_cats"-->
-<!--                            android:layout_width="match_parent"-->
-<!--                            android:layout_height="wrap_content"-->
 <!--                            android:layout_marginTop="8dp"-->
 <!--                            android:layout_marginBottom="16dp"-->
 <!--                            android:orientation="vertical" />-->
@@ -376,9 +366,8 @@
                             android:layout_height="wrap_content"
                             android:text="Danh mục"
                             android:textColor="@color/subtle_text"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
-
 
                         <TextView
                             android:id="@+id/container_cats"
@@ -391,29 +380,19 @@
                             android:padding="14dp"
                             android:text="Chọn danh mục"
                             android:textColor="@color/dark_green"
-                            android:textSize="17sp" />
+                            android:textSize="16sp" />
                     </LinearLayout>
 
                     <!-- Nguon thu nhap -->
 <!--                    <LinearLayout-->
-<!--                        android:id="@+id/box_income_method"-->
-<!--                        android:layout_width="match_parent"-->
-<!--                        android:layout_height="wrap_content"-->
 <!--                        android:orientation="vertical"-->
 <!--                        android:visibility="gone">-->
 
 <!--                        <TextView-->
-<!--                            android:layout_width="wrap_content"-->
-<!--                            android:layout_height="wrap_content"-->
-<!--                            android:text="Nguồn thu"-->
 <!--                            android:textColor="@color/subtle_text"-->
-<!--                            android:textSize="14sp"-->
 <!--                            android:textStyle="bold" />-->
 
 <!--                        <LinearLayout-->
-<!--                            android:id="@+id/container_methods"-->
-<!--                            android:layout_width="match_parent"-->
-<!--                            android:layout_height="wrap_content"-->
 <!--                            android:layout_marginTop="8dp"-->
 <!--                            android:layout_marginBottom="16dp"-->
 <!--                            android:orientation="vertical" />-->
@@ -430,9 +409,8 @@
                             android:layout_height="wrap_content"
                             android:text="Nguồn thu"
                             android:textColor="@color/subtle_text"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
-
 
                         <TextView
                             android:id="@+id/container_methods"
@@ -445,7 +423,7 @@
                             android:padding="14dp"
                             android:text="Chọn nguồn thu"
                             android:textColor="@color/dark_green"
-                            android:textSize="17sp" />
+                            android:textSize="16sp" />
                     </LinearLayout>
 
                     <!-- Thoi diem ghi nhan -->
@@ -455,7 +433,7 @@
                         android:layout_height="wrap_content"
                         android:text="Thời gian"
                         android:textColor="@color/subtle_text"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -469,7 +447,7 @@
                         android:padding="14dp"
                         android:text="01/01/2025 08:00"
                         android:textColor="@color/dark_green"
-                        android:textSize="17sp" />
+                        android:textSize="16sp" />
 
                     <!-- Ban va 03/08: chon khoan vay goc can tru bot.
                          Chi hien khi ghi Tra no goc hoac Thu hoi no goc. -->
@@ -487,7 +465,7 @@
                             android:layout_height="wrap_content"
                             android:text="Trả cho khoản vay nào"
                             android:textColor="@color/subtle_text"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -501,7 +479,7 @@
                             android:padding="14dp"
                             android:text="Chưa chọn khoản gốc"
                             android:textColor="@color/dark_green"
-                            android:textSize="17sp" />
+                            android:textSize="16sp" />
                     </LinearLayout>
 
                     <!-- Han doi / han phai tra -->
@@ -519,7 +497,7 @@
                             android:layout_height="wrap_content"
                             android:text="Thời hạn người đó vay"
                             android:textColor="@color/subtle_text"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -533,7 +511,7 @@
                             android:padding="14dp"
                             android:text="Chưa đặt thời hạn"
                             android:textColor="@color/dark_green"
-                            android:textSize="17sp" />
+                            android:textSize="16sp" />
                     </LinearLayout>
 
                     <!-- Phuong thuc thanh toan -->
@@ -549,7 +527,7 @@
                             android:layout_height="wrap_content"
                             android:text="Thanh toán"
                             android:textColor="@color/subtle_text"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -563,7 +541,7 @@
                             android:padding="14dp"
                             android:text="🏦 Chuyển khoản"
                             android:textColor="@color/dark_green"
-                            android:textSize="17sp" />
+                            android:textSize="16sp" />
                     </LinearLayout>
 
                     <!-- Ghi chu them -->
@@ -579,7 +557,7 @@
                             android:layout_height="wrap_content"
                             android:text="Ghi chú"
                             android:textColor="@color/subtle_text"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
 
                         <EditText
@@ -595,7 +573,7 @@
                             android:padding="14dp"
                             android:textColor="@color/dark_green"
                             android:textColorHint="@color/subtle_text"
-                            android:textSize="17sp" />
+                            android:textSize="16sp" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -612,7 +590,7 @@
                 android:padding="16dp"
                 android:text="Lưu ghi chú"
                 android:textColor="@color/cream"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </ScrollView>

@@ -11,6 +11,7 @@ import android.widget.NumberPicker;
 
 import com.example.bmmoney.R;
 import com.example.bmmoney.util.Prefs;
+import com.example.bmmoney.util.ViewUtils;
 
 import java.util.Calendar;
 
@@ -61,7 +62,7 @@ public final class WelcomeDialog {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
-        view.findViewById(R.id.btn_welcome_start).setOnClickListener(v -> {
+        ViewUtils.onClick(view, R.id.btn_welcome_start, v -> {
             // Dien o nao thi luu o do. Khong o nao bat buoc.
             String userName = name.getText().toString().trim();
             Prefs.setUserName(context, userName.isEmpty() ? "b\u1ea1n" : userName);

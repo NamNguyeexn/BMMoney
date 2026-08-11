@@ -7,8 +7,8 @@
     android:layout_height="match_parent"
     android:background="@color/cream">
 
-    <ScrollView 
-    
+    <ScrollView
+
     android:id="@+id/screen_dashboard"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -22,7 +22,6 @@
         android:padding="16dp"
         android:paddingTop="8dp"
         android:paddingBottom="120dp">
-
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -42,7 +41,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Xin chào, Linh! \uD83D\uDC4B"
-                android:textSize="26sp"
+                android:textSize="25sp"
                 android:textStyle="bold"
                 android:textColor="@color/dark_green" />
 
@@ -50,7 +49,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Duy trì thói quen ghi lại chi tiêu rất tốt !!"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textColor="@color/olive" />
         </LinearLayout>
 
@@ -101,7 +100,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Tổng chi tiêu tháng này"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textColor="@color/subtle_text"
                 />
             <TextView
@@ -110,7 +109,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="65.481.000 ₫"
-                android:textSize="32sp"
+                android:textSize="31sp"
                 android:textColor="@color/cream"
                 android:textStyle="bold"
                 />
@@ -140,17 +139,12 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="Ngân sách: 80.500.000 ₫"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textColor="@color/subtle_text"
                 android:layout_weight="1"
                 />
 <!--            <TextView-->
-<!--                android:id="@+id/tv_income_line"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
 <!--                android:layout_marginRight="12dp"-->
-<!--                android:text="Thu: 0 ₫"-->
-<!--                android:textSize="15sp"-->
 <!--                android:textColor="@color/olive"-->
 <!--                />-->
             <TextView
@@ -158,7 +152,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Còn lại: 15.019.000 ₫"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textColor="@color/subtle_text"
                 />
                 <TextView
@@ -171,7 +165,7 @@
                     android:gravity="center"
                     android:includeFontPadding="false"
                     android:textColor="@color/sandy"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
             <FrameLayout
@@ -198,7 +192,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="81.3% đã dùng"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textColor="@color/subtle_text"
                 android:layout_weight="1"
                 />
@@ -209,7 +203,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Còn 9 ngày"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textColor="@color/subtle_text"
                 />
             </LinearLayout>
@@ -224,7 +218,7 @@
                 android:paddingBottom="6dp"
                 android:background="@drawable/bg_badge_warning"
                 android:text="Bạn đang vượt mức chi tiêu kỳ này"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:textColor="@color/cream"
                 android:visibility="gone" />
@@ -256,7 +250,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="Chi tiêu theo danh mục"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:textColor="@color/dark_green"
                 android:textStyle="bold"
                 android:layout_weight="1"
@@ -266,7 +260,7 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/tv_period_range"
                 android:text="--"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textColor="@color/olive"
                 android:background="@drawable/bg_badge_cream"
                 android:paddingLeft="8dp"
@@ -310,7 +304,7 @@
                         android:layout_weight="1"
                         android:layout_marginLeft="8dp"
                         android:text="Ăn uống"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="@color/olive" />
 
                     <TextView
@@ -318,7 +312,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="40%"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textColor="@color/grey_gold" />
 
                     <TextView
@@ -327,7 +321,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="8dp"
                         android:text="26.500.000 ₫"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         android:gravity="right"
                         android:textColor="@color/dark_green" />
@@ -370,7 +364,7 @@
                         android:layout_weight="1"
                         android:layout_marginLeft="8dp"
                         android:text="Di chuyển"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="@color/olive" />
 
                     <TextView
@@ -378,7 +372,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="24%"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textColor="@color/grey_gold" />
 
                     <TextView
@@ -387,7 +381,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="8dp"
                         android:text="15.650.000 ₫"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         android:gravity="right"
                         android:textColor="@color/dark_green" />
@@ -430,7 +424,7 @@
                         android:layout_weight="1"
                         android:layout_marginLeft="8dp"
                         android:text="Hóa đơn"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="@color/olive" />
 
                     <TextView
@@ -438,7 +432,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="18%"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textColor="@color/grey_gold" />
 
                     <TextView
@@ -447,7 +441,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="8dp"
                         android:text="11.980.000 ₫"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         android:gravity="right"
                         android:textColor="@color/dark_green" />
@@ -490,7 +484,7 @@
                         android:layout_weight="1"
                         android:layout_marginLeft="8dp"
                         android:text="Mua sắm"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="@color/olive" />
 
                     <TextView
@@ -498,7 +492,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="12%"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textColor="@color/grey_gold" />
 
                     <TextView
@@ -507,7 +501,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="8dp"
                         android:text="8.060.000 ₫"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         android:gravity="right"
                         android:textColor="@color/dark_green" />
@@ -550,7 +544,7 @@
                         android:layout_weight="1"
                         android:layout_marginLeft="8dp"
                         android:text="Khác"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="@color/olive" />
 
                     <TextView
@@ -558,7 +552,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="6%"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textColor="@color/grey_gold" />
 
                     <TextView
@@ -567,7 +561,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="8dp"
                         android:text="3.381.000 ₫"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         android:gravity="right"
                         android:textColor="@color/dark_green" />
@@ -623,7 +617,7 @@
                     android:layout_height="wrap_content"
                     android:text="Giá trị ròng"
                     android:textColor="@color/subtle_text"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -636,7 +630,7 @@
                     android:gravity="center"
                     android:includeFontPadding="false"
                     android:textColor="@color/burnt"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -647,7 +641,7 @@
                 android:layout_marginTop="4dp"
                 android:text="0 ₫"
                 android:textColor="@color/dark_green"
-                android:textSize="28sp"
+                android:textSize="27sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -658,7 +652,7 @@
                 android:layout_marginTop="4dp"
                 android:text="Tiền trong ví + phải thu − phải trả"
                 android:textColor="@color/olive"
-                android:textSize="13sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/btn_balance"
@@ -674,7 +668,7 @@
                 android:paddingBottom="8dp"
                 android:text="⚖ Cân bằng số dư"
                 android:textColor="@color/cream"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <View
@@ -700,7 +694,7 @@
                         android:layout_height="wrap_content"
                         android:text="Tiền trong ví"
                         android:textColor="@color/subtle_text"
-                        android:textSize="13sp" />
+                        android:textSize="12sp" />
 
                     <TextView
                         android:id="@+id/tv_wallet_balance"
@@ -709,7 +703,7 @@
                         android:layout_marginTop="2dp"
                         android:text="0 ₫"
                         android:textColor="@color/dark_green"
-                        android:textSize="18sp"
+                        android:textSize="17sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -724,7 +718,7 @@
                         android:layout_height="wrap_content"
                         android:text="Lãi lỗ kỳ này"
                         android:textColor="@color/subtle_text"
-                        android:textSize="13sp" />
+                        android:textSize="12sp" />
 
                     <TextView
                         android:id="@+id/tv_net_profit"
@@ -733,7 +727,7 @@
                         android:layout_marginTop="2dp"
                         android:text="0 ₫"
                         android:textColor="@color/net_positive"
-                        android:textSize="18sp"
+                        android:textSize="17sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -785,7 +779,7 @@
                     android:layout_marginTop="12dp"
                     android:text="Phải thu (cho vay)"
                     android:textColor="@color/olive"
-                    android:textSize="14sp" />
+                    android:textSize="13sp" />
 
                 <TextView
                     android:id="@+id/tv_lend_total"
@@ -795,7 +789,7 @@
                     android:layout_marginTop="2dp"
                     android:text="0 ₫"
                     android:textColor="@color/sandy"
-                    android:textSize="17sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -806,7 +800,7 @@
                     android:layout_marginTop="2dp"
                     android:text="Còn phải thu 0 ₫"
                     android:textColor="@color/subtle_text"
-                    android:textSize="13sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -849,7 +843,7 @@
                     android:layout_marginTop="12dp"
                     android:text="Phải trả (đi vay)"
                     android:textColor="@color/olive"
-                    android:textSize="14sp" />
+                    android:textSize="13sp" />
 
                 <TextView
                     android:id="@+id/tv_debt_total"
@@ -859,7 +853,7 @@
                     android:layout_marginTop="2dp"
                     android:text="0 ₫"
                     android:textColor="@color/dark_green"
-                    android:textSize="17sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -870,7 +864,7 @@
                     android:layout_marginTop="2dp"
                     android:text="Còn phải trả 0 ₫"
                     android:textColor="@color/subtle_text"
-                    android:textSize="13sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
@@ -899,7 +893,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="Giao dịch gần đây"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:textColor="@color/dark_green"
                 android:textStyle="bold"
                 android:layout_weight="1"
@@ -909,7 +903,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Xem tất cả"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textColor="@color/burnt"
                 android:textStyle="bold"
                 android:clickable="true"
@@ -933,7 +927,7 @@
                 android:padding="16dp"
                 android:background="@drawable/bg_field"
                 android:text="Chưa có giao dịch nào. Hãy thêm chi tiêu đầu tiên!"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textColor="@color/olive"
                 android:visibility="gone" />
         </LinearLayout>
@@ -987,7 +981,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="So tháng trước"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textColor="@color/olive" />
 
                 <TextView
@@ -1000,7 +994,7 @@
                     android:gravity="center"
                     android:includeFontPadding="false"
                     android:textColor="@color/burnt"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
             <TextView
@@ -1009,7 +1003,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="+8.5%"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textColor="@color/burnt"
                 android:textStyle="bold"
                 android:layout_gravity="center_horizontal"
@@ -1053,7 +1047,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="Ngày còn lại"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textColor="@color/olive"
                 android:layout_gravity="center_horizontal"
                 />
@@ -1063,7 +1057,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="9 ngày"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textColor="@color/dark_green"
                 android:textStyle="bold"
                 android:layout_gravity="center_horizontal"

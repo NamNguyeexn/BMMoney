@@ -38,7 +38,7 @@
                 android:layout_marginTop="8dp"
                 android:text="Lịch"
                 android:textColor="@color/dark_green"
-                android:textSize="26sp"
+                android:textSize="25sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -47,7 +47,7 @@
                 android:layout_marginTop="2dp"
                 android:text="Nhịp độ tài chính theo từng ngày"
                 android:textColor="@color/olive"
-                android:textSize="15sp" />
+                android:textSize="14sp" />
 
             <!-- ============================ The lich ============================ -->
             <com.google.android.material.card.MaterialCardView
@@ -92,7 +92,7 @@
                             android:gravity="center"
                             android:text="Tháng 8/2026"
                             android:textColor="@color/dark_green"
-                            android:textSize="18sp"
+                            android:textSize="17sp"
                             android:textStyle="bold" />
 
                         <ImageView
@@ -117,7 +117,7 @@
                         android:gravity="center"
                         android:text=""
                         android:textColor="@color/olive"
-                        android:textSize="14sp" />
+                        android:textSize="13sp" />
 
                     <!-- Hang thu trong tuan -->
                     <LinearLayout
@@ -182,7 +182,7 @@
                             android:layout_marginLeft="6dp"
                             android:text="Vượt mốc"
                             android:textColor="@color/olive"
-                            android:textSize="13sp" />
+                            android:textSize="12sp" />
 
                         <View
                             android:layout_width="6dp"
@@ -196,7 +196,7 @@
                             android:layout_marginLeft="6dp"
                             android:text="Đạt 50% mốc"
                             android:textColor="@color/olive"
-                            android:textSize="13sp" />
+                            android:textSize="12sp" />
 
                         <View
                             android:layout_width="6dp"
@@ -210,7 +210,7 @@
                             android:layout_marginLeft="6dp"
                             android:text="Có giao dịch"
                             android:textColor="@color/olive"
-                            android:textSize="13sp" />
+                            android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -244,7 +244,7 @@
                             android:layout_weight="1"
                             android:text="Ngày 01/08/2026"
                             android:textColor="@color/dark_green"
-                            android:textSize="18sp"
+                            android:textSize="17sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -258,7 +258,7 @@
                             android:paddingBottom="4dp"
                             android:text="0 bản ghi"
                             android:textColor="@color/olive"
-                            android:textSize="14sp" />
+                            android:textSize="13sp" />
                     </LinearLayout>
 
                     <TextView
@@ -268,7 +268,7 @@
                         android:layout_marginTop="4dp"
                         android:text=""
                         android:textColor="@color/olive"
-                        android:textSize="14sp" />
+                        android:textSize="13sp" />
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recycler_day"
@@ -286,7 +286,7 @@
                         android:padding="16dp"
                         android:text="Ngày này không có bản ghi nào"
                         android:textColor="@color/subtle_text"
-                        android:textSize="15sp" />
+                        android:textSize="14sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

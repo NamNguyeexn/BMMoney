@@ -10,6 +10,7 @@ import android.widget.NumberPicker;
 import android.widget.TextView;
 
 import com.example.bmmoney.R;
+import com.example.bmmoney.util.ViewUtils;
 
 /** Popup ch\u1ec9nh m\u1ed9t gi\u00e1 tr\u1ecb ph\u1ea7n tr\u0103m (ng\u01b0\u1ee1ng chi ti\u00eau, m\u1ed1c chi ti\u00eau l\u1edbn). */
 public final class PercentDialog {
@@ -46,8 +47,8 @@ public final class PercentDialog {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
-        view.findViewById(R.id.btn_percent_cancel).setOnClickListener(v -> dialog.dismiss());
-        view.findViewById(R.id.btn_percent_save).setOnClickListener(v -> {
+        ViewUtils.onClick(view, R.id.btn_percent_cancel, v -> dialog.dismiss());
+        ViewUtils.onClick(view, R.id.btn_percent_save, v -> {
             picker.clearFocus();
             dialog.dismiss();
             if (callback != null) callback.onPicked(picker.getValue());

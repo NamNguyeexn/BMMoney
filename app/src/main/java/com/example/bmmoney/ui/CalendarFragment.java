@@ -25,6 +25,7 @@ import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Prefs;
 import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Stats;
+import com.example.bmmoney.util.ViewUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -101,8 +102,8 @@ public class CalendarFragment extends Fragment {
 
         refresh = Refresh.setup(root, R.id.refresh_calendar, this::reload);
 
-        root.findViewById(R.id.btn_prev_month).setOnClickListener(v -> shiftMonth(-1));
-        root.findViewById(R.id.btn_next_month).setOnClickListener(v -> shiftMonth(1));
+        ViewUtils.onClick(root, R.id.btn_prev_month, v -> shiftMonth(-1));
+        ViewUtils.onClick(root, R.id.btn_next_month, v -> shiftMonth(1));
 
         return root;
     }
@@ -290,8 +291,8 @@ public class CalendarFragment extends Fragment {
         if (adapter != null) adapter.setTransactions(data.dayItems);
 
         boolean empty = data.dayItems.isEmpty();
-        root.findViewById(R.id.tv_empty_day).setVisibility(empty ? View.VISIBLE : View.GONE);
-        root.findViewById(R.id.recycler_day).setVisibility(empty ? View.GONE : View.VISIBLE);
+        ViewUtils.setVisibility(root, R.id.tv_empty_day, empty ? View.VISIBLE : View.GONE);
+        ViewUtils.setVisibility(root, R.id.recycler_day, empty ? View.GONE : View.VISIBLE);
     }
 
     private static long startOfToday() {
