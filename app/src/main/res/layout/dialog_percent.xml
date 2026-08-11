@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ban va 11/08. Chinh mot nguong phan tram.
+
+  Truoc day o day la mot NumberPicker: muon di tu 10% len 180% phai vuot banh xe
+  hang chuc lan. Nay go thang bang BAN PHIM SO, banh xe bi bo han. Hai nut +/- ben
+  canh de danh cho viec chinh nhe mot vai bac.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -24,11 +31,84 @@
         android:textSize="13sp"
         android:textColor="@color/olive" />
 
-    <NumberPicker
-        android:id="@+id/np_percent"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp" />
+        android:layout_marginTop="14dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_percent_minus"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_pill_cream"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="−"
+            android:textColor="@color/olive"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_field"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/edt_percent"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="@null"
+                android:gravity="center"
+                android:imeOptions="actionDone"
+                android:inputType="number"
+                android:maxLength="3"
+                android:minWidth="56dp"
+                android:text="80"
+                android:textColor="@color/dark_green"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:selectAllOnFocus="true"
+                android:contentDescription="Nhập phần trăm" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="%"
+                android:textColor="@color/olive"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btn_percent_plus"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_pill_cream"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="+"
+            android:textColor="@color/olive"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_percent_range"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="--"
+        android:textSize="12sp"
+        android:textColor="@color/grey_gold" />
 
     <LinearLayout
         android:layout_width="match_parent"

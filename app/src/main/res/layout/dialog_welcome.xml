@@ -19,14 +19,14 @@
             android:textStyle="bold"
             android:textColor="@color/dark_green" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="Để trống dòng nào thì app dùng mặc định dòng đó. Sửa lại bất cứ lúc nào trong Cài đặt."
-            android:textSize="14sp"
-            android:lineSpacingExtra="2dp"
-            android:textColor="@color/olive" />
+<!--        <TextView-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginTop="6dp"-->
+<!--            android:text="Để trống dòng nào thì app dùng mặc định dòng đó. Sửa lại bất cứ lúc nào trong Cài đặt."-->
+<!--            android:textSize="14sp"-->
+<!--            android:lineSpacingExtra="2dp"-->
+<!--            android:textColor="@color/olive" />-->
 
         <EditText
             android:id="@+id/edt_welcome_name"
@@ -51,7 +51,7 @@
             android:paddingLeft="12dp"
             android:paddingRight="12dp"
             android:background="@drawable/bg_field"
-            android:hint="Ngân sách tháng — mặc định 80.500.000"
+            android:hint="Ngân sách tháng (2.000.000)"
             android:inputType="number"
             android:maxLength="12"
             android:textSize="16sp"
@@ -67,7 +67,7 @@
             android:textStyle="bold"
             android:textColor="@color/dark_green" />
 
-        <LinearLayout
+         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"

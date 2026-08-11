@@ -588,7 +588,7 @@
                 android:focusable="true"
                 android:gravity="center"
                 android:padding="16dp"
-                android:text="Lưu ghi chú"
+                android:text="Lưu"
                 android:textColor="@color/cream"
                 android:textSize="17sp"
                 android:textStyle="bold" />

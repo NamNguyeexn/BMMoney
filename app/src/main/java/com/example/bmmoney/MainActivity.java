@@ -38,22 +38,37 @@ public class MainActivity extends AppCompatActivity {
     public static final int TAB_SEARCH = 4;
     public static final int TAB_SETTINGS = 5;
 
-    // Nam mang duoi day phai cung thu tu voi cac hang so TAB_* o tren
+    /**
+     * THANH DIEU HUONG CHI CO NAM MUC.
+     *
+     * <p>Muc "Them" da bi go khoi thanh duoi (nguoi dung them khoan bang nut + o dau
+     * man Trang chu). Cac mang duoi day PHAI khop chinh xac voi
+     * {@code view_bottom_nav.xml}: truoc day chung van con giu {@code nav_add}, ma id
+     * do khong con ton tai trong bo cuc nen thu tu bi lech mot bac - bam "Lich" lai mo
+     * man Them, va man Trang chu khong duoc nap lai dung luc.</p>
+     *
+     * <p>{@link #NAV_TABS} noi tung o tren thanh voi hang so TAB_* tuong ung, nen sau
+     * nay them hay bot mot muc chi phai sua mang nay chu khong dung toi cac hang so.</p>
+     */
     private static final int[] NAV_IDS = {
-            R.id.nav_home, R.id.nav_add, R.id.nav_calendar,
+            R.id.nav_home, R.id.nav_calendar,
             R.id.nav_analytics, R.id.nav_search, R.id.nav_settings};
     private static final int[] PILL_IDS = {
-            R.id.nav_home_pill, R.id.nav_add_pill, R.id.nav_calendar_pill,
+            R.id.nav_home_pill, R.id.nav_calendar_pill,
             R.id.nav_analytics_pill, R.id.nav_search_pill, R.id.nav_settings_pill};
     private static final int[] ICON_IDS = {
-            R.id.nav_home_icon, R.id.nav_add_icon, R.id.nav_calendar_icon,
+            R.id.nav_home_icon, R.id.nav_calendar_icon,
             R.id.nav_analytics_icon, R.id.nav_search_icon, R.id.nav_settings_icon};
     private static final int[] LABEL_IDS = {
-            R.id.nav_home_label, R.id.nav_add_label, R.id.nav_calendar_label,
+            R.id.nav_home_label, R.id.nav_calendar_label,
             R.id.nav_analytics_label, R.id.nav_search_label, R.id.nav_settings_label};
     private static final int[] DOT_IDS = {
-            R.id.nav_home_dot, R.id.nav_add_dot, R.id.nav_calendar_dot,
+            R.id.nav_home_dot, R.id.nav_calendar_dot,
             R.id.nav_analytics_dot, R.id.nav_search_dot, R.id.nav_settings_dot};
+
+    /** Man hinh ma tung o tren thanh dieu huong se mo. */
+    private static final int[] NAV_TABS = {
+            TAB_HOME, TAB_CALENDAR, TAB_ANALYTICS, TAB_SEARCH, TAB_SETTINGS};
 
     private int current = -1;
     /** Chỉ sao lưu tối đa một lần cho mỗi phiên mở app. */
@@ -65,11 +80,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         for (int i = 0; i < NAV_IDS.length; i++) {
-            final int index = i;
-            findViewById(NAV_IDS[i]).setOnClickListener(new View.OnClickListener() {
+            final int tab = NAV_TABS[i];
+            View item = findViewById(NAV_IDS[i]);
+            if (item == null) continue;
+            item.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    showTab(index);
+                    showTab(tab);
                 }
             });
         }
@@ -135,9 +152,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /** Chuyen man hinh + cap nhat trang thai thanh dieu huong. */
+    /**
+     * Chuyen man hinh + cap nhat trang thai thanh dieu huong.
+     *
+     * <p>Bam lai dung o dang mo: khong dung lai nua ma NAP LAI man do. Truoc day ham
+     * tra ve ngay, nen sau khi luu mot khoan chi va quay ve Trang chu (cung mot tab)
+     * thi man hinh giu nguyen so lieu cu - giao dich vua them khong hien ra.</p>
+     */
     public void showTab(int index) {
-        if (current == index) return;
+        if (current == index) {
+            refreshCurrentTab();
+            return;
+        }
         current = index;
 
         Fragment fragment;
@@ -159,23 +185,29 @@ public class MainActivity extends AppCompatActivity {
         int inactiveColor = Color.parseColor("#80606C38");
 
         for (int i = 0; i < NAV_IDS.length; i++) {
-            boolean active = i == index;
+            // Man Them khong co o rieng tren thanh: luc do sang o Trang chu, vi day la
+            // noi nguoi dung se quay ve ngay sau khi luu.
+            boolean active = NAV_TABS[i] == index
+                    || (index == TAB_ADD && NAV_TABS[i] == TAB_HOME);
+
             View pill = findViewById(PILL_IDS[i]);
-            pill.setBackgroundResource(active ? R.drawable.bg_nav_pill : 0);
+            if (pill != null) {
+                pill.setBackgroundResource(active ? R.drawable.bg_nav_pill : 0);
+                if (active) {
+                    pill.setScaleX(0.9f);
+                    pill.setScaleY(0.9f);
+                    pill.animate().scaleX(1f).scaleY(1f).setDuration(220).start();
+                }
+            }
 
             ImageView icon = findViewById(ICON_IDS[i]);
-            icon.setColorFilter(active ? activeColor : inactiveColor);
+            if (icon != null) icon.setColorFilter(active ? activeColor : inactiveColor);
 
             TextView label = findViewById(LABEL_IDS[i]);
-            label.setTextColor(active ? activeColor : inactiveColor);
+            if (label != null) label.setTextColor(active ? activeColor : inactiveColor);
 
-            findViewById(DOT_IDS[i]).setVisibility(active ? View.VISIBLE : View.GONE);
-
-            if (active) {
-                pill.setScaleX(0.9f);
-                pill.setScaleY(0.9f);
-                pill.animate().scaleX(1f).scaleY(1f).setDuration(220).start();
-            }
+            View dot = findViewById(DOT_IDS[i]);
+            if (dot != null) dot.setVisibility(active ? View.VISIBLE : View.GONE);
         }
     }
 

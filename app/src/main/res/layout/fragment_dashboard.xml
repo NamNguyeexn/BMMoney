@@ -155,18 +155,6 @@
                 android:textSize="14sp"
                 android:textColor="@color/subtle_text"
                 />
-                <TextView
-                    android:id="@+id/help_budget"
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:layout_marginLeft="6dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:textColor="@color/sandy"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
             </LinearLayout>
             <FrameLayout
                 android:layout_width="match_parent"

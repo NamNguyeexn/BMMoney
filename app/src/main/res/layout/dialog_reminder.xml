@@ -52,7 +52,7 @@
         android:layout_marginTop="12dp"
         android:paddingLeft="12dp"
         android:background="@drawable/bg_field"
-        android:hint="Ghi chú cho lời nhắc"
+        android:hint="Lời nhắc"
         android:inputType="textCapSentences"
         android:textSize="15sp"
         android:textColor="@color/dark_green"

@@ -684,42 +684,6 @@
                 android:textColor="@color/olive"
                 android:layout_gravity="center_horizontal"
                 />
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Điều khoản"
-                    android:textSize="15sp"
-                    android:textColor="@color/olive"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="16dp"
-                    android:text="Quyền riêng tư"
-                    android:textSize="15sp"
-                    android:textColor="@color/olive"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="16dp"
-                    android:text="Trợ giúp"
-                    android:textSize="15sp"
-                    android:textColor="@color/olive"
-                    android:clickable="true"
-                    android:focusable="true" />
-            </LinearLayout>
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

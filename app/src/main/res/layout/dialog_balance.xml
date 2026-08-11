@@ -197,7 +197,7 @@
             android:paddingRight="18dp"
             android:paddingTop="11dp"
             android:paddingBottom="11dp"
-            android:text="Tạo khoản cân bằng"
+            android:text="Cân bằng"
             android:textColor="@color/cream"
             android:textSize="15sp"
             android:textStyle="bold" />

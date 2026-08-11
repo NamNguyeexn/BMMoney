@@ -90,7 +90,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Ghi chú tài chính theo chu kỳ"
+                android:text="Tài chính theo chu kỳ"
                 android:textSize="17sp"
                 android:textColor="@color/dark_green"
                 android:textStyle="bold"
