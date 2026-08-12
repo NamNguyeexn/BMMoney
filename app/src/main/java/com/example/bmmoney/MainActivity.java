@@ -15,6 +15,7 @@ import com.example.bmmoney.ui.AddExpenseFragment;
 import com.example.bmmoney.ui.AnalyticsFragment;
 import com.example.bmmoney.ui.CalendarFragment;
 import com.example.bmmoney.ui.DashboardFragment;
+import com.example.bmmoney.ui.FloatingAddButton;
 import com.example.bmmoney.ui.SearchFragment;
 import com.example.bmmoney.ui.SettingsFragment;
 import com.example.bmmoney.ui.WelcomeDialog;
@@ -41,8 +42,8 @@ public class MainActivity extends AppCompatActivity {
     /**
      * THANH DIEU HUONG CHI CO NAM MUC.
      *
-     * <p>Muc "Them" da bi go khoi thanh duoi (nguoi dung them khoan bang nut + o dau
-     * man Trang chu). Cac mang duoi day PHAI khop chinh xac voi
+     * <p>Muc "Them" da bi go khoi thanh duoi (nguoi dung them khoan bang nut + noi keo
+     * tha, xem {@link FloatingAddButton}). Cac mang duoi day PHAI khop chinh xac voi
      * {@code view_bottom_nav.xml}: truoc day chung van con giu {@code nav_add}, ma id
      * do khong con ton tai trong bo cuc nen thu tu bi lech mot bac - bam "Lich" lai mo
      * man Them, va man Trang chu khong duoc nap lai dung luc.</p>
@@ -90,6 +91,10 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+        // Nut + noi thuoc ve Activity chu khong thuoc man hinh nao, nen no song sot
+        // qua moi lan doi tab va giu nguyen vi tri nguoi dung da keo toi.
+        FloatingAddButton.attach(findViewById(R.id.fab_add), () -> showTab(TAB_ADD));
+
         showTab(TAB_HOME);
 
         // Lan dau mo app: hien popup Xin chao de thiet lap thong tin co ban

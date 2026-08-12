@@ -1,21 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  Ban va 12/08: nut + tro thanh nut noi keo tha.
+
+  Goc cua bo cuc doi tu LinearLayout sang FrameLayout de co mot LOP PHU nam tren toan
+  bo noi dung. Nut + khong con thuoc ve mot man hinh nao (truoc day no nam trong dau
+  Trang chu, nen bam sang Lich hay Cai dat la mat), ma song cung Activity - doi man
+  hinh bao nhieu lan no van dung yen o cho nguoi dung da dat.
+
+  clipChildren="false" o ca hai cap la BAT BUOC. Thieu no thi bong do va phan phong to
+  luc nhac nut len se bi cat cut ngay tai bien cua vien chua.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/cream"
+    android:clipChildren="false"
     android:fitsSystemWindows="true">
 
-    <!-- Nội dung màn hình -->
-    <FrameLayout
-        android:id="@+id/fragment_container"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@color/cream" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <!-- Thanh điều hướng dưới -->
-    <include layout="@layout/view_bottom_nav" />
+        <!-- Nội dung màn hình -->
+        <FrameLayout
+            android:id="@+id/fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/cream" />
 
-</LinearLayout>
+        <!-- Thanh điều hướng dưới -->
+        <include layout="@layout/view_bottom_nav" />
+
+    </LinearLayout>
+
+    <!--
+      Lop phu chua nut noi.
+
+      paddingBottom bang chieu cao thanh nav: vung keo tha duoc tinh theo padding, nen
+      nut khong bao gio dung duoc len tren cac muc dieu huong. Khong can kiem tra gi
+      them trong ma nguon.
+    -->
+    <FrameLayout
+        android:id="@+id/fab_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:paddingBottom="@dimen/nav_height">
+
+        <FrameLayout
+            android:id="@+id/fab_add"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_gravity="top|left"
+            android:background="@drawable/bg_fab_add"
+            android:clickable="true"
+            android:contentDescription="Thêm giao dịch"
+            android:focusable="true"
+            android:outlineProvider="background">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center"
+                android:contentDescription="Thêm giao dịch"
+                android:src="@drawable/ic_add"
+                app:tint="@color/cream" />
+        </FrameLayout>
+    </FrameLayout>
+
+</FrameLayout>

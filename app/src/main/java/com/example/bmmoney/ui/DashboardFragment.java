@@ -108,7 +108,8 @@ public class DashboardFragment extends Fragment {
                 "So s\u00e1nh t\u1ed5ng chi ti\u00eau k\u1ef3 n\u00e0y v\u1edbi k\u1ef3 li\u1ec1n tr\u01b0\u1edbc. "
                         + "S\u1ed1 d\u01b0\u01a1ng l\u00e0 ti\u00eau nhi\u1ec1u h\u01a1n, s\u1ed1 \u00e2m l\u00e0 ti\u00eau \u00edt h\u01a1n.");
 
-        ViewUtils.onClick(root, R.id.btn_header_add, v -> open(MainActivity.TAB_ADD));
+        // Ban va 12/08: nut + o dau man da chuyen thanh nut noi keo tha cua Activity
+        // (xem FloatingAddButton), nen o day khong con gi de gan nua.
         ViewUtils.onClick(root, R.id.btn_view_all, v -> open(MainActivity.TAB_SEARCH));
 
         // Ban va 04/08: mo hop thoai can bang so du

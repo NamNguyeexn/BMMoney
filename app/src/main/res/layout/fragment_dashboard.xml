@@ -53,22 +53,6 @@
                 android:textColor="@color/olive" />
         </LinearLayout>
 
-        <FrameLayout
-                android:id="@+id/btn_header_add"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_olive_rounded"
-            android:elevation="6dp"
-            android:clickable="true"
-            android:focusable="true">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_add"
-                app:tint="@color/cream" />
-        </FrameLayout>
     </LinearLayout>
 
     <com.google.android.material.card.MaterialCardView

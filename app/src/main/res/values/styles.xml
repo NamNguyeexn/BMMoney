@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ban va 12/08.
+
+  Tep nay tung khai bao <dimen name="nav_font_style">bold</dimen>. "bold" khong phai
+  mot kich thuoc, nen aapt2 bao "Invalid <dimen> for given resource value" - va bao o
+  vi tri trong tep values.xml da GOP, tuc dimens.xml:5:4, chu khong phai o dong that
+  su gay loi. Do la ly do doc thong bao loi mai ma khong thay gi sai trong dimens.xml.
+
+  Khai bao do khong duoc noi nao dung toi (kieu chu dam duoc dat thang bang
+  android:textStyle="bold" trong view_bottom_nav.xml), nen bo han thay vi doi sang
+  <string>. Neu sau nay can dung chung, hay dat lai bang <string name="...">bold</string>.
+-->
 <resources>
-<!--    <dimen name="nav_font_style">bold</dimen>-->
 </resources>

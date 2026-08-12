@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nen nut + noi.
+
+  Dung gradient cheo chu khong phai mot mau phang: cung voi bong do va goc nghieng khi
+  keo, mang sang toi nhat quan tu goc tren ben trai lam nut trong nhu mot khoi tron co
+  the tich, thay vi mot dom mau dan tren man hinh.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:angle="315"
+        android:startColor="#7A8A46"
+        android:endColor="@color/olive"
+        android:type="linear" />
+    <stroke
+        android:width="1dp"
+        android:color="#33FEFAE0" />
+</shape>
