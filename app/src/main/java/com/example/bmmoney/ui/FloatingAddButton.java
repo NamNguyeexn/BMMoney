@@ -3,6 +3,7 @@ package com.example.bmmoney.ui;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
@@ -48,8 +49,18 @@ import androidx.dynamicanimation.animation.SpringForce;
 public final class FloatingAddButton {
 
     /** Do cao luc nghi va luc dang nhac len, tinh bang dp. */
-    private static final float REST_ELEVATION_DP = 10f;
-    private static final float DRAG_ELEVATION_DP = 24f;
+    private static final float REST_ELEVATION_DP = 14f;
+    private static final float DRAG_ELEVATION_DP = 28f;
+
+    /**
+     * Mau bong do (chi co tac dung tu Android 9).
+     *
+     * <p>Bong mac dinh cua he thong la den thuan. Tren nen kem {@code #FEFAE0} cua app,
+     * mot vung xam den trong nhu vet ban chu khong nhu bong. Nhuom bong theo mau xanh
+     * o liu dam cua bang mau thi no hoa vao nen, va nghich ly la nho vay lai co the day
+     * do dam len cao hon nhieu ma van sach.</p>
+     */
+    private static final int SHADOW_COLOR = 0xFF283618;
 
     /** Chua le nao bam sat canh man hinh, luon chua mot khoang nay. */
     private static final float EDGE_MARGIN_DP = 16f;
@@ -91,6 +102,14 @@ public final class FloatingAddButton {
         // do nghieng doc ra tinh te dung nhu vat the that.
         fab.setCameraDistance(density * 8000f);
         fab.setElevation(REST_ELEVATION_DP * density);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // Bong "diem" la vet do bong den tu nguon sang, bong "moi truong" la vung toi
+            // deu quanh vat. Dat ca hai, neu khong nua nay se van la mau den mac dinh va
+            // hai lop bong danh nhau ve mau sac.
+            fab.setOutlineSpotShadowColor(SHADOW_COLOR);
+            fab.setOutlineAmbientShadowColor(SHADOW_COLOR);
+        }
 
         final SpringAnimation springX = spring(fab, DynamicAnimation.TRANSLATION_X,
                 SpringForce.STIFFNESS_LOW, 0.62f);
@@ -241,6 +260,52 @@ public final class FloatingAddButton {
             v.setTranslationX(clamp(rx * maxX, edge, Math.max(edge, maxX - edge)));
             v.setTranslationY(clamp(ry * maxY, edge, Math.max(edge, maxY - edge)));
         });
+    }
+
+    // ------------------------------------------------------------------- an / hien
+
+    /**
+     * An hoac hien nut.
+     *
+     * <p>Dung khi man dang mo CHINH LA man Them: giu nut + o do la moi mot lan bam nhu
+     * hua hen mo them mot thu gi nua, trong khi thuc te khong co gi xay ra.</p>
+     *
+     * <p>An bang {@code GONE} chu khong phai {@code alpha = 0}: mot nut trong suot van
+     * chan cham o dung cho no dung, nen nguoi dung se gap mot vung chet vo hinh tren
+     * man Them ma khong hieu tai sao.</p>
+     */
+    public static void setShown(final View fab, boolean shown) {
+        if (fab == null) return;
+        boolean visible = fab.getVisibility() == View.VISIBLE;
+        if (shown == visible) return;
+
+        fab.animate().cancel();
+
+        if (shown) {
+            fab.setVisibility(View.VISIBLE);
+            fab.setScaleX(0.4f);
+            fab.setScaleY(0.4f);
+            fab.setAlpha(0f);
+            fab.setRotation(-90f);
+            fab.animate()
+                    .scaleX(1f).scaleY(1f).alpha(1f).rotation(0f)
+                    .setDuration(260)
+                    .start();
+        } else {
+            fab.animate()
+                    .scaleX(0.4f).scaleY(0.4f).alpha(0f).rotation(-90f)
+                    .setDuration(180)
+                    .withEndAction(() -> {
+                        fab.setVisibility(View.GONE);
+                        // Tra lai nguyen trang, neu khong lan hien ke tiep se bat dau tu
+                        // mot nut xoay leo va teo nho.
+                        fab.setScaleX(1f);
+                        fab.setScaleY(1f);
+                        fab.setAlpha(1f);
+                        fab.setRotation(0f);
+                    })
+                    .start();
+        }
     }
 
     // --------------------------------------------------------------- nhac len / ha xuong

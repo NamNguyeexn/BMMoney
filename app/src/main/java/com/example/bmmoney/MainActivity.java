@@ -71,6 +71,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int[] NAV_TABS = {
             TAB_HOME, TAB_CALENDAR, TAB_ANALYTICS, TAB_SEARCH, TAB_SETTINGS};
 
+    /** Nut + noi. Giu lai de an di dung luc man Them dang mo. */
+    private View fabAdd;
+
     private int current = -1;
     /** Chỉ sao lưu tối đa một lần cho mỗi phiên mở app. */
     private boolean backupDone = false;
@@ -93,7 +96,8 @@ public class MainActivity extends AppCompatActivity {
         }
         // Nut + noi thuoc ve Activity chu khong thuoc man hinh nao, nen no song sot
         // qua moi lan doi tab va giu nguyen vi tri nguoi dung da keo toi.
-        FloatingAddButton.attach(findViewById(R.id.fab_add), () -> showTab(TAB_ADD));
+        fabAdd = findViewById(R.id.fab_add);
+        FloatingAddButton.attach(fabAdd, () -> showTab(TAB_ADD));
 
         showTab(TAB_HOME);
 
@@ -185,6 +189,10 @@ public class MainActivity extends AppCompatActivity {
                 .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
                 .replace(R.id.fragment_container, fragment)
                 .commit();
+
+        // An nut + khi man Them dang mo. De no lai thi moi lan bam nhu hua hen mo them
+        // mot thu gi nua, trong khi nguoi dung dang o dung cho no dan tram.
+        FloatingAddButton.setShown(fabAdd, index != TAB_ADD);
 
         int activeColor = ContextCompat.getColor(this, R.color.dark_green);
         int inactiveColor = Color.parseColor("#80606C38");
