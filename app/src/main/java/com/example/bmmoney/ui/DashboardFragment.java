@@ -1,5 +1,8 @@
 package com.example.bmmoney.ui;
 
+import android.animation.ObjectAnimator;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -41,6 +44,9 @@ import java.util.Locale;
  * ho\u1eb7c khi ng\u01b0\u1eddi d\u00f9ng ch\u1ee7 \u0111\u1ed9ng k\u00e9o \u0111\u1ec3 t\u1ea3i l\u1ea1i.
  */
 public class DashboardFragment extends Fragment {
+
+    /** Hieu ung mo dan cua nut chuong, giu lai de con huy khi roi man. */
+    @Nullable private ObjectAnimator bellFade;
 
     private static final int[] CAT_NAME = {R.id.cat_name_0, R.id.cat_name_1, R.id.cat_name_2, R.id.cat_name_3, R.id.cat_name_4};
     private static final int[] CAT_PCT = {R.id.cat_pct_0, R.id.cat_pct_1, R.id.cat_pct_2, R.id.cat_pct_3, R.id.cat_pct_4};
@@ -112,6 +118,12 @@ public class DashboardFragment extends Fragment {
         // (xem FloatingAddButton), nen o day khong con gi de gan nua.
         ViewUtils.onClick(root, R.id.btn_view_all, v -> open(MainActivity.TAB_SEARCH));
 
+        // Ban va 14/08: nut chuong mo man goi y tu thong bao.
+        ViewUtils.onClick(root, R.id.btn_bell, v -> {
+            if (getContext() == null) return;
+            startActivity(new Intent(getContext(), SuggestionsActivity.class));
+        });
+
         // Ban va 04/08: mo hop thoai can bang so du
         View balance = root.findViewById(R.id.btn_balance);
         if (balance != null) {
@@ -129,16 +141,62 @@ public class DashboardFragment extends Fragment {
     public void onResume() {
         super.onResume();
         reload();
+        bindBell();
     }
 
     @Override
     public void onDestroyView() {
         RecyclerView recycler = root == null ? null : (RecyclerView) root.findViewById(R.id.recycler_recent);
         if (recycler != null) recycler.setAdapter(null);
+        if (bellFade != null) {
+            bellFade.cancel();
+            bellFade = null;
+        }
         adapter = null;
         refresh = null;
         root = null;
         super.onDestroyView();
+    }
+
+    /**
+     * Dem so goi y dang cho va hien so do len chuong. Doc DB o luong nen vi ham nay
+     * duoc goi lai moi lan quay ve man trang chu.
+     */
+    private void bindBell() {
+        if (root == null || getContext() == null) return;
+        final Context app = getContext().getApplicationContext();
+        Db.load(() -> AppDatabase.suggestions(app).pendingCount(), count -> {
+            if (root == null) return;
+            View bell = root.findViewById(R.id.btn_bell);
+            TextView badge = root.findViewById(R.id.tv_bell_badge);
+            int pending = count == null ? 0 : count;
+            if (badge != null) {
+                badge.setText(pending > 9 ? "9+" : String.valueOf(pending));
+                badge.setVisibility(pending > 0 ? View.VISIBLE : View.GONE);
+            }
+            fadeBell(bell, pending > 0);
+        });
+    }
+
+    /**
+     * Hieu ung fade cho chuong: chi chay khi con goi y chua xu ly, va dung mau/alpha
+     * theo chinh nut do nen no doi theo chu de sang toi cua man hinh.
+     */
+    private void fadeBell(@Nullable View bell, boolean pending) {
+        if (bellFade != null) {
+            bellFade.cancel();
+            bellFade = null;
+        }
+        if (bell == null) return;
+        if (!pending) {
+            bell.setAlpha(1f);
+            return;
+        }
+        bellFade = ObjectAnimator.ofFloat(bell, View.ALPHA, 0.45f, 1f);
+        bellFade.setDuration(700L);
+        bellFade.setRepeatMode(ObjectAnimator.REVERSE);
+        bellFade.setRepeatCount(ObjectAnimator.INFINITE);
+        bellFade.start();
     }
 
     private void open(int tab) {

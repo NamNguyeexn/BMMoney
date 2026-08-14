@@ -53,6 +53,39 @@
                 android:textColor="@color/olive" />
         </LinearLayout>
 
+        <!-- Ban va 14/08: nut chuong mo man goi y doc tu thong bao.
+             So tren huy hieu la so goi y dang cho, dat trong FrameLayout de huy hieu
+             deo len goc nut chu khong day nut lech di. -->
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/btn_bell"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_margin="4dp"
+                android:background="@drawable/bg_pill_cream"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="\uD83D\uDD14"
+                android:textSize="19sp" />
+
+            <TextView
+                android:id="@+id/tv_bell_badge"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="top|end"
+                android:background="@drawable/bg_badge_warning"
+                android:gravity="center"
+                android:text="0"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="@color/cream"
+                android:visibility="gone" />
+        </FrameLayout>
+
     </LinearLayout>
 
     <com.google.android.material.card.MaterialCardView

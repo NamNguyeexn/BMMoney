@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 /**
@@ -38,9 +39,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
                 TransactionEntity.class,
                 CategoryEntity.class,
                 PartnerEntity.class,
-                LoanEntity.class
+                LoanEntity.class,
+                SuggestionEntity.class
         },
-        version = 1,
+        version = 2,
         exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -59,6 +61,43 @@ public abstract class AppDatabase extends RoomDatabase {
 
     public abstract LoanDao loanDao();
 
+    /** Bang goi y doc tu thong bao. Chi nam tren may, khong bao gio duoc day len cloud. */
+    public abstract SuggestionDao suggestionDao();
+
+    /**
+     * Ban va 14/08: them bang goi y doc tu thong bao.
+     *
+     * <p>App da phat hanh nen KHONG duoc dung fallbackToDestructiveMigration o day:
+     * lam vay la xoa sach giao dich cua nguoi dung khi ho cap nhat. Buoc chuyen doi
+     * chi tao them mot bang moi, khong cham vao bat ky bang cu nao.
+     *
+     * <p>Cau lenh phai khop tung chu voi lo tren Room, ke ca ten chi muc, neu khong
+     * Room se nem IllegalStateException ngay lan mo dau tien sau khi cap nhat.
+     */
+    static final Migration MIGRATION_1_2 = new Migration(1, 2) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `suggestions` ("
+                    + "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    + "`dedupeKey` TEXT, "
+                    + "`packageName` TEXT, "
+                    + "`appLabel` TEXT, "
+                    + "`rawText` TEXT, "
+                    + "`title` TEXT, "
+                    + "`amount` INTEGER NOT NULL, "
+                    + "`type` TEXT, "
+                    + "`categoryName` TEXT, "
+                    + "`date` INTEGER NOT NULL, "
+                    + "`status` INTEGER NOT NULL, "
+                    + "`createdAt` INTEGER NOT NULL, "
+                    + "`aiParsed` INTEGER NOT NULL)");
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_suggestions_dedupeKey`"
+                    + " ON `suggestions` (`dedupeKey`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_suggestions_status`"
+                    + " ON `suggestions` (`status`)");
+        }
+    };
+
     public static AppDatabase getInstance(Context context) {
         if (instance == null) {
             synchronized (AppDatabase.class) {
@@ -68,6 +107,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     AppDatabase.class,
                                     DB_NAME)
                             .addCallback(SEED)
+                            .addMigrations(MIGRATION_1_2)
                             .build();
                 }
             }
@@ -83,6 +123,10 @@ public abstract class AppDatabase extends RoomDatabase {
 
     public static CategoryDao categories(Context context) {
         return getInstance(context).categoryDao();
+    }
+
+    public static SuggestionDao suggestions(Context context) {
+        return getInstance(context).suggestionDao();
     }
 
     public static PartnerDao partners(Context context) {

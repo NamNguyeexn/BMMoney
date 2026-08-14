@@ -19,6 +19,7 @@ import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.CategoryEntity;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.LoanEntity;
+import com.example.bmmoney.data.SuggestionEntity;
 import com.example.bmmoney.data.TransactionEntity;
 import com.example.bmmoney.data.TxRow;
 import com.example.bmmoney.util.AutoBackup;
@@ -99,6 +100,22 @@ public class AddExpenseFragment extends Fragment {
     private String category = "";
     private String method = METHODS.get(0)[1];
 
+    /** Khoa du lieu dien san khi man nay duoc mo tu mot goi y thong bao. */
+    public static final String ARG_STANDALONE = "arg_standalone";
+    public static final String ARG_SUGGESTION = "arg_suggestion";
+    public static final String ARG_TITLE = "arg_title";
+    public static final String ARG_AMOUNT = "arg_amount";
+    public static final String ARG_TYPE = "arg_type";
+    public static final String ARG_CATEGORY = "arg_category";
+    public static final String ARG_DATE = "arg_date";
+    public static final String ARG_NOTE = "arg_note";
+
+    /** true khi man nay dung mot minh trong AddNoteActivity, khong nam trong MainActivity. */
+    private boolean standalone;
+
+    /** Goi y da sinh ra man nay. 0 nghia la nguoi dung tu mo man them ghi chu. */
+    private int suggestionId;
+
     /** Khoan vay goc dang duoc tra bot / thu bot, null la chua chon. */
     @Nullable private TxRow pickedLoan;
     /** So con lai cua khoan vay goc dang chon, dung de canh bao tra qua tay. */
@@ -121,8 +138,20 @@ public class AddExpenseFragment extends Fragment {
 
         Refresh.setup(root, R.id.refresh_add_expense, this::resetForm);
 
+        // Dien san TRUOC khi ve man, vi tv_date doc theo pickedTime ngay o duoi day.
+        applyArguments();
+
         View back = root.findViewById(R.id.btn_back);
-        if (back != null) back.setOnClickListener(v -> open(MainActivity.TAB_HOME));
+        if (back != null) {
+            back.setOnClickListener(v -> {
+                if (standalone) {
+                    // Quay lai la ve man goi y, va goi y do van con nguyen trong danh sach.
+                    if (getActivity() != null) getActivity().finish();
+                    return;
+                }
+                open(MainActivity.TAB_HOME);
+            });
+        }
 
         text(R.id.tv_date, format.format(new Date(pickedTime)));
         text(R.id.tv_payment, payment);
@@ -863,7 +892,64 @@ public class AddExpenseFragment extends Fragment {
         if (refresh != null) refresh.setRefreshing(false);
     }
 
+    /**
+     * Dien san form tu mot goi y thong bao.
+     *
+     * <p>Danh muc chi can dat vao truong {@code category}: buildCategories giu lai lua chon
+     * nay neu ten do con ton tai, nen khong phai cho danh muc tai xong moi dien duoc.
+     */
+    private void applyArguments() {
+        Bundle args = getArguments();
+        if (args == null) return;
+
+        standalone = args.getBoolean(ARG_STANDALONE, false);
+        suggestionId = args.getInt(ARG_SUGGESTION, 0);
+
+        long date = args.getLong(ARG_DATE, 0L);
+        if (date > 0L) pickedTime = date;
+
+        if (Stats.INCOME.equals(args.getString(ARG_TYPE, Stats.EXPENSE))) {
+            setMode(MODE_INCOME);
+        }
+
+        String picked = args.getString(ARG_CATEGORY, "");
+        if (picked != null && !picked.isEmpty()) category = picked;
+
+        long amount = args.getLong(ARG_AMOUNT, 0L);
+        if (amount > 0L) fill(R.id.edt_amount, String.valueOf(amount));
+
+        String title = args.getString(ARG_TITLE, "");
+        if (title != null && !title.isEmpty()) fill(R.id.edt_description, title);
+
+        String note = args.getString(ARG_NOTE, "");
+        if (note != null && !note.isEmpty()) fill(R.id.edt_note, note);
+    }
+
+    private void fill(int id, String value) {
+        if (root == null) return;
+        EditText field = root.findViewById(id);
+        if (field != null) field.setText(value);
+    }
+
+    /**
+     * Danh dau goi y da dung. Chi goi tu {@link #open(int)}, tuc sau khi luu thanh cong -
+     * bam quay lai thi goi y phai con nguyen.
+     */
+    private void markSuggestionUsed() {
+        if (suggestionId <= 0 || getContext() == null) return;
+        final Context app = getContext().getApplicationContext();
+        final int id = suggestionId;
+        suggestionId = 0;
+        Db.io(() -> AppDatabase.suggestions(app).setStatus(id, SuggestionEntity.CREATED));
+    }
+
     private void open(int tab) {
+        if (standalone) {
+            // Man nay mo tu mot goi y: luu xong thi danh dau goi y roi ve man goi y.
+            markSuggestionUsed();
+            if (getActivity() != null) getActivity().finish();
+            return;
+        }
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).showTab(tab);
         }

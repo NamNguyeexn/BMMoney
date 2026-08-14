@@ -18,6 +18,15 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- Ban va 14/08: tu Android 11, queryIntentActivities chi tra ve app trong danh sach
+         nay. Thieu khoi <queries> thi hop thoai chon nguon thong bao se rong tron. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".BmmApp"
         android:largeHeap="false"
@@ -65,6 +74,33 @@
                 <action android:name="com.huawei.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
+
+        <!-- Man goi y doc tu thong bao. De rieng thay vi them tab vao thanh dieu huong. -->
+        <activity
+            android:name=".ui.SuggestionsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+        <!-- Man them ghi chu mo tu mot goi y, quay lai la ve man goi y -->
+        <activity
+            android:name=".ui.AddNoteActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Dich vu doc thong bao.
+             android:permission BAT BUOC phai la BIND_NOTIFICATION_LISTENER_SERVICE, neu khong
+             he thong se khong bao gio hien app trong trang cap quyen. Nguoi dung phai tu bat
+             trong cai dat he thong, khong the xin bang hop thoai. -->
+        <service
+            android:name=".notify.NotifyListener"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
     </application>
 

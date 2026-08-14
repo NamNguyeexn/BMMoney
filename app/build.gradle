@@ -51,9 +51,19 @@ dependencies {
     // Lo xo cho nut + noi: cho phep tha nut bay ve canh voi quan tinh that,
     // thay vi mot duong truot deu vo hon.
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
-    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    // Ban va 14/08: nang BOM len 34.8.0 vi firebase-ai chi co tu 34.x
+    implementation platform('com.google.firebase:firebase-bom:34.8.0')
     implementation 'com.google.firebase:firebase-firestore'
     implementation 'com.google.firebase:firebase-auth'
+    // Firebase AI Logic - goi Gemini truc tiep tu app, khong can server rieng
+    implementation 'com.google.firebase:firebase-ai'
+
+    // Ban va 15/08: GenerativeModelFutures cua Firebase AI tra ve ListenableFuture
+    // cua Guava, va Firebase khong keo thu vien nay ve giup. Ban -android nhe hon
+    // ban -jre va la ban Google khuyen dung cho Android.
+    implementation 'com.google.guava:guava:32.1.3-android'
+    // Chi can cho generateContentStream (Publisher). Rat nho, them cho chac.
+    implementation 'org.reactivestreams:reactive-streams:1.0.4'
     implementation 'com.google.android.gms:play-services-auth:21.2.0'
     implementation 'androidx.room:room-runtime:2.6.1'
     annotationProcessor 'androidx.room:room-compiler:2.6.1'
