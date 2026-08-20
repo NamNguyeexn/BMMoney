@@ -21,6 +21,7 @@ import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionDao;
 import com.example.bmmoney.data.TxRow;
+import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Prefs;
 import com.example.bmmoney.util.Refresh;
@@ -42,16 +43,26 @@ import java.util.Locale;
  *
  * <ul>
  *   <li>cham dam: tong bien dong trong ngay vuot moc dang chu y;</li>
- *   <li>cham nhat hon: dat tu 50% moc tro len;</li>
+ *   <li>cham vang: tieu qua so tien duoc phep cua MOT ngay;</li>
  *   <li>cham rat nhat: ngay do co giao dich nhung chua dang ke;</li>
  *   <li>khong co cham: ngay do khong phat sinh ban ghi nao.</li>
  * </ul>
  *
  * <p>Moc lay tu "mocdang chu y" trong Cai dat (Prefs.bigPercent) nhan voi tong
  * bien dong ca thang, dung dung cong thuc ma man Tim kiem dang dung nen hai man
- * hinh luon hieu "dang chu y" giong nhau. Bien dong tinh gop ca bon loai
- * thu / chi / cho vay / dang no theo dung gia tri tuyet doi, vi o day dang do
- * do lon cua bien dong chu khong phai so du vi.</p>
+ * hinh luon hieu "dang chu y" giong nhau.
+ *
+ * <p>Ban va 20/08: cham vang khong con la "dat 50% moc" nua. Moc 50% chi la mot
+ * ty le cua chinh thang do nen no khong noi len dieu gi ve viec tieu nhieu hay it:
+ * thang tieu it thi mot khoan binh thuong cung sang vang. Nay cham vang tra loi mot
+ * cau ro rang hon: NGAY DO CO TIEU QUA PHAN DUOC PHEP CUA MOT NGAY KHONG. Phan cua
+ * mot ngay = ngan sach hang thang (Cai dat) chia cho so ngay cua chu ky chua ngay do,
+ * nen chu ky 28, 30 hay 31 ngay deu ra han muc dung cua no. Chi tinh khoan CHI
+ * (Stats.EXPENSE), khong tinh thu / cho vay / dang no, vi day la cau hoi ve chi tieu.</p>
+ *
+ * <p>Rieng cham dam (moc dang chu y) van tinh gop ca bon loai thu / chi / cho vay /
+ * dang no theo dung gia tri tuyet doi, vi o do dang do do lon cua bien dong chu
+ * khong phai so du vi.</p>
  *
  * <p>Bam mot ngay se liet ke ban ghi cua ngay do tu dau ngay den cuoi ngay;
  * bam mot ban ghi se mo dung popup cua man Tim kiem (TxDialog).</p>
@@ -75,8 +86,14 @@ public class CalendarFragment extends Fragment {
     /** Ket qua nap mot thang: tong tuyet doi tung ngay + ban ghi cua ngay dang chon. */
     private static class Data {
         double[] byDay = new double[32];
+        /** Chi tieu (chi tinh EXPENSE) cua tung ngay trong thang. */
+        double[] expenseByDay = new double[32];
+        /** Han muc chi cua mot ngay, tinh rieng cho chu ky chua ngay do. */
+        double[] dayLimit = new double[32];
         double monthTotal;
         double threshold;
+        /** Han muc mot ngay cua chu ky dang chua ngay duoc chon, dung cho dong tom tat. */
+        double selectedLimit;
         List<TxRow> dayItems = new ArrayList<>();
         double dayExpense;
         double dayIncome;
@@ -142,6 +159,8 @@ public class CalendarFragment extends Fragment {
 
         final int daysInMonth = month.getActualMaximum(Calendar.DAY_OF_MONTH);
         final int bigPercent = Prefs.bigPercent(getContext());
+        final int cycleDay = Prefs.cycleDay(getContext());
+        final double budget = Prefs.budget(getContext());
         final long dayStart = selectedDay;
         final long dayEnd = dayStart + 24L * 60 * 60 * 1000 - 1;
 
@@ -161,9 +180,24 @@ public class CalendarFragment extends Fragment {
                     double value = Math.abs(t.getAmount());
                     data.byDay[day] += value;
                     data.monthTotal += value;
+                    // Han muc mot ngay chi so voi khoan CHI, nen thu / vay khong lam sang cham vang
+                    if (Stats.EXPENSE.equals(t.getType())) {
+                        data.expenseByDay[day] += Math.abs(t.getAmount());
+                    }
                 }
             }
             data.threshold = data.monthTotal * bigPercent / 100d;
+
+            // Han muc mot ngay: tinh lai cho tung ngay vi mot thang duong lich co the
+            // nam vat qua hai chu ky co do dai khac nhau.
+            // Dung mot Calendar rieng dung tu monthStart: khong doc field month o luong nen
+            Calendar probe = Calendar.getInstance();
+            probe.setTimeInMillis(monthStart);
+            for (int day = 1; day <= daysInMonth; day++) {
+                probe.set(Calendar.DAY_OF_MONTH, day);
+                data.dayLimit[day] = dailyAllowance(cycleDay, budget, probe.getTimeInMillis());
+            }
+            data.selectedLimit = dailyAllowance(cycleDay, budget, dayStart);
 
             List<TxRow> items = dao.getRangeAscending(dayStart, dayEnd);
             if (items != null) {
@@ -183,6 +217,7 @@ public class CalendarFragment extends Fragment {
             text(R.id.tv_month_total, data.monthTotal > 0
                     ? "Bi\u1ebfn \u0111\u1ed9ng c\u1ea3 th\u00e1ng " + Money.vnd(data.monthTotal)
                             + " \u00b7 m\u1ed1c \u0111\u00e1ng ch\u00fa \u00fd " + Money.vnd(data.threshold)
+                            + " \u00b7 chi/ng\u00e0y " + Money.vnd(data.selectedLimit)
                     : "Th\u00e1ng n\u00e0y ch\u01b0a c\u00f3 b\u1ea3n ghi n\u00e0o");
 
             buildGrid(data, daysInMonth);
@@ -255,9 +290,11 @@ public class CalendarFragment extends Fragment {
                     dot.setVisibility(View.INVISIBLE);
                 } else {
                     dot.setVisibility(View.VISIBLE);
+                    double limit = data.dayLimit[day];
                     if (data.threshold > 0 && value >= data.threshold) {
                         dot.setBackgroundResource(R.drawable.dot_cal_strong);
-                    } else if (data.threshold > 0 && value >= data.threshold / 2) {
+                    } else if (limit > 0 && data.expenseByDay[day] > limit) {
+                        // Tieu qua phan duoc phep cua mot ngay
                         dot.setBackgroundResource(R.drawable.dot_cal_medium);
                     } else {
                         dot.setBackgroundResource(R.drawable.dot_cal_light);
@@ -293,6 +330,23 @@ public class CalendarFragment extends Fragment {
         boolean empty = data.dayItems.isEmpty();
         ViewUtils.setVisibility(root, R.id.tv_empty_day, empty ? View.VISIBLE : View.GONE);
         ViewUtils.setVisibility(root, R.id.recycler_day, empty ? View.GONE : View.VISIBLE);
+    }
+
+    /**
+     * So tien duoc phep chi trong MOT ngay = ngan sach hang thang / so ngay cua chu ky
+     * dang chua thoi diem do.
+     *
+     * <p>Do dai chu ky doc tu {@link Cycle}: ngay chot cua nguoi dung quyet dinh mot ky
+     * dai 28, 29, 30 hay 31 ngay, nen khong the lay cung mot con so 30 cho moi thang.</p>
+     */
+    private static double dailyAllowance(int cycleDay, double budget, long time) {
+        if (budget <= 0) return 0d;
+        long from = Cycle.start(cycleDay, time);
+        long to = Cycle.end(cycleDay, time);
+        // Cong nua ngay roi chia de khong bi lech mot ngay khi chu ky vat qua moc doi gio
+        int days = (int) Math.round((to - from) / (24d * 60 * 60 * 1000));
+        if (days <= 0) return 0d;
+        return budget / days;
     }
 
     private static long startOfToday() {

@@ -194,7 +194,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginLeft="6dp"
-                            android:text="Đạt 50% mốc"
+                            android:text="Quá chi 1 ngày"
                             android:textColor="@color/olive"
                             android:textSize="12sp" />
 

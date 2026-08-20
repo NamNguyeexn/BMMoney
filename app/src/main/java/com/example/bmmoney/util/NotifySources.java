@@ -7,7 +7,9 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.provider.Settings;
+import android.service.notification.NotificationListenerService;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
@@ -83,9 +85,22 @@ public final class NotifySources {
         return out;
     }
 
+    /**
+     * Ban va 20/08: danh sach RONG nghia la nghe TAT CA app, khong phai nghe khong app nao.
+     *
+     * <p>Truoc day nguoi dung bat cong tac "nghe thong bao", cap quyen he thong xong ma
+     * man Goi y van trong mai, vi con mot buoc nua bi bo qua: phai vao "Chon ung dung
+     * theo doi" va tick tung app. Khong tick thi {@code watched()} rong va moi thong bao
+     * deu bi chan ngay tai day - dung nhu trieu chung "chuc nang khong hoat dong".</p>
+     *
+     * <p>Cong chan that su van con: chi thong bao co so tien moi thanh goi y. Nen mac dinh
+     * nghe tat ca la an toan, va ai muon thu hep thi cu tick app cua minh.</p>
+     */
     public static boolean isWatched(Context context, @Nullable String packageName) {
         if (packageName == null || packageName.isEmpty()) return false;
-        return watched(context).contains(packageName);
+        Set<String> current = watched(context);
+        if (current.isEmpty()) return true;
+        return current.contains(packageName);
     }
 
     public static void setWatched(Context context, String packageName, boolean value) {
@@ -195,23 +210,33 @@ public final class NotifySources {
     }
 
     /**
-     * Tat roi bat lai thanh phan dich vu de he thong noi lai ket noi.
+     * Yeu cau he thong noi lai ket noi voi dich vu doc thong bao.
      *
-     * <p>Can thiet vi sau khi vua duoc cap quyen, dich vu doi khi khong duoc goi
-     * cho den lan khoi dong may tiep theo.
+     * <p><b>Ban va 20/08 - day chinh la thu tu tay tat chuc nang.</b> Ban cu "noi lai"
+     * bang cach TAT roi BAT lai thanh phan dich vu qua {@code setComponentEnabledSetting}.
+     * Nhung quyen doc thong bao duoc he thong ghi theo ten thanh phan: khi thanh phan bi
+     * tat, he thong coi nhu dich vu khong con ton tai va GO app khoi danh sach duoc phep
+     * nghe. Bat lai thanh phan khong lay lai duoc quyen do. Nghia la ngay khi nguoi dung
+     * bam bat cong tac, doan code nay lam mat luon quyen vua cap - va tu do khong con
+     * thong bao nao den nua, du man Cai dat van hien "dang lang nghe".</p>
+     *
+     * <p>Cach dung la {@link NotificationListenerService#requestRebind(ComponentName)}:
+     * no bao he thong goi lai dich vu ma khong he cham vao quyen.</p>
+     *
+     * <p><b>requestRebind chi co tu Android 7.0 (API 24), con minSdk cua app la 23.</b>
+     * Tren Android 6.0 khong co duong nao noi lai ma khong mat quyen, nen o day ta
+     * KHONG lam gi ca. Khong mat gi nhieu: he thong tu goi dich vu khi co thong bao moi,
+     * viec "noi lai" chi de doc ngay cac thong bao dang nam tren man hinh. Doi lai, tuyet
+     * doi khong duoc quay ve cach tat / bat thanh phan - lam vay la go luon quyen vua cap.</p>
      */
     public static void rebind(Context context, Class<?> service) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return;
         try {
-            PackageManager manager = context.getPackageManager();
-            ComponentName component = new ComponentName(context, service);
-            manager.setComponentEnabledSetting(component,
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                    PackageManager.DONT_KILL_APP);
-            manager.setComponentEnabledSetting(component,
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP);
+            ComponentName component = new ComponentName(context.getApplicationContext(), service);
+            NotificationListenerService.requestRebind(component);
         } catch (Throwable error) {
-            // Khong noi lai duoc thi cung khong lam hong gi, cho lan sau.
+            // Khong noi lai duoc thi cung khong lam hong gi: thong bao ke tiep se danh thuc
+            // dich vu. Tuyet doi khong tat / bat lai thanh phan o day vi se mat quyen.
         }
     }
 }
