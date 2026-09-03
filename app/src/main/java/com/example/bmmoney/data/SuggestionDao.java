@@ -38,14 +38,11 @@ public interface SuggestionDao {
     void dismissAllPending();
 
     /**
-     * Ghi lai ket qua Gemini. Dieu kien status = 0 tranh viec AI tra loi cham
-     * roi ghi de len goi y ma nguoi dung vua xoa hoac vua dung.
+     * Don goi y qua cu, ke ca goi y da bo, de bang khong phinh mai.
+     *
+     * <p>Chi co dong trong bang can don. Khong co tep anh nao thuoc ve app, nen o day
+     * cung khong co gi tren dia phai xoa theo.
      */
-    @Query("UPDATE suggestions SET title = :title, amount = :amount, type = :type,"
-            + " categoryName = :category, aiParsed = 1 WHERE id = :id AND status = 0")
-    void refine(int id, String title, long amount, String type, @Nullable String category);
-
-    /** Don goi y qua cu, ke ca goi y da xoa, de bang khong phinh mai. */
     @Query("DELETE FROM suggestions WHERE createdAt < :before")
     void purgeOlderThan(long before);
 }

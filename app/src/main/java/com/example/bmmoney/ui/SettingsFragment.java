@@ -40,7 +40,6 @@ import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.CategoryTotal;
 import com.example.bmmoney.data.TransactionDao;
 import com.example.bmmoney.data.Db;
-import com.example.bmmoney.notify.NotifyListener;
 import com.example.bmmoney.remote.FirebaseSyncManager;
 import com.example.bmmoney.remote.ReminderReceiver;
 import com.example.bmmoney.util.AutoBackup;
@@ -48,7 +47,6 @@ import com.example.bmmoney.util.Categories;
 import com.example.bmmoney.util.Cycle;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Notice;
-import com.example.bmmoney.util.NotifySources;
 import com.example.bmmoney.util.Prefs;
 import com.example.bmmoney.util.Stats;
 import com.example.bmmoney.util.Refresh;
@@ -134,10 +132,9 @@ public class SettingsFragment extends Fragment {
 
         allowInnerScroll();
 
-        // Ban va 14/08: nhom "Goi y tu thong bao"
-        ViewUtils.onClick(root, R.id.tv_notify_enabled, v -> toggleNotify());
-        ViewUtils.onClick(root, R.id.tv_notify_sources, v -> pickNotifySources());
-        ViewUtils.onClick(root, R.id.tv_notify_ai, v -> toggleNotifyAi());
+        // Ban va 03/09: nhom "Doc anh giao dich". Chi con mot duong dan sang man doc
+        // anh - khong con gi de bat tat, vi bo doc chu nam san trong app va khong
+        // doi quyen he thong nao.
         ViewUtils.onClick(root, R.id.btn_open_suggestions, v -> {
             if (getContext() == null) return;
             startActivity(new Intent(getContext(), SuggestionsActivity.class));
@@ -165,95 +162,6 @@ public class SettingsFragment extends Fragment {
         refresh = null;
         root = null;
         super.onDestroyView();
-    }
-
-    /** Ve lai nhom "Goi y tu thong bao". Luon doc lai quyen that cua he thong. */
-    private void bindNotify() {
-        if (root == null || getContext() == null) return;
-
-        boolean access = NotifySources.hasAccess(getContext());
-        boolean on = access && NotifySources.enabled(getContext());
-        text(R.id.tv_notify_enabled, on
-                ? "\uD83D\uDD14  \u0110ang l\u1eafng nghe th\u00f4ng b\u00e1o"
-                : "\uD83D\uDD14  Ch\u01b0a b\u1eadt nghe th\u00f4ng b\u00e1o");
-
-        int count = NotifySources.watched(getContext()).size();
-        text(R.id.tv_notify_sources, count == 0
-                ? "\uD83D\uDCF1  Ch\u1ecdn \u1ee9ng d\u1ee5ng theo d\u00f5i"
-                : "\uD83D\uDCF1  \u0110ang theo d\u00f5i " + count + " \u1ee9ng d\u1ee5ng");
-
-        text(R.id.tv_notify_ai, NotifySources.aiEnabled(getContext())
-                ? "\u2728  D\u00f9ng AI \u0111\u1ec3 \u0111\u1ecdc th\u00f4ng b\u00e1o: B\u1eadt"
-                : "\u2728  D\u00f9ng AI \u0111\u1ec3 \u0111\u1ecdc th\u00f4ng b\u00e1o: T\u1eaft");
-    }
-
-    /** Bat / tat nghe thong bao. Chua co quyen thi dan sang cai dat he thong. */
-    private void toggleNotify() {
-        if (getContext() == null) return;
-
-        if (!NotifySources.hasAccess(getContext())) {
-            ConfirmDialog.show(getContext(), "\uD83D\uDD14",
-                    "C\u1ea7n quy\u1ec1n \u0111\u1ecdc th\u00f4ng b\u00e1o",
-                    "Android ch\u1ec9 cho ph\u00e9p b\u1eadt quy\u1ec1n n\u00e0y trong c\u00e0i \u0111\u1eb7t h\u1ec7 th\u1ed1ng. "
-                            + "H\u00e3y t\u00ecm BMMoney trong danh s\u00e1ch v\u00e0 b\u1eadt l\u00ean.",
-                    "M\u1edf c\u00e0i \u0111\u1eb7t",
-                    () -> NotifySources.openAccessSettings(getContext()));
-            return;
-        }
-
-        boolean next = !NotifySources.enabled(getContext());
-        NotifySources.setEnabled(getContext(), next);
-        // Ket noi lai service de no doc ngay co moi.
-        NotifySources.rebind(getContext(), NotifyListener.class);
-        Notice.success(root, next
-                ? "\u0110\u00e3 b\u1eadt nghe th\u00f4ng b\u00e1o"
-                : "\u0110\u00e3 t\u1eaft nghe th\u00f4ng b\u00e1o");
-        bindNotify();
-    }
-
-    private void toggleNotifyAi() {
-        if (getContext() == null) return;
-        boolean next = !NotifySources.aiEnabled(getContext());
-        NotifySources.setAiEnabled(getContext(), next);
-        Notice.info(root, next
-                ? "\u0110\u00e3 b\u1eadt AI \u0111\u1ecdc th\u00f4ng b\u00e1o"
-                : "\u0110\u00e3 t\u1eaft AI, ch\u1ec9 t\u00e1ch s\u1ed1 ti\u1ec1n \u1edf m\u00e1y");
-        bindNotify();
-    }
-
-    /** Hop thoai chon nhieu ung dung, dung AlertDialog cua he thong. */
-    private void pickNotifySources() {
-        if (getContext() == null) return;
-
-        final List<NotifySources.AppItem> apps = NotifySources.installed(getContext());
-        if (apps.isEmpty()) {
-            Notice.error(root, "Kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c danh s\u00e1ch \u1ee9ng d\u1ee5ng", null);
-            return;
-        }
-
-        Set<String> current = NotifySources.watched(getContext());
-        final CharSequence[] labels = new CharSequence[apps.size()];
-        final boolean[] checked = new boolean[apps.size()];
-        for (int i = 0; i < apps.size(); i++) {
-            labels[i] = apps.get(i).label;
-            checked[i] = current.contains(apps.get(i).packageName);
-        }
-
-        new AlertDialog.Builder(getContext())
-                .setTitle("Ch\u1ecdn \u1ee9ng d\u1ee5ng theo d\u00f5i")
-                .setMultiChoiceItems(labels, checked,
-                        (dialog, which, isChecked) -> checked[which] = isChecked)
-                .setNegativeButton("H\u1ee7y", null)
-                .setPositiveButton("Xong", (dialog, which) -> {
-                    Set<String> picked = new HashSet<>();
-                    for (int i = 0; i < apps.size(); i++) {
-                        if (checked[i]) picked.add(apps.get(i).packageName);
-                    }
-                    NotifySources.replaceWatched(getContext(), picked);
-                    Notice.success(root, "\u0110\u00e3 l\u01b0u " + picked.size() + " \u1ee9ng d\u1ee5ng");
-                    bindNotify();
-                })
-                .show();
     }
 
     /**
@@ -346,7 +254,6 @@ public class SettingsFragment extends Fragment {
                 ? "M\u1ee9c \u0111\u1ed3ng h\u1ed3 h\u1ec7 th\u1ed1ng \u2014 ch\u1eafc ch\u1eafn nh\u1ea5t"
                 : "Ch\u1ebf \u0111\u1ed9 nh\u1eb9 \u2014 kh\u00f4ng c\u00f3 bi\u1ec3u t\u01b0\u1ee3ng \u0111\u1ed3ng h\u1ed3");
         text(R.id.tv_big_percent, Prefs.bigPercent(getContext()) + "%");
-        bindNotify();
         text(R.id.tv_app_version, "Phi\u00ean b\u1ea3n 2.2");
 
         long backup = Prefs.lastBackup(getContext());

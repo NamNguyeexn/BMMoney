@@ -42,7 +42,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
                 LoanEntity.class,
                 SuggestionEntity.class
         },
-        version = 2,
+        version = 3,
         exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -61,7 +61,7 @@ public abstract class AppDatabase extends RoomDatabase {
 
     public abstract LoanDao loanDao();
 
-    /** Bang goi y doc tu thong bao. Chi nam tren may, khong bao gio duoc day len cloud. */
+    /** Bang goi y doc tu anh giao dich. Chi nam tren may, khong bao gio duoc day len cloud. */
     public abstract SuggestionDao suggestionDao();
 
     /**
@@ -98,6 +98,53 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    /**
+     * Ban va 03/09: bo chuc nang nghe thong bao, chuyen sang doc anh giao dich.
+     *
+     * <h3>Vi sao o day duoc phep DROP TABLE</h3>
+     *
+     * <p>Bang {@code suggestions} khong phai du lieu cua nguoi dung - no la mot hang
+     * cho tam. Moi dong trong do chi song den luc nguoi dung bam dau tich (thanh giao
+     * dich thuc, nam o bang khac) hoac dau X. Giao dich da ghi KHONG tro toi bang nay,
+     * nen xoa sach no khong lam mat mot dong tien nao.
+     *
+     * <p>Doi lai la ta khong phai viet sau lenh ALTER TABLE de doi mot bang von da
+     * khong con dung nghia: {@code packageName} va {@code appLabel} noi ve app gui
+     * thong bao, {@code aiParsed} noi ve Gemini - ca ba deu mat ly do ton tai. Hai cot
+     * moi thay vao ({@code refCode}, {@code hasTime}) mo ta mot the gioi khac han.
+     *
+     * <p>Chu y la KHONG co cot nao tro toi anh. App doc anh xong thi tra anh lai cho
+     * nguoi dung; bang nay chi giu lai ba con so may doc duoc.
+     *
+     * <p>Cai gia phai tra la ro rang va nho: nhung goi y dang cho tu ban truoc se
+     * bien mat sau khi cap nhat. Danh doi nay dang gia hon la keo theo mot bang lai
+     * ghep giua hai thoi ky.
+     */
+    static final Migration MIGRATION_2_3 = new Migration(2, 3) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("DROP TABLE IF EXISTS `suggestions`");
+            db.execSQL("CREATE TABLE IF NOT EXISTS `suggestions` ("
+                    + "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    + "`dedupeKey` TEXT, "
+                    + "`refCode` TEXT, "
+                    + "`sourceLabel` TEXT, "
+                    + "`rawText` TEXT, "
+                    + "`title` TEXT, "
+                    + "`amount` INTEGER NOT NULL, "
+                    + "`type` TEXT, "
+                    + "`categoryName` TEXT, "
+                    + "`date` INTEGER NOT NULL, "
+                    + "`hasTime` INTEGER NOT NULL, "
+                    + "`status` INTEGER NOT NULL, "
+                    + "`createdAt` INTEGER NOT NULL)");
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_suggestions_dedupeKey`"
+                    + " ON `suggestions` (`dedupeKey`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_suggestions_status`"
+                    + " ON `suggestions` (`status`)");
+        }
+    };
+
     public static AppDatabase getInstance(Context context) {
         if (instance == null) {
             synchronized (AppDatabase.class) {
@@ -107,7 +154,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     AppDatabase.class,
                                     DB_NAME)
                             .addCallback(SEED)
-                            .addMigrations(MIGRATION_1_2)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                             .build();
                 }
             }

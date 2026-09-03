@@ -52,7 +52,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Gợi ý tứ thông báo"
+                        android:text="Ảnh giao dịch"
                         android:textSize="21sp"
                         android:textStyle="bold"
                         android:textColor="@color/dark_green" />
@@ -61,7 +61,7 @@
                         android:id="@+id/tv_suggest_sub"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Chọn một gợi ý để ghi thành giao dịch"
+                        android:text="Chọn ảnh để máy đọc số tiền và thời gian"
                         android:textSize="13sp"
                         android:textColor="@color/olive" />
                 </LinearLayout>
@@ -81,12 +81,12 @@
                     android:textColor="@color/olive" />
             </LinearLayout>
 
+            <!-- Khu chon anh. Luon nam tren cung, ke ca khi danh sach goi y dai. -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_no_access"
+                android:id="@+id/card_pick_image"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:visibility="gone"
                 app:cardBackgroundColor="@color/card_cream"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="4dp"
@@ -101,7 +101,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Chưa đọc được thông báo"
+                        android:text="Đọc từ ảnh biên lai"
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:textColor="@color/dark_green" />
@@ -110,32 +110,51 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="Quyền đọc thông báo phải tự bật trong cài đặt hệ thống. Thông báo đến trước lúc bật sẽ không đọc được."
+                        android:text="Máy chỉ đọc số tiền, ngày và giờ, phần còn lại bạn tự điền. Ảnh không rời khỏi thiết bị và không cần mạng."
                         android:textSize="13sp"
                         android:lineSpacingExtra="3dp"
                         android:textColor="@color/olive" />
 
                     <TextView
-                        android:id="@+id/btn_grant_access"
+                        android:id="@+id/btn_pick_image"
                         android:layout_width="match_parent"
-                        android:layout_height="44dp"
-                        android:layout_marginTop="12dp"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="14dp"
                         android:background="@drawable/bg_pill_olive"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
-                        android:text="Mở cài đặt để cấp quyền"
-                        android:textSize="14sp"
+                        android:text="🖼  Chọn ảnh giao dịch"
+                        android:textSize="15sp"
                         android:textStyle="bold"
                         android:textColor="@color/cream" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="Hoặc mở ảnh trong app ngân hàng, bấm Chia sẻ rồi chọn BMMoney."
+                        android:textSize="12sp"
+                        android:lineSpacingExtra="2dp"
+                        android:textColor="@color/olive" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/tv_suggest_heading"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Gợi ý đang chờ"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/dark_green" />
 
             <TextView
                 android:id="@+id/tv_no_suggestion"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 android:gravity="center"
                 android:text="Chưa có gợi ý nào"
                 android:textSize="14sp"
@@ -146,7 +165,7 @@
                 android:id="@+id/container_suggestions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:orientation="vertical" />
         </LinearLayout>
     </ScrollView>

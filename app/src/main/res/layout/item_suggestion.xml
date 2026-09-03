@@ -31,7 +31,7 @@
                 android:layout_height="36dp"
                 android:background="@drawable/bg_pill_cream"
                 android:gravity="center"
-                android:text="🔔"
+                android:text="🧾"
                 android:textSize="17sp" />
 
             <LinearLayout
@@ -43,15 +43,15 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/tv_suggest_title"
+                    android:id="@+id/tv_suggest_amount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:maxLines="1"
                     android:ellipsize="end"
-                    android:text="Khoản chi"
-                    android:textSize="15sp"
+                    android:text="0 đ"
+                    android:textSize="17sp"
                     android:textStyle="bold"
-                    android:textColor="@color/dark_green" />
+                    android:textColor="@color/burnt" />
 
                 <TextView
                     android:id="@+id/tv_suggest_meta"
@@ -60,26 +60,28 @@
                     android:layout_marginTop="2dp"
                     android:maxLines="1"
                     android:ellipsize="end"
-                    android:text="Ứng dụng"
+                    android:text="Thời gian"
                     android:textSize="12sp"
                     android:textColor="@color/olive" />
+
+                <TextView
+                    android:id="@+id/tv_suggest_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:text="Khoản chi"
+                    android:textSize="13sp"
+                    android:textColor="@color/dark_green" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/tv_suggest_amount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginLeft="8dp"
-                android:text="0 đ"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/burnt" />
-
+            <!-- Bo goi y. Dat truoc dau tich de nut pha huy khong nam duoi ngon tay
+                 o vi tri de bam nhat. -->
             <TextView
                 android:id="@+id/btn_suggest_dismiss"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginLeft="8dp"
                 android:background="@drawable/bg_pill_cream"
@@ -87,8 +89,24 @@
                 android:focusable="true"
                 android:gravity="center"
                 android:text="✕"
-                android:textSize="14sp"
+                android:textSize="15sp"
                 android:textColor="@color/olive" />
+
+            <!-- Nhan de mo man them giao dich voi so tien va thoi gian dien san. -->
+            <TextView
+                android:id="@+id/btn_suggest_accept"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginLeft="8dp"
+                android:background="@drawable/bg_pill_olive"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="✓"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/cream" />
         </LinearLayout>
 
         <TextView
@@ -100,7 +118,7 @@
             android:padding="10dp"
             android:maxLines="3"
             android:ellipsize="end"
-            android:text="Nội dung thông báo"
+            android:text="Chữ đọc được từ ảnh"
             android:textSize="12sp"
             android:lineSpacingExtra="2dp"
             android:textColor="@color/olive" />
