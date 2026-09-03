@@ -1,5 +1,6 @@
 package com.example.bmmoney.ui;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,6 +8,9 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.PickVisualMediaRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -15,9 +19,10 @@ import com.example.bmmoney.R;
 import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.SuggestionEntity;
+import com.example.bmmoney.ocr.ReceiptImporter;
+import com.example.bmmoney.ocr.ReceiptOcr;
 import com.example.bmmoney.util.Money;
 import com.example.bmmoney.util.Notice;
-import com.example.bmmoney.util.NotifySources;
 import com.example.bmmoney.util.Refresh;
 import com.example.bmmoney.util.Stats;
 import com.example.bmmoney.util.ViewUtils;
@@ -29,20 +34,82 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Danh sach goi y doc tu thong bao.
+ * MAN DOC ANH GIAO DICH.
  *
- * <p>Bam vao mot goi y thi mo man them ghi chu voi form da dien san, quay lai thi
- * ve dung day. Bam dau X la bo goi y do di.
+ * <p>Tren cung la o chon anh, duoi la danh sach goi y dang cho. Moi dong co hai nut:
+ * dau X bo goi y, dau tich mo man them giao dich voi so tien va thoi gian dien san.
+ *
+ * <h3>App khong luu anh</h3>
+ *
+ * <p>Anh duoc doc thang tu Uri nguoi dung vua chon roi tha ra. Khong co ban sao nao
+ * trong app, nen anh van hoan toan do nguoi dung quan ly - xoa anh trong thu vien la
+ * xoa that. Danh sach ben duoi chi giu ba con so may doc duoc kem doan chu da che so
+ * tai khoan, du de doi chieu ma khong can mo lai anh.
+ *
+ * <h3>Vi sao dau tich khong luu thang</h3>
+ *
+ * <p>May chi doc duoc ba thu: so tien, ngay, gio. Mot giao dich luu thang tu ba thu do
+ * la mot giao dich khong co danh muc - no se roi vao nhom "khong phan loai" va lam
+ * lech moi bieu do ma chinh nguoi dung dung de ra quyet dinh. Mo man them giao dich
+ * ton mot buoc bam, nhung doi lai moi dong vao so deu day du ngay tu dau.
+ *
+ * <p>Goi y chi duoc danh dau da dung SAU khi luu thanh cong, viec do do
+ * {@link AddExpenseFragment} lam. Bo o giua duong thi goi y van con day.
  */
 public class SuggestionsFragment extends Fragment {
+
+    /**
+     * Ket qua mot lan doc anh chia se, do man nhan anh chia se dua sang.
+     *
+     * <p>Chi la ba con so dem duoc, khong co anh nao di kem: man kia da doc xong ngay
+     * tai cho, va app khong luu anh nen cung khong co gi de chuyen tiep.
+     */
+    public static final String ARG_ADDED = "added";
+    public static final String ARG_DUPLICATE = "duplicate";
+    public static final String ARG_FAILED = "failed";
 
     /** Chi hien thi mot so luong vua phai, con lai cho lan don sau. */
     private static final int MAX_SHOWN = 50;
 
+    /**
+     * So anh toi da moi lan chon.
+     *
+     * <p>Moi anh mat khoang mot phan tu giay de doc, va chung duoc doc lan luot tren
+     * mot luong. Muoi anh la khoang cho con chiu duoc ma khong can thanh tien trinh.
+     */
+    private static final int MAX_PICK = 10;
+
+    private static final String FAILED =
+            "\u0110\u1ecdc \u1ea3nh giao d\u1ecbch th\u1ea5t b\u1ea1i";
+
     private View root;
 
-    private final SimpleDateFormat when =
-            new SimpleDateFormat("dd/MM HH:mm", Locale.getDefault());
+    private ActivityResultLauncher<PickVisualMediaRequest> picker;
+
+    /** Ngay gio day du, cho nhung goi y doc duoc ca gio. */
+    private final SimpleDateFormat withTime =
+            new SimpleDateFormat("HH:mm dd/MM/yyyy", Locale.getDefault());
+
+    /** Chi ngay, cho goi y doc tu man danh sach - o do khong he co gio. */
+    private final SimpleDateFormat dateOnly =
+            new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // Bo chon anh cua he thong: tra ve Uri da duoc cap quyen cho rieng lan chon
+        // do, nen app khong can quyen doc thu vien anh.
+        picker = registerForActivityResult(
+                new ActivityResultContracts.PickMultipleVisualMedia(MAX_PICK),
+                images -> {
+                    if (images == null || images.isEmpty()) return;
+                    read(new ArrayList<>(images));
+                });
+
+        // Nong bo doc san trong luc nguoi dung con dang tim anh.
+        Db.io(ReceiptOcr::prepare);
+    }
 
     @Nullable
     @Override
@@ -54,10 +121,21 @@ public class SuggestionsFragment extends Fragment {
 
         ViewUtils.onClick(root, R.id.btn_suggest_back, v -> back());
         ViewUtils.onClick(root, R.id.btn_dismiss_all, v -> confirmDismissAll());
-        ViewUtils.onClick(root, R.id.btn_grant_access, v -> {
-            if (getContext() == null) return;
-            NotifySources.openAccessSettings(getContext());
-        });
+        ViewUtils.onClick(root, R.id.btn_pick_image, v -> pick());
+
+        // Ket qua tu man nhan anh chia se: chi con viec bao lai cho nguoi dung. Xoa doi
+        // so ngay sau khi dung de xoay man hinh khong bao lai lan nua.
+        Bundle args = getArguments();
+        if (args != null && args.containsKey(ARG_ADDED)) {
+            ReceiptImporter.Result shared = new ReceiptImporter.Result();
+            shared.added = args.getInt(ARG_ADDED, 0);
+            shared.duplicate = args.getInt(ARG_DUPLICATE, 0);
+            shared.failed = args.getInt(ARG_FAILED, 0);
+            args.remove(ARG_ADDED);
+            args.remove(ARG_DUPLICATE);
+            args.remove(ARG_FAILED);
+            report(Notice.loading(root, busyLabel(1)), shared);
+        }
 
         return root;
     }
@@ -69,19 +147,65 @@ public class SuggestionsFragment extends Fragment {
         reload();
     }
 
+    @Override
+    public void onDestroyView() {
+        root = null;
+        super.onDestroyView();
+    }
+
+    // ------------------------------------------------------------- chon anh
+
+    private void pick() {
+        if (picker == null) return;
+        try {
+            picker.launch(new PickVisualMediaRequest.Builder()
+                    .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                    .build());
+        } catch (Throwable error) {
+            Notice.error(root, FAILED, null);
+        }
+    }
+
+    /**
+     * Doc anh vua chon.
+     *
+     * <p>Doc thang tu Uri, khong sao ra ban nao. Quyen doc Uri do bo chon anh cap cho
+     * tien trinh nay va con hieu luc trong luc no con song, du cho ca viec doc dien ra
+     * o luong nen.
+     */
+    private void read(List<Uri> images) {
+        if (getContext() == null) return;
+        final Notice.Handle notice = Notice.loading(root, busyLabel(images.size()));
+        Db.io(() -> report(notice, ReceiptImporter.ingest(getContext(), images)));
+    }
+
+    /** Bao ket qua mot lan doc anh roi ve lai danh sach. Goi duoc tu luong nen. */
+    private void report(Notice.Handle notice, ReceiptImporter.Result result) {
+        Db.ui(() -> {
+            if (result.isFailure()) {
+                // Nguoi dung khong can biet loi nam o dau: anh mo, khong phai bien lai,
+                // hay bo doc that bai - ca ba deu dan den cung mot viec la chon anh khac.
+                notice.error(FAILED, null);
+            } else if (result.added == 0) {
+                notice.info("Giao d\u1ecbch n\u00e0y \u0111\u00e3 c\u00f3 trong danh s\u00e1ch");
+            } else {
+                notice.success("\u0110\u00e3 \u0111\u1ecdc " + result.added
+                        + " giao d\u1ecbch t\u1eeb \u1ea3nh");
+            }
+            reload();
+        });
+    }
+
+    private String busyLabel(int count) {
+        return count <= 1
+                ? "\u0110ang \u0111\u1ecdc \u1ea3nh giao d\u1ecbch\u2026"
+                : "\u0110ang \u0111\u1ecdc " + count + " \u1ea3nh\u2026";
+    }
+
+    // ------------------------------------------------------------ danh sach
+
     private void reload() {
         if (root == null || getContext() == null) return;
-
-        boolean granted = NotifySources.hasAccess(getContext());
-        ViewUtils.setVisibility(root, R.id.card_no_access, granted ? View.GONE : View.VISIBLE);
-
-        TextView sub = root.findViewById(R.id.tv_suggest_sub);
-        if (sub != null) {
-            sub.setText(NotifySources.enabled(getContext())
-                    ? "Ch\u1ecdn m\u1ed9t g\u1ee3i \u00fd \u0111\u1ec3 ghi th\u00e0nh giao d\u1ecbch"
-                    : "\u0110ang t\u1eaft. B\u1eadt trong C\u00e0i \u0111\u1eb7t \u0111\u1ec3 b\u1eaft \u0111\u1ea7u nh\u1eadn g\u1ee3i \u00fd");
-        }
-
         Db.load(() -> AppDatabase.suggestions(getContext()).pending(MAX_SHOWN), list -> {
             if (root == null) return;
             build(list == null ? new ArrayList<>() : list);
@@ -96,17 +220,18 @@ public class SuggestionsFragment extends Fragment {
         boolean empty = list.isEmpty();
         ViewUtils.setVisibility(root, R.id.tv_no_suggestion, empty ? View.VISIBLE : View.GONE);
         ViewUtils.setVisibility(root, R.id.btn_dismiss_all, empty ? View.GONE : View.VISIBLE);
+
+        TextView heading = root.findViewById(R.id.tv_suggest_heading);
+        if (heading != null) {
+            heading.setText(empty
+                    ? "G\u1ee3i \u00fd \u0111ang ch\u1edd"
+                    : "G\u1ee3i \u00fd \u0111ang ch\u1edd (" + list.size() + ")");
+        }
         if (empty) return;
 
         LayoutInflater inflater = LayoutInflater.from(container.getContext());
         for (SuggestionEntity item : list) {
             View row = inflater.inflate(R.layout.item_suggestion, container, false);
-
-            TextView title = row.findViewById(R.id.tv_suggest_title);
-            if (title != null) title.setText(item.title);
-
-            TextView meta = row.findViewById(R.id.tv_suggest_meta);
-            if (meta != null) meta.setText(meta(item));
 
             TextView amount = row.findViewById(R.id.tv_suggest_amount);
             if (amount != null) {
@@ -114,11 +239,20 @@ public class SuggestionsFragment extends Fragment {
                         + Money.vnd(item.amount));
             }
 
+            TextView meta = row.findViewById(R.id.tv_suggest_meta);
+            if (meta != null) meta.setText(meta(item));
+
+            TextView title = row.findViewById(R.id.tv_suggest_title);
+            if (title != null) title.setText(titleOf(item));
+
             TextView raw = row.findViewById(R.id.tv_suggest_raw);
             if (raw != null) raw.setText(item.rawText);
 
             View dismiss = row.findViewById(R.id.btn_suggest_dismiss);
             if (dismiss != null) dismiss.setOnClickListener(v -> dismiss(item));
+
+            View accept = row.findViewById(R.id.btn_suggest_accept);
+            if (accept != null) accept.setOnClickListener(v -> openAdd(item));
 
             row.setOnClickListener(v -> openAdd(item));
 
@@ -126,21 +260,30 @@ public class SuggestionsFragment extends Fragment {
         }
     }
 
-    /** Dong phu: ten app, gio nhan, danh muc doan duoc va dau hieu chua qua AI. */
+    /**
+     * Dong phu: thoi diem giao dich.
+     *
+     * <p>Khong co gio thi noi ro "chua ro gi\u1edd" chu khong in "00:00". In 00:00 la
+     * khang dinh mot dieu ma anh khong he cho biet, va nguoi dung se tin no.
+     */
     private String meta(SuggestionEntity item) {
-        StringBuilder out = new StringBuilder();
-        out.append(item.appLabel);
-        out.append(" \u00b7 ").append(when.format(new Date(item.date)));
-        if (item.categoryName != null && !item.categoryName.isEmpty()) {
-            out.append(" \u00b7 ").append(item.categoryName);
-        }
-        if (item.aiParsed == 0) {
-            out.append(" \u00b7 ch\u01b0a qua AI");
-        }
-        return out.toString();
+        Date when = new Date(item.date);
+        if (item.hasTime == 1) return withTime.format(when);
+        return dateOnly.format(when) + " \u00b7 ch\u01b0a r\u00f5 gi\u1edd";
     }
 
-    /** Mo man them ghi chu voi form da dien san. Goi y chi duoc danh dau khi luu xong. */
+    /** Ten khoan doan duoc, kem danh muc neu co. Rong thi de nguoi dung tu dat. */
+    private String titleOf(SuggestionEntity item) {
+        String name = item.title == null || item.title.trim().isEmpty()
+                ? "Ch\u01b0a c\u00f3 t\u00ean"
+                : item.title.trim();
+        if (item.categoryName != null && !item.categoryName.isEmpty()) {
+            return name + " \u00b7 " + item.categoryName;
+        }
+        return name;
+    }
+
+    /** Mo man them giao dich voi form da dien san. Goi y chi duoc danh dau khi luu xong. */
     private void openAdd(SuggestionEntity item) {
         if (getContext() == null) return;
         startActivity(AddNoteActivity.from(getContext(), item.id, item.title, item.amount,
@@ -152,7 +295,6 @@ public class SuggestionsFragment extends Fragment {
         Db.io(() -> AppDatabase.suggestions(getContext())
                 .setStatus(item.id, SuggestionEntity.DISMISSED));
         Notice.info(root, "\u0110\u00e3 b\u1ecf g\u1ee3i \u00fd n\u00e0y");
-        // Bo khoi danh sach ngay, khong cho database tra loi.
         reloadSoon();
     }
 
