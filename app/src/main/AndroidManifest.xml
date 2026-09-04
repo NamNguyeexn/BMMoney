@@ -34,12 +34,10 @@
         android:theme="@style/Theme.ExpenseManager"
         android:usesCleartextTraffic="false">
 
-        <!-- Ban va 03/09: bao Play services tai san mo hinh doc chu ngay khi cai app.
-             Voi ban -bundled thi mo hinh da nam trong APK, the nay chi giup ML Kit
-             khoi tao nhanh hon o lan dung dau tien. -->
-        <meta-data
-            android:name="com.google.mlkit.vision.DEPENDENCIES"
-            android:value="ocr" />
+        <!-- Ban va 04/09: KHONG khai bao meta-data com.google.mlkit.vision.DEPENDENCIES.
+             The do de yeu cau Play services tai mo hinh ve, chi co nghia voi ban ML Kit
+             tai ve. App nay dung ban -bundled: mo hinh da nam san trong APK, nen khai
+             bao them chi lam Play services di tim mot thu khong ai can. -->
 
         <!-- Toan bo 5 man hinh moi nam trong MainActivity duoi dang Fragment -->
         <activity
@@ -94,17 +92,19 @@
 
         <!-- Ban va 03/09: cua nhan anh chia se tu app khac (Techcombank, Thu vien anh...).
 
-             Man nay KHONG co giao dien va KHONG luu anh: no doc anh ngay tai cho roi
-             chuyen sang man doc anh giao dich, chi dua theo ba con so dem duoc.
-             Ly do phai doc ngay tai day: quyen doc Uri chia se chi song trong vong doi
-             cua Activity nhan no, ma app thi khong giu ban sao anh de doc tre.
+             Man nay KHONG co giao dien: no chuyen ngay anh duoc chia se sang man doc
+             anh giao dich roi tu ket thuc. Viec doc anh dien ra o man ben kia.
+
+             Sua 04/09: da bo android:noHistory. Truoc day man nay vua trong suot vua
+             noHistory vua phai cho doc anh xong moi mo man tiep - he thong ket thuc no
+             giua duong, keo theo mat quyen doc anh va mat luon lenh mo man goi y.
+             Nay no khong cho doi gi nua nen cung khong con can noHistory.
 
              exported=true la bat buoc de xuat hien trong bang chia se cua he thong. -->
         <activity
             android:name=".ui.ShareReceiptActivity"
             android:exported="true"
             android:excludeFromRecents="true"
-            android:noHistory="true"
             android:label="@string/app_name"
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>

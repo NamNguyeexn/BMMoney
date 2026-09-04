@@ -1,37 +1,55 @@
 package com.example.bmmoney.ui;
 
+import android.app.Activity;
+import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-
-import com.example.bmmoney.data.Db;
-import com.example.bmmoney.ocr.ReceiptImporter;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * CUA NHAN ANH CHIA SE TU APP NGAN HANG.
  *
- * <p>Man nay khong co giao dien. No doc anh ngay tai day, roi mo man goi y va bao
- * ket qua. Anh khong duoc sao lai o bat cu dau.
+ * <p>Man nay khong co giao dien va lam duy nhat mot viec, NGAY LAP TUC: chuyen anh
+ * duoc chia se sang man doc anh giao dich, roi tu ket thuc. Viec doc anh dien ra o
+ * man ben kia, noi co thanh tien trinh va cho bao loi.
  *
- * <h3>Vi sao viec doc phai xay ra ngay tai day</h3>
+ * <h3>Vi sao khong doc anh ngay tai day (ban truoc lam vay va no khong chay)</h3>
  *
- * <p>Quyen doc Uri chia se duoc cap cho DUNG Activity nay va chi song den khi no ket
- * thuc. Vi app khong luu ban sao anh, khong con cach nao doc tre: chuyen Uri sang man
- * khac roi moi mo thi quyen do co the da het. Vi vay day la noi duy nhat co the doc,
- * va man goi y chi nhan lai ba con so dem duoc.
+ * <p>Ban truoc doc anh ngay trong man nay roi moi mo man goi y. Ba dieu cung sai:</p>
  *
- * <p>Doc anh mat khoang mot phan tu giay moi anh nen phai o luong nen. Man hinh trong
- * suot va {@code noHistory} de nguoi dung khong thay man trang nhay len giua duong;
- * mot Toast ngan cho biet may dang lam viec.
+ * <ol>
+ *   <li>Man nay trong suot, khong ve gi, va khai bao {@code noHistory} - he thong ket
+ *       thuc no ngay khi no thoi hien dien. Doc anh mat vai giay, nen den luc doc xong
+ *       thi Activity da chet: quyen doc Uri mat theo, va lenh mo man goi y bi bo qua
+ *       vi {@code isFinishing()} da true.</li>
+ *   <li>Ke ca khi con song, lenh mo Activity phat ra sau vai giay cho doi bi Android 10
+ *       tro len chan lai nhu mot lenh mo tu duoi nen.</li>
+ *   <li>Nguoi dung khong thay bat cu dau hieu nao ve viec doc thanh cong hay that bai,
+ *       vi khong co man hinh nao dang mo de bao.</li>
+ * </ol>
+ *
+ * <p>Sua lai theo huong nguoc lai: mo man goi y truoc - viec nay dien ra ngay trong
+ * {@code onCreate}, luc app con la ung dung dang o truoc mat nguoi dung nen khong bi
+ * chan - va de man do doc anh.
+ *
+ * <h3>Chuyen quyen doc anh sang man kia the nao</h3>
+ *
+ * <p>Uri chia se khong the doc boi mot Activity chua duoc cap quyen. Cach chinh thong
+ * de chuyen quyen la dat Uri vao {@code ClipData} cua Intent kem co
+ * {@code FLAG_GRANT_READ_URI_PERMISSION}: he thong se cap quyen doc cho Activity duoc
+ * mo, va quyen do song cung Activity ay. Nho vay man goi y doc duoc anh ma app van
+ * khong phai sao anh ra bat cu dau.
+ *
+ * <p>Ke thua {@code Activity} tran chu khong phai {@code AppCompatActivity}: man nay
+ * dung giao dien trong suot cua he thong, ma AppCompat thi doi mot theme AppCompat va
+ * se nem loi khi khong co.
  */
-public class ShareReceiptActivity extends AppCompatActivity {
+public class ShareReceiptActivity extends Activity {
 
     private static final String FAILED =
             "\u0110\u1ecdc \u1ea3nh giao d\u1ecbch th\u1ea5t b\u1ea1i";
@@ -40,45 +58,27 @@ public class ShareReceiptActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        final List<Uri> images = collect(getIntent());
+        ArrayList<Uri> images = collect(getIntent());
         if (images.isEmpty()) {
-            fail();
+            Toast.makeText(this, FAILED, Toast.LENGTH_LONG).show();
+            finish();
             return;
         }
 
-        Toast.makeText(this,
-                "\u0110ang \u0111\u1ecdc \u1ea3nh giao d\u1ecbch\u2026",
-                Toast.LENGTH_SHORT).show();
-
-        Db.io(() -> {
-            ReceiptImporter.Result read;
-            try {
-                read = ReceiptImporter.ingest(this, images);
-            } catch (Throwable error) {
-                read = new ReceiptImporter.Result();
-                read.failed = images.size();
-            }
-            final ReceiptImporter.Result result = read;
-
-            Db.ui(() -> {
-                if (isFinishing()) return;
-                Intent go = SuggestionsActivity.withResult(this, result);
-                go.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(go);
-                finish();
-            });
-        });
+        try {
+            startActivity(SuggestionsActivity.withImages(this, images));
+        } catch (Throwable error) {
+            Toast.makeText(this, FAILED, Toast.LENGTH_LONG).show();
+        }
+        finish();
     }
 
     /** Gom anh tu ca hai kieu chia se: mot anh va nhieu anh. */
-    private List<Uri> collect(@Nullable Intent intent) {
-        List<Uri> out = new ArrayList<>();
+    private ArrayList<Uri> collect(@Nullable Intent intent) {
+        ArrayList<Uri> out = new ArrayList<>();
         if (intent == null) return out;
 
         String action = intent.getAction();
-        String type = intent.getType();
-        if (type == null || !type.startsWith("image/")) return out;
-
         if (Intent.ACTION_SEND.equals(action)) {
             Uri one = intent.getParcelableExtra(Intent.EXTRA_STREAM);
             if (one != null) out.add(one);
@@ -90,11 +90,17 @@ public class ShareReceiptActivity extends AppCompatActivity {
                 }
             }
         }
-        return out;
-    }
 
-    private void fail() {
-        Toast.makeText(this, FAILED, Toast.LENGTH_LONG).show();
-        finish();
+        // Mot so app chia se dat anh vao ClipData thay vi EXTRA_STREAM.
+        if (out.isEmpty()) {
+            ClipData clip = intent.getClipData();
+            if (clip != null) {
+                for (int i = 0; i < clip.getItemCount(); i++) {
+                    Uri uri = clip.getItemAt(i).getUri();
+                    if (uri != null) out.add(uri);
+                }
+            }
+        }
+        return out;
     }
 }

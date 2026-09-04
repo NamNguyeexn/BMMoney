@@ -1,5 +1,6 @@
 package com.example.bmmoney.ui;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -59,14 +60,12 @@ import java.util.Locale;
 public class SuggestionsFragment extends Fragment {
 
     /**
-     * Ket qua mot lan doc anh chia se, do man nhan anh chia se dua sang.
+     * Anh can doc ngay khi man mo ra, do man nhan anh chia se dua sang.
      *
-     * <p>Chi la ba con so dem duoc, khong co anh nao di kem: man kia da doc xong ngay
-     * tai cho, va app khong luu anh nen cung khong co gi de chuyen tiep.
+     * <p>La Uri goc cua nguoi dung, khong phai ban sao. Quyen doc chung do Intent mo
+     * man nay cap kem, va song cung Activity nay - du de doc xong roi tha ra.
      */
-    public static final String ARG_ADDED = "added";
-    public static final String ARG_DUPLICATE = "duplicate";
-    public static final String ARG_FAILED = "failed";
+    public static final String ARG_IMAGES = "images";
 
     /** Chi hien thi mot so luong vua phai, con lai cho lan don sau. */
     private static final int MAX_SHOWN = 50;
@@ -123,18 +122,13 @@ public class SuggestionsFragment extends Fragment {
         ViewUtils.onClick(root, R.id.btn_dismiss_all, v -> confirmDismissAll());
         ViewUtils.onClick(root, R.id.btn_pick_image, v -> pick());
 
-        // Ket qua tu man nhan anh chia se: chi con viec bao lai cho nguoi dung. Xoa doi
-        // so ngay sau khi dung de xoay man hinh khong bao lai lan nua.
+        // Anh vua duoc chia se tu app ngan hang: doc luon. Xoa doi so ngay sau khi
+        // dung, de xoay man hinh khong khien anh bi doc lai lan nua.
         Bundle args = getArguments();
-        if (args != null && args.containsKey(ARG_ADDED)) {
-            ReceiptImporter.Result shared = new ReceiptImporter.Result();
-            shared.added = args.getInt(ARG_ADDED, 0);
-            shared.duplicate = args.getInt(ARG_DUPLICATE, 0);
-            shared.failed = args.getInt(ARG_FAILED, 0);
-            args.remove(ARG_ADDED);
-            args.remove(ARG_DUPLICATE);
-            args.remove(ARG_FAILED);
-            report(Notice.loading(root, busyLabel(1)), shared);
+        if (args != null && args.containsKey(ARG_IMAGES)) {
+            ArrayList<Uri> shared = args.getParcelableArrayList(ARG_IMAGES);
+            args.remove(ARG_IMAGES);
+            if (shared != null && !shared.isEmpty()) read(shared);
         }
 
         return root;
@@ -174,9 +168,15 @@ public class SuggestionsFragment extends Fragment {
      * o luong nen.
      */
     private void read(List<Uri> images) {
-        if (getContext() == null) return;
+        Context context = getContext();
+        if (context == null) return;
+
+        // Giu san Context cua ung dung. getContext() doc tu luong nen la mot loi cho
+        // doi: nguoi dung co the roi man hinh giua luc doc, luc do Fragment da roi khoi
+        // Activity va getContext() tra ve null - viec doc dang do se chet lang le.
+        final Context app = context.getApplicationContext();
         final Notice.Handle notice = Notice.loading(root, busyLabel(images.size()));
-        Db.io(() -> report(notice, ReceiptImporter.ingest(getContext(), images)));
+        Db.io(() -> report(notice, ReceiptImporter.ingest(app, images)));
     }
 
     /** Bao ket qua mot lan doc anh roi ve lai danh sach. Goi duoc tu luong nen. */

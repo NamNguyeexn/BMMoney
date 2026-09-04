@@ -2,6 +2,7 @@ package com.example.bmmoney.ocr;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 
 import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.SuggestionDao;
@@ -36,6 +37,8 @@ import java.util.List;
  * doc sau.
  */
 public final class ReceiptImporter {
+
+    private static final String TAG = "BmmOcr";
 
     /** Goi y cu hon moc nay se bi don khoi bang. */
     private static final long PURGE_AFTER_MS = 60L * 24 * 60 * 60 * 1000;
@@ -90,11 +93,16 @@ public final class ReceiptImporter {
                 drafts = ReceiptParser.parse(lines);
                 raw = ReceiptParser.rawOf(lines);
             } catch (Throwable error) {
+                // Nguoi dung chi thay mot cau bao loi chung, dung nhu ho yeu cau. Nhung
+                // nguyen nhan that phai co cho de lai: thieu quyen doc anh, anh hong va
+                // bo doc chu that bai la ba viec rat khac nhau khi can tim loi.
+                Log.w(TAG, "Khong doc duoc anh: " + image, error);
                 result.failed++;
                 continue;
             }
 
             if (drafts.isEmpty()) {
+                Log.w(TAG, "Doc duoc chu nhung khong thay giao dich nao: " + image);
                 result.failed++;
                 continue;
             }

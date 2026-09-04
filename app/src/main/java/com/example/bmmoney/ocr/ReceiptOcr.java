@@ -117,7 +117,16 @@ public final class ReceiptOcr {
      * @throws Exception khi khong mo duoc anh hoac bo doc that bai
      */
     public static List<Line> read(Context context, Uri image) throws Exception {
-        InputImage input = InputImage.fromFilePath(context, image);
+        // fromFilePath nem SecurityException khi tien trinh khong duoc cap quyen doc
+        // Uri nay. Do la loi hay gap nhat cua duong chia se, nen goi dung ten no ra
+        // thay vi de mot SecurityException tran troi trong log.
+        InputImage input;
+        try {
+            input = InputImage.fromFilePath(context, image);
+        } catch (SecurityException error) {
+            throw new IllegalStateException("Khong co quyen doc anh duoc chia se: " + image,
+                    error);
+        }
         Text result = Tasks.await(recognizer().process(input), TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
         List<Line> lines = new ArrayList<>();
