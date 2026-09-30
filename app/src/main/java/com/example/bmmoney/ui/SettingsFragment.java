@@ -716,7 +716,7 @@ public class SettingsFragment extends Fragment {
                     "\u2601",
                     "\u0110\u00e3 c\u00f3 b\u1ea3n sao l\u01b0u tr\u00ean cloud",
                     when + " \u00b7 " + info.count + " giao d\u1ecbch"
-                            + "\n\nL\u1ea5y v\u1ec1: d\u00f9ng b\u1ea3n cloud, thay d\u1eef li\u1ec7u \u0111ang c\u00f3 tr\u00ean m\u00e1y."
+                            + "\n\nL\u1ea5y v\u1ec1: g\u1ed9p b\u1ea3n cloud v\u00e0o m\u00e1y (d\u00f2ng n\u00e0o s\u1eeda sau th\u00ec gi\u1eef), kh\u00f4ng x\u00f3a d\u1eef li\u1ec7u tr\u00ean m\u00e1y."
                             + "\nGhi \u0111\u00e8: \u0111\u01b0a d\u1eef li\u1ec7u tr\u00ean m\u00e1y l\u00ean cloud.",
                     "L\u1ea5y b\u1ea3n cloud v\u1ec1", () -> runRestore(manager),
                     "Ghi \u0111\u00e8 l\u00ean cloud", () -> runBackup(manager));
@@ -748,7 +748,7 @@ public class SettingsFragment extends Fragment {
             notice.error("Sao l\u01b0u qu\u00e1 l\u00e2u",
                     "Nh\u1ea5n gi\u1eef n\u00fat \u0110\u1ed3ng b\u1ed9 \u0111\u1ec3 xem chi ti\u1ebft tr\u1ea1ng th\u00e1i");
         };
-        ui.postDelayed(giveUp, 25000L);
+        ui.postDelayed(giveUp, 90000L);
 
         manager.backupNow((ok, count, error) -> {
             ui.removeCallbacks(giveUp);
@@ -793,7 +793,7 @@ public class SettingsFragment extends Fragment {
             notice.error("\u0110\u1ed3ng b\u1ed9 qu\u00e1 l\u00e2u",
                     "Nh\u1ea5n gi\u1eef n\u00fat \u0110\u1ed3ng b\u1ed9 \u0111\u1ec3 xem chi ti\u1ebft tr\u1ea1ng th\u00e1i");
         };
-        ui.postDelayed(giveUp, 25000L);
+        ui.postDelayed(giveUp, 90000L);
 
         manager.syncNow((ok, count, pushed, error) -> {
             ui.removeCallbacks(giveUp);
@@ -872,7 +872,7 @@ public class SettingsFragment extends Fragment {
             notice.error("X\u00f3a qu\u00e1 l\u00e2u",
                     "Nh\u1ea5n gi\u1eef n\u00fat \u0110\u1ed3ng b\u1ed9 \u0111\u1ec3 xem chi ti\u1ebft tr\u1ea1ng th\u00e1i");
         };
-        ui.postDelayed(giveUp, 25000L);
+        ui.postDelayed(giveUp, 90000L);
 
         manager.deleteBackup((ok, count, error) -> {
             ui.removeCallbacks(giveUp);

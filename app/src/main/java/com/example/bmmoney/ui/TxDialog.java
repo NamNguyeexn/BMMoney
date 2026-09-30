@@ -152,6 +152,7 @@ public final class TxDialog {
                     Db.ui(() -> {
                         dialog.dismiss();
                         if (onChanged != null) onChanged.onChanged();
+                        else refreshHost(context);
                     });
                 });
             });
@@ -159,35 +160,58 @@ public final class TxDialog {
             settle.setVisibility(View.GONE);
         }
 
+        // Ban va 30/09: CRUD day du. Moi man hinh deu sua / xoa duoc; sau khi doi du
+        // lieu thi man dang mo tu nap lai (qua onChanged hoac qua MainActivity).
+        final OnChanged changed = () -> {
+            if (onChanged != null) onChanged.onChanged();
+            else refreshHost(context);
+        };
+
+        TextView edit = view.findViewById(R.id.btn_tx_edit);
+        edit.setVisibility(View.VISIBLE);
+        edit.setOnClickListener(v -> {
+            dialog.dismiss();
+            TxEditDialog.show(context, t, changed);
+        });
+
         TextView delete = view.findViewById(R.id.btn_tx_delete);
-        if (allowDelete && onChanged != null) {
-            delete.setVisibility(View.VISIBLE);
-            delete.setOnClickListener(v -> {
+        delete.setVisibility(View.VISIBLE);
+        delete.setOnClickListener(v -> {
+            String message = loan
+                    ? "X\u00f3a kho\u1ea3n g\u1ed1c s\u1ebd x\u00f3a lu\u00f4n c\u00e1c l\u1ea7n tr\u1ea3 / thu c\u1ee7a kho\u1ea3n n\u00e0y."
+                    : "B\u1ea3n ghi s\u1ebd b\u1ecb x\u00f3a c\u1ea3 tr\u00ean m\u00e1y v\u00e0 tr\u00ean b\u1ea3n \u0111\u1ed3ng b\u1ed9.";
+            ConfirmDialog.show(context, "\uD83D\uDDD1", "X\u00f3a b\u1ea3n ghi n\u00e0y?", message,
+                    "X\u00f3a", () -> {
                 final Context app = context.getApplicationContext();
                 Db.io(() -> {
                     long now = System.currentTimeMillis();
-
-                    // XOA MEM: dong van nam lai voi dau xoa. Xoa that thi may khac
-                    // khong biet dong do tung ton tai nen lan dong bo sau se day
-                    // nguoc no tro lai.
-                    AppDatabase.dao(app).softDelete(t.getId(), now);
-
-                    // Xoa khoan vay GOC thi xoa luon phan dau khoan, neu khong no se
-                    // treo lai trong tong cong no ma khong con dong nao tro tOi.
-                    if (loan && !empty(t.loanIdOrEmpty())) {
-                        AppDatabase.loans(app).softDelete(t.loanIdOrEmpty(), now);
-                    }
-
+                    AppDatabase db = AppDatabase.getInstance(app);
+                    final String loanId = t.loanIdOrEmpty();
+                    db.runInTransaction(() -> {
+                        // XOA MEM: dong van nam lai voi dau xoa de lan dong bo sau
+                        // biet ma xoa tren cloud, khong day nguoc no tro lai.
+                        db.transactionDao().softDelete(t.getId(), now);
+                        if (loan && !empty(loanId)) {
+                            db.transactionDao().softDeleteByLoan(loanId, now);
+                            db.loanDao().softDelete(loanId, now);
+                        } else if (!empty(loanId)) {
+                            // Xoa mot lan tra / thu: tinh lai trang thai tat toan
+                            com.example.bmmoney.data.LoanEntity head = db.loanDao().byId(loanId);
+                            Double paid = db.transactionDao().paidOfLoan(loanId);
+                            if (head != null) {
+                                int settled = paid != null && Math.round(paid) >= head.getPrincipal() ? 1 : 0;
+                                if (settled != head.getSettled()) db.loanDao().setSettled(loanId, settled, now);
+                            }
+                        }
+                    });
                     AutoBackup.scheduleSoon(app);
                     Db.ui(() -> {
                         dialog.dismiss();
-                        onChanged.onChanged();
+                        changed.onChanged();
                     });
                 });
             });
-        } else {
-            delete.setVisibility(View.GONE);
-        }
+        });
 
         ViewUtils.onClick(view, R.id.btn_tx_close, v -> dialog.dismiss());
 
@@ -195,6 +219,18 @@ public final class TxDialog {
         if (window != null) {
             window.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
                     WindowManager.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    /** Nap lai man dang mo khi popup duoc goi ma khong kem onChanged (vd man Lich). */
+    private static void refreshHost(Context context) {
+        Context c = context;
+        while (c instanceof android.content.ContextWrapper) {
+            if (c instanceof com.example.bmmoney.MainActivity) {
+                ((com.example.bmmoney.MainActivity) c).refreshCurrentTab();
+                return;
+            }
+            c = ((android.content.ContextWrapper) c).getBaseContext();
         }
     }
 

@@ -123,6 +123,23 @@
             android:visibility="gone" />
 
         <TextView
+            android:id="@+id/btn_tx_edit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_cream"
+            android:gravity="center"
+            android:padding="12dp"
+            android:text="Sửa"
+            android:textColor="@color/dark_green"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/btn_tx_close"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

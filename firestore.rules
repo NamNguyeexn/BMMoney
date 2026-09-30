@@ -1,30 +1,56 @@
 rules_version = '2';
-
-// BMMoney - Firestore Security Rules
-//
-// Nguyen tac duy nhat: moi nguoi chi doc/ghi duoc nhanh users/{uid} cua chinh minh.
-// Khong co bat ky duong nao khac duoc mo. Mac dinh cua Firestore la TU CHOI HET,
-// nen chi can khong khai bao la da khoa.
-//
-// Cach nap:  firebase deploy --only firestore:rules
-
+// BMM v6 — mỗi tài khoản chỉ đọc/ghi được dữ liệu của chính mình.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isOwner(uid) {
-      return request.auth != null && request.auth.uid == uid;
+    function signedIn(uid) { return request.auth != null && request.auth.uid == uid; }
+    function common(d, id) {                // trường bắt buộc của mọi bảng
+      return d.id == id && d.updatedAt is int && d.deleted is bool;
+    }
+    function optStr(d, k) { return !(k in d) || d[k] == null || d[k] is string; }
+    // Bản ghi đã xóa (deleted = true) chỉ cần đúng trường chung, không kiểm tra thêm
+    function gone(d) { return d.deleted == true; }
+
+    // ----- Cấu trúc mới v6
+    match /accounts/{uid} {
+      allow read, write: if signedIn(uid);
+
+      match /settings/{doc} { allow read, write: if signedIn(uid); }
+      match /meta/{doc}     { allow read, write: if signedIn(uid); }
+
+      match /categories/{id} {
+        allow read, delete: if signedIn(uid);
+        allow create, update: if signedIn(uid) && common(request.resource.data, id)
+          && (gone(request.resource.data) || request.resource.data.name is string
+          && request.resource.data.kind in ['EXPENSE', 'INCOME', 'BOTH']);
+      }
+      match /people/{id} {
+        allow read, delete: if signedIn(uid);
+        allow create, update: if signedIn(uid) && common(request.resource.data, id)
+          && request.resource.data.name is string;
+      }
+      match /loans/{id} {
+        allow read, delete: if signedIn(uid);
+        allow create, update: if signedIn(uid) && common(request.resource.data, id)
+          && (gone(request.resource.data) || request.resource.data.direction in ['BORROW', 'LEND']
+          && request.resource.data.principal is int && request.resource.data.principal > 0
+          && optStr(request.resource.data, 'personId'));
+      }
+      match /transactions/{id} {
+        allow read, delete: if signedIn(uid);
+        allow create, update: if signedIn(uid) && common(request.resource.data, id)
+          && (gone(request.resource.data) || request.resource.data.type in ['EXPENSE', 'INCOME', 'BORROW', 'LEND', 'REPAY', 'COLLECT']
+          && request.resource.data.amount is int && request.resource.data.amount > 0
+          && request.resource.data.occurredAt is int
+          && optStr(request.resource.data, 'categoryId')
+          && optStr(request.resource.data, 'loanId')
+          && request.resource.data.get('paymentMethod', null) in [null, 'BANK', 'CASH', 'CARD', 'EWALLET', 'OTHER']);
+      }
     }
 
-    // Ho so tai khoan: users/{uid}
-    match /users/{uid} {
-      allow read, write: if isOwner(uid);
-
-      // Toan bo du lieu con:
-      //   meta/sync, cats/{id}, people/{id}, loans/{loanId}, tx/{id}
-      // va ca hai collection cu dang cho don: transactions/{id}, backup/{id}
-      match /{document=**} {
-        allow read, write: if isOwner(uid);
-      }
+    // ----- Cấu trúc cũ: giữ quyền để app bản hiện tại vẫn chạy trong lúc chuyển đổi
+    match /users/{uid}/{document=**} {
+      allow read, write: if signedIn(uid);
     }
   }
 }

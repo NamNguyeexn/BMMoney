@@ -376,6 +376,11 @@ public interface TransactionDao {
     @Query("UPDATE transactions SET deleted = 1, updatedAt = :now WHERE id = :id")
     void softDelete(int id, long now);
 
+    /** Ban va 30/09: xoa khoan vay goc thi xoa mem luon cac dong tra / thu cua no. */
+    @Query("UPDATE transactions SET deleted = 1, updatedAt = :now "
+            + "WHERE loanId = :loanId AND deleted = 0")
+    void softDeleteByLoan(String loanId, long now);
+
     @Query("UPDATE transactions SET settled = :settled, updatedAt = :now WHERE id = :id")
     void setSettled(int id, int settled, long now);
 
