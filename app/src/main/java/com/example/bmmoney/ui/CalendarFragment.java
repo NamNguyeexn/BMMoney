@@ -11,12 +11,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.bmmoney.R;
-import com.example.bmmoney.adapter.TransactionAdapter;
+import com.example.bmmoney.adapter.TxRowBinder;
 import com.example.bmmoney.data.AppDatabase;
 import com.example.bmmoney.data.Db;
 import com.example.bmmoney.data.TransactionDao;
@@ -73,7 +71,6 @@ public class CalendarFragment extends Fragment {
 
     private View root;
     private SwipeRefreshLayout refresh;
-    private TransactionAdapter adapter;
 
     /** Thang dang xem, luon dat ve ngay 1 luc 00:00. */
     private final Calendar month = Calendar.getInstance();
@@ -109,14 +106,6 @@ public class CalendarFragment extends Fragment {
         month.set(Calendar.DAY_OF_MONTH, 1);
         selectedDay = startOfToday();
 
-        RecyclerView recycler = root.findViewById(R.id.recycler_day);
-        adapter = new TransactionAdapter();
-        adapter.setShowTimeOnly(true);
-        recycler.setLayoutManager(new LinearLayoutManager(getContext()));
-        recycler.setItemAnimator(null);
-        recycler.setNestedScrollingEnabled(false);
-        recycler.setAdapter(adapter);
-
         refresh = Refresh.setup(root, R.id.refresh_calendar, this::reload);
 
         ViewUtils.onClick(root, R.id.btn_prev_month, v -> shiftMonth(-1));
@@ -133,9 +122,6 @@ public class CalendarFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        RecyclerView recycler = root == null ? null : (RecyclerView) root.findViewById(R.id.recycler_day);
-        if (recycler != null) recycler.setAdapter(null);
-        adapter = null;
         refresh = null;
         root = null;
         super.onDestroyView();
@@ -325,11 +311,21 @@ public class CalendarFragment extends Fragment {
         text(R.id.tv_day_summary, sum.length() > 0 ? sum.toString()
                 : "S\u1eafp x\u1ebfp t\u1eeb \u0111\u1ea7u ng\u00e0y \u0111\u1ebfn cu\u1ed1i ng\u00e0y");
 
-        if (adapter != null) adapter.setTransactions(data.dayItems);
+        // Gan thang tung dong vao LinearLayout (xem ghi chu trong fragment_calendar.xml).
+        // Mot ngay chi co vai chuc ban ghi nen khong can co che tai su dung cua RecyclerView.
+        LinearLayout box = root.findViewById(R.id.container_day);
+        if (box != null) {
+            box.removeAllViews();
+            for (TxRow row : data.dayItems) {
+                View item = TxRowBinder.inflate(box);
+                TxRowBinder.bind(item, row, true, null);
+                box.addView(item);
+            }
+        }
 
         boolean empty = data.dayItems.isEmpty();
         ViewUtils.setVisibility(root, R.id.tv_empty_day, empty ? View.VISIBLE : View.GONE);
-        ViewUtils.setVisibility(root, R.id.recycler_day, empty ? View.GONE : View.VISIBLE);
+        ViewUtils.setVisibility(root, R.id.container_day, empty ? View.GONE : View.VISIBLE);
     }
 
     /**

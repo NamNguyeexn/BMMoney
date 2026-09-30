@@ -270,12 +270,18 @@
                         android:textColor="@color/olive"
                         android:textSize="13sp" />
 
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recycler_day"
+                    <!--
+                      Ban va 30/09: bo RecyclerView. Long mot danh sach cuon vao trong
+                      ScrollView lam RecyclerView bi do thieu chieu cao (chi du 1 dong),
+                      cac dong con lai bi cat mat. Cac dong nay duoc gan THANG vao
+                      LinearLayout giong man Tim kiem.
+                    -->
+                    <LinearLayout
+                        android:id="@+id/container_day"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:overScrollMode="never" />
+                        android:orientation="vertical" />
 
                     <TextView
                         android:id="@+id/tv_empty_day"
