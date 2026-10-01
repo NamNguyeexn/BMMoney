@@ -97,7 +97,7 @@ public class FirebaseSyncManager {
     private static final String[] TABLES = {C_CATS, C_PEOPLE, C_LOANS, C_TX};
 
     private static final String SP = "bmm_sync_v6";
-    private static final String K_LAST_PUSH = "lastPush";
+    private static final String K_LAST_PUSH = "lastPush";   // luu rieng theo uid: lastPush:{uid}
 
     // ------------------------------------------------------------- giao dien cu (giu nguyen)
     public interface Result {
@@ -375,7 +375,7 @@ public class FirebaseSyncManager {
     /** full = true: đẩy lại toàn bộ (nút "Ghi đè"), bỏ qua mốc lastPush. */
     private int push(String uid, boolean full) throws Exception {
         final long startedAt = System.currentTimeMillis();
-        final long since = full ? 0L : sp().getLong(K_LAST_PUSH, 0L);
+        final long since = full ? 0L : sp().getLong(K_LAST_PUSH + ":" + uid, 0L);
         Log.i(TAG, "push: uid=" + uid + (since <= 0 ? " TOAN BO" : " tu moc " + since));
 
         List<DocumentReference> refs = new ArrayList<>();
@@ -428,7 +428,7 @@ public class FirebaseSyncManager {
         tail.set(meta(uid), head, SetOptions.merge());
         await(tail.commit());
 
-        sp().edit().putLong(K_LAST_PUSH, startedAt).apply();
+        sp().edit().putLong(K_LAST_PUSH + ":" + uid, startedAt).apply();
         Prefs.setLastBackup(context, now);
         Prefs.setLocalChangedAt(context, now);
         Log.i(TAG, "push: xong " + refs.size() + " dong, cloud giu " + live + " giao dich");
@@ -736,7 +736,7 @@ public class FirebaseSyncManager {
                 tail.delete(settingsRef(uid));
                 tail.delete(meta(uid));
                 await(tail.commit());
-                sp().edit().putLong(K_LAST_PUSH, 0L).apply();   // lan sau day lai toan bo
+                sp().edit().putLong(K_LAST_PUSH + ":" + uid, 0L).apply();   // lan sau day lai toan bo
                 Prefs.setLastBackup(context, 0L);
                 done(result, true, 0, null);
             } catch (Exception e) {
